@@ -176,7 +176,7 @@ export function CalendarPage() {
                   >
                     {evt.type}
                   </span>
-                  <strong style={{ fontSize: 15, color: "#f8fafc" }}>
+                  <strong style={{ fontSize: 15, color: "var(--color-text-title)" }}>
                     {evt.title}
                   </strong>
                   {evt.status === "Live" && (

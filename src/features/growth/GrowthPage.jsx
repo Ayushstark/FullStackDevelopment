@@ -157,7 +157,7 @@ export function GrowthPage() {
               <strong style={{ color: "#f87171", display: "block", fontSize: 15 }}>
                 Streak at risk of resetting!
               </strong>
-              <span style={{ fontSize: 13, color: "#cbd5e1" }}>
+              <span style={{ fontSize: 13, color: "var(--color-text-main)" }}>
                 You have been inactive for more than a day. Use a Streak Freeze to protect your{" "}
                 <strong>{growthStats.currentStreak}-day</strong> record!
               </span>
@@ -455,12 +455,12 @@ export function GrowthPage() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <strong style={{ color: "#f8fafc" }}>
+                      <strong style={{ color: "var(--color-text-title)" }}>
                         {log.platform} · {log.problemsSolved} Solved
                       </strong>
                       <span style={{ color: "var(--color-text-muted)" }}>{log.date}</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>{log.notes}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>{log.notes}</p>
                   </div>
                 ))}
               </div>
@@ -513,10 +513,10 @@ export function GrowthPage() {
                         ✓ {project.status}
                       </span>
                     </div>
-                    <h3 style={{ fontSize: 16, margin: "0 0 6px 0", color: "#f8fafc" }}>
+                    <h3 style={{ fontSize: 16, margin: "0 0 6px 0", color: "var(--color-text-title)" }}>
                       {project.name}
                     </h3>
-                    <p style={{ fontSize: 13, color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.5 }}>
                       {project.description}
                     </p>
                   </div>
@@ -698,11 +698,11 @@ export function GrowthPage() {
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: 16, margin: "0 0 8px 0", color: "#f8fafc" }}>
+                    <h3 style={{ fontSize: 16, margin: "0 0 8px 0", color: "var(--color-text-title)" }}>
                       {evt.title}
                     </h3>
 
-                    <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 14px 0", lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 14px 0", lineHeight: 1.5 }}>
                       {evt.description}
                     </p>
 
@@ -717,7 +717,7 @@ export function GrowthPage() {
                               background: "rgba(255, 255, 255, 0.05)",
                               padding: "2px 8px",
                               borderRadius: 4,
-                              color: "#cbd5e1",
+                              color: "var(--color-text-main)",
                             }}
                           >
                             {tag}
