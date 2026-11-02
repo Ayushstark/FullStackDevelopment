@@ -90,28 +90,28 @@ export function OpportunityDetailModal({ opportunity, onClose }) {
               <span style={{ fontSize: 11, color: "var(--color-text-muted)", display: "block" }}>
                 ELIGIBILITY
               </span>
-              <strong style={{ fontSize: 13.5, color: "#f8fafc" }}>{opportunity.experience} Level</strong>
+              <strong style={{ fontSize: 13.5, color: "var(--color-text-title)" }}>{opportunity.experience} Level</strong>
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <h3 style={{ fontSize: 15, margin: "0 0 8px", color: "#f8fafc" }}>
+            <h3 style={{ fontSize: 15, margin: "0 0 8px", color: "var(--color-text-title)" }}>
               About the Position
             </h3>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "#cbd5e1", margin: 0 }}>
+            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--color-text-main)", margin: 0 }}>
               {opportunity.description}
             </p>
           </div>
 
           {/* Key Requirements */}
           <div>
-            <h3 style={{ fontSize: 15, margin: "0 0 8px", color: "#f8fafc" }}>
+            <h3 style={{ fontSize: 15, margin: "0 0 8px", color: "var(--color-text-title)" }}>
               Key Qualifications & Requirements
             </h3>
             <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
               {opportunity.requirements.map((req, idx) => (
-                <li key={idx} style={{ fontSize: 13, lineHeight: 1.5, color: "#94a3b8" }}>
+                <li key={idx} style={{ fontSize: 13, lineHeight: 1.5, color: "var(--color-text-main)" }}>
                   {req}
                 </li>
               ))}
@@ -121,7 +121,7 @@ export function OpportunityDetailModal({ opportunity, onClose }) {
           {/* Required Skills vs Your Skills */}
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <h3 style={{ fontSize: 15, margin: 0, color: "#f8fafc" }}>
+              <h3 style={{ fontSize: 15, margin: 0, color: "var(--color-text-title)" }}>
                 Core Skills Required
               </h3>
               <span style={{ fontSize: 11.5, color: "#34d399", fontWeight: 600 }}>

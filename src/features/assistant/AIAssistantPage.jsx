@@ -268,12 +268,12 @@ export function AIAssistantPage() {
             </div>
 
             <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--color-border-subtle)" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#f8fafc", display: "block", marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-title)", display: "block", marginBottom: 8 }}>
                 AI Recommendations
               </span>
               <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
                 {displayMatchAnalysis.recommendations.map((rec, i) => (
-                  <li key={i} style={{ fontSize: 12.5, color: "#cbd5e1", lineHeight: 1.5 }}>
+                  <li key={i} style={{ fontSize: 12.5, color: "var(--color-text-main)", lineHeight: 1.5 }}>
                     {rec}
                   </li>
                 ))}

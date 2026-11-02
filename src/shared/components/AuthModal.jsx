@@ -74,7 +74,7 @@ export function AuthModal({ isOpen, onClose }) {
               <span className="brand-mark" style={{ width: 26, height: 26, fontSize: 13 }}>
                 O
               </span>
-              <strong style={{ fontSize: 15, color: "#f8fafc" }}>OpportunityOS Auth</strong>
+              <strong style={{ fontSize: 15, color: "var(--color-text-title)" }}>OpportunityOS Auth</strong>
             </div>
             <h2 style={{ margin: "4px 0 0", fontSize: 20 }}>
               {mode === "login" ? "Sign in to your account" : "Create student account"}

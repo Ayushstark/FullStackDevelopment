@@ -274,7 +274,7 @@ export function SettingsPage() {
                   }}
                 >
                   <div>
-                    <strong style={{ display: "block", color: "#f8fafc", fontSize: 13.5 }}>
+                    <strong style={{ display: "block", color: "var(--color-text-title)", fontSize: 13.5 }}>
                       {user.name}
                     </strong>
                     <span style={{ fontSize: 12, color: "#34d399" }}>{user.email}</span>
