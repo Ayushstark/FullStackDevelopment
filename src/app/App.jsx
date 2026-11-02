@@ -5,9 +5,7 @@ import {
   FileText,
   LayoutDashboard,
   Settings,
-  Sparkles,
 } from "lucide-react";
-import { AIAssistantPage } from "../features/assistant/AIAssistantPage.jsx";
 import { ApplicationsPage } from "../features/applications/ApplicationsPage.jsx";
 import { CalendarPage } from "../features/calendar/CalendarPage.jsx";
 import { DashboardPage } from "../features/dashboard/DashboardPage.jsx";
@@ -47,7 +45,6 @@ function AppContent() {
       badge: growthStats.streakAtRisk ? "Alert" : undefined,
     },
     { id: "calendar", label: "Calendar", icon: CalendarDays },
-    { id: "assistant", label: "AI Assistant", icon: Sparkles },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -61,8 +58,6 @@ function AppContent() {
         return <GrowthPage />;
       case "calendar":
         return <CalendarPage />;
-      case "assistant":
-        return <AIAssistantPage />;
       case "settings":
         return <SettingsPage />;
       case "overview":

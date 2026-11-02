@@ -13,6 +13,7 @@ import {
   loginUser,
   logoutUser,
   registerUser,
+  submitGrowthLog,
 } from "../services/authService.js";
 
 const STORAGE_KEYS = {
@@ -45,6 +46,38 @@ function saveToStorage(key, value) {
 }
 
 const AppContext = createContext(undefined);
+
+// Helper to compute streak health, risk, and days since last active
+function calculateStreakStatus(lastActiveDate, currentStreak) {
+  try {
+    if (!lastActiveDate) {
+      return { streakAtRisk: true, daysInactive: 1, isBroken: false };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const last = new Date(lastActiveDate);
+    last.setHours(0, 0, 0, 0);
+
+    const diffMs = today.getTime() - last.getTime();
+    const daysInactive = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (daysInactive === 0) {
+      // Solved something today!
+      return { streakAtRisk: false, daysInactive: 0, isBroken: false };
+    } else if (daysInactive === 1) {
+      // Solved yesterday, needs activity today to keep going
+      return { streakAtRisk: true, daysInactive: 1, isBroken: false };
+    } else {
+      // Inactive 2+ days, streak is broken or needs freeze/recovery
+      return { streakAtRisk: true, daysInactive, isBroken: currentStreak > 0 };
+    }
+  } catch (err) {
+    console.error("Error evaluating streak status:", err);
+    return { streakAtRisk: true, daysInactive: 1, isBroken: false };
+  }
+}
 
 export function AppProvider({ children }) {
   const [activePage, setActivePage] = useState("overview");
@@ -83,9 +116,21 @@ export function AppProvider({ children }) {
     loadFromStorage(STORAGE_KEYS.APPLICATIONS, initialApplications),
   );
 
-  const [growthStats, setGrowthStats] = useState(() =>
-    loadFromStorage(STORAGE_KEYS.GROWTH, initialGrowthStats),
-  );
+  const [growthStats, setGrowthStats] = useState(() => {
+    try {
+      const loaded = loadFromStorage(STORAGE_KEYS.GROWTH, initialGrowthStats);
+      const status = calculateStreakStatus(loaded.lastActiveDate, loaded.currentStreak);
+      return {
+        ...loaded,
+        streakAtRisk: status.streakAtRisk,
+        streakBroken: status.isBroken,
+        streakFreezesAvailable: loaded.streakFreezesAvailable ?? 2,
+      };
+    } catch (err) {
+      console.error("Failed to initialize growth stats:", err);
+      return initialGrowthStats;
+    }
+  });
 
   const [calendarEvents, setCalendarEvents] = useState(() =>
     loadFromStorage(STORAGE_KEYS.CALENDAR, initialCalendarEvents),
@@ -272,6 +317,11 @@ export function AppProvider({ children }) {
 
   // Developer Growth & Streak actions (Streak Module)
   const logCodingActivity = (platform, problemsSolved, notes) => {
+    // Attempt asynchronous sync with backend if user has an active session
+    submitGrowthLog({ platform, problemsSolved, notes }).catch((err) => {
+      console.warn("Offline or unauthenticated; saving activity locally:", err);
+    });
+
     const today = new Date().toISOString().split("T")[0];
     setGrowthStats((prev) => {
       const isFirstActivityToday = prev.streakAtRisk;
@@ -317,8 +367,21 @@ export function AppProvider({ children }) {
         date: today,
         platform,
         problemsSolved,
-        notes: notes || `Completed ${problemsSolved} problems on ${platform}.`,
+        notes: notes || `Completed ${problemsSolved} items on ${platform}.`,
       };
+
+      const updatedAutonomous = [...(prev.autonomousProjects || [])];
+      if (platform === "GitHub" && notes) {
+        updatedAutonomous.unshift({
+          id: `proj-${Date.now()}`,
+          name: notes.length > 40 ? notes.slice(0, 37) + "..." : notes,
+          language: "JavaScript",
+          commits: problemsSolved,
+          date: today,
+          status: "Completed",
+          description: notes,
+        });
+      }
 
       return {
         ...prev,
@@ -326,14 +389,35 @@ export function AppProvider({ children }) {
         longestStreak: nextLongest,
         lastActiveDate: today,
         streakAtRisk: false,
+        streakBroken: false,
         totalProblemsSolved: prev.totalProblemsSolved + problemsSolved,
         leetcode: updatedLeetCode,
         codeforces: updatedCodeforces,
         github: updatedGithub,
         weeklyActivity: updatedWeekly,
         recentLogs: [newLog, ...prev.recentLogs].slice(0, 10),
+        autonomousProjects: updatedAutonomous.slice(0, 10),
       };
     });
+  };
+
+  // Streak Recovery / Freeze action
+  const useStreakFreeze = () => {
+    try {
+      setGrowthStats((prev) => {
+        if ((prev.streakFreezesAvailable ?? 0) <= 0) return prev;
+        const today = new Date().toISOString().split("T")[0];
+        return {
+          ...prev,
+          lastActiveDate: today,
+          streakAtRisk: false,
+          streakBroken: false,
+          streakFreezesAvailable: (prev.streakFreezesAvailable ?? 2) - 1,
+        };
+      });
+    } catch (err) {
+      console.error("Failed to use streak freeze:", err);
+    }
   };
 
   // Calendar actions
@@ -391,6 +475,7 @@ export function AppProvider({ children }) {
         deleteApplication,
         growthStats,
         logCodingActivity,
+        useStreakFreeze,
         calendarEvents,
         toggleCalendarReminder,
         resetAllData,

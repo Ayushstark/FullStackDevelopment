@@ -6,7 +6,7 @@ const growthLogSchema = new mongoose.Schema(
     date: { type: String, required: true },
     platform: {
       type: String,
-      enum: ["LeetCode", "Codeforces", "GitHub", "HackerRank"],
+      enum: ["LeetCode", "Codeforces", "GitHub", "AtCoder", "HackerRank"],
       required: true,
     },
     problemsSolved: { type: Number, required: true, min: 1 },
