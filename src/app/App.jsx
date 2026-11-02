@@ -27,6 +27,13 @@ function AppContent() {
   const navigation = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     {
+      id: "growth",
+      label: "Streak & Practice",
+      icon: Activity,
+      badge: growthStats.streakAtRisk ? "At Risk" : undefined,
+    },
+    { id: "calendar", label: "Contests & Events", icon: CalendarDays },
+    {
       id: "opportunities",
       label: "Opportunities",
       icon: BriefcaseBusiness,
@@ -38,13 +45,6 @@ function AppContent() {
       icon: FileText,
       badge: applications.length > 0 ? applications.length : undefined,
     },
-    {
-      id: "growth",
-      label: "Streak & Growth",
-      icon: Activity,
-      badge: growthStats.streakAtRisk ? "Alert" : undefined,
-    },
-    { id: "calendar", label: "Calendar", icon: CalendarDays },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 

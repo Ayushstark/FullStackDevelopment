@@ -39,7 +39,11 @@ describe("sample opportunity and domain data", () => {
 
   it("contains growth statistics and streak risk status", () => {
     expect(initialGrowthStats.currentStreak).toBeGreaterThan(0);
+    expect(initialGrowthStats.longestStreak).toBeGreaterThanOrEqual(initialGrowthStats.currentStreak);
+    expect(initialGrowthStats.totalProblemsSolved).toBeGreaterThan(0);
     expect(initialGrowthStats.leetcode.solved).toBeGreaterThan(0);
+    expect(initialGrowthStats.codeforces.solved).toBeGreaterThan(0);
+    expect(initialGrowthStats.github.contributions).toBeGreaterThan(0);
     expect(initialGrowthStats.weeklyActivity.length).toBe(7);
   });
 
