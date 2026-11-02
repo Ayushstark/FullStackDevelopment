@@ -264,6 +264,36 @@ export const initialGrowthStats = {
     { day: "Tue", count: 3, completed: true },
     { day: "Wed", count: 0, completed: false },
   ],
+  monthlyActivity: [
+    { date: "2026-10-01", day: "Thu", count: 3, level: 2 },
+    { date: "2026-10-02", day: "Fri", count: 4, level: 2 },
+    { date: "2026-10-03", day: "Sat", count: 6, level: 3 },
+    { date: "2026-10-04", day: "Sun", count: 2, level: 1 },
+    { date: "2026-10-05", day: "Mon", count: 3, level: 2 },
+    { date: "2026-10-06", day: "Tue", count: 5, level: 3 },
+    { date: "2026-10-07", day: "Wed", count: 4, level: 2 },
+    { date: "2026-10-08", day: "Thu", count: 2, level: 1 },
+    { date: "2026-10-09", day: "Fri", count: 3, level: 2 },
+    { date: "2026-10-10", day: "Sat", count: 5, level: 3 },
+    { date: "2026-10-11", day: "Sun", count: 4, level: 2 },
+    { date: "2026-10-12", day: "Mon", count: 3, level: 2 },
+    { date: "2026-10-13", day: "Tue", count: 2, level: 1 },
+    { date: "2026-10-14", day: "Wed", count: 4, level: 2 },
+    { date: "2026-10-15", day: "Thu", count: 5, level: 3 },
+    { date: "2026-10-16", day: "Fri", count: 3, level: 2 },
+    { date: "2026-10-17", day: "Sat", count: 7, level: 3 },
+    { date: "2026-10-18", day: "Sun", count: 4, level: 2 },
+    { date: "2026-10-19", day: "Mon", count: 2, level: 1 },
+    { date: "2026-10-20", day: "Tue", count: 3, level: 2 },
+    { date: "2026-10-21", day: "Wed", count: 5, level: 3 },
+    { date: "2026-10-22", day: "Thu", count: 4, level: 2 },
+    { date: "2026-10-23", day: "Fri", count: 3, level: 2 },
+    { date: "2026-10-24", day: "Sat", count: 6, level: 3 },
+    { date: "2026-10-25", day: "Sun", count: 5, level: 3 },
+    { date: "2026-10-26", day: "Mon", count: 4, level: 2 },
+    { date: "2026-10-27", day: "Tue", count: 3, level: 2 },
+    { date: "2026-10-28", day: "Wed", count: 0, level: 0 },
+  ],
   recentLogs: [
     {
       date: "2026-10-27",
@@ -407,5 +437,12 @@ export const initialCalendarEvents = [
     tags: ["Hackathon", "Web3", "Distributed Systems", "Bounties"],
     isReminderSet: true,
   },
+];
+
+export const streakMilestones = [
+  { id: "spark", name: "7-Day Spark", targetDays: 7, description: "Solidified a consistent 1-week coding habit" },
+  { id: "momentum", name: "14-Day Momentum", targetDays: 14, description: "Two straight weeks of uninterrupted problem solving" },
+  { id: "master", name: "30-Day Master", targetDays: 30, description: "One full month of unbroken technical consistency" },
+  { id: "legend", name: "100-Day Legend", targetDays: 100, description: "Elite dedication, top 1% developer consistency" },
 ];
 

@@ -1617,6 +1617,34 @@ body { background: var(--bg-page); color: var(--color-text-main); }
 .modal-dialog { border-color: #e6e2d7; border-radius: 16px; }
 .mobile-brand { color: #202923; }
 
+/* 28-Day Consistency Heatmap */
+.heatmap-container { margin-top: 18px; }
+.heatmap-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; }
+.heatmap-meta strong { color: var(--color-text-title); }
+.heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.heatmap-cell { aspect-ratio: 1; border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; transition: var(--transition); cursor: pointer; }
+.heatmap-cell small { font-size: 9px; font-weight: 500; opacity: 0.8; }
+.heatmap-cell.level-0 { background: #ebe7dc; border: 1px solid #dfdacd; color: #9c9a8e; }
+.heatmap-cell.level-1 { background: #d8e8b7; border: 1px solid #c5dc9b; color: #3b5327; }
+.heatmap-cell.level-2 { background: #b5db6c; border: 1px solid #9dc94d; color: #233e14; }
+.heatmap-cell.level-3 { background: #234e40; border: 1px solid #1a3c31; color: #f4f8ed; }
+.heatmap-cell:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(35, 78, 64, 0.15); }
+.heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 14px; font-size: 11px; color: var(--color-text-muted); }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+/* Streak Milestones */
+.milestones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
+.milestone-card { background: var(--bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: var(--transition); }
+.milestone-card.unlocked { border-color: #c9ec6c; background: #f7f9f0; }
+.milestone-card-top { display: flex; align-items: center; justify-content: space-between; }
+.milestone-title { font-size: 13.5px; font-weight: 700; color: var(--color-text-title); }
+.milestone-badge-pill { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-full); }
+.milestone-badge-pill.unlocked { background: #d8e8b7; color: #3b5327; }
+.milestone-badge-pill.in-progress { background: #fef3c7; color: #b45309; }
+.milestone-badge-pill.locked { background: #ebe7dc; color: #9c9a8e; }
+.milestone-progress-bar { height: 5px; background: #e6e2d7; border-radius: 99px; overflow: hidden; margin-top: 4px; }
+.milestone-progress-fill { height: 100%; background: #234e40; border-radius: 99px; transition: width 0.3s ease; }
+
 /* Spin animation */
 @keyframes spin {
   to {
