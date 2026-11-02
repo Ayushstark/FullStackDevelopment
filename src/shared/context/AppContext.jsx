@@ -316,9 +316,33 @@ export function AppProvider({ children }) {
   };
 
   // Developer Growth & Streak actions (Streak Module)
-  const logCodingActivity = (platform, problemsSolved, notes) => {
+  const logCodingActivity = (
+    platformOrData,
+    count,
+    notes,
+    difficulty = "Medium",
+    category = "Algorithms",
+  ) => {
+    let platform = "LeetCode";
+    let problemsSolved = 1;
+    let activityNotes = "";
+    let problemDifficulty = difficulty;
+    let activityCategory = category;
+
+    if (typeof platformOrData === "object" && platformOrData !== null) {
+      platform = platformOrData.platform || "LeetCode";
+      problemsSolved = Number(platformOrData.problemsSolved) || 1;
+      activityNotes = platformOrData.notes || "";
+      problemDifficulty = platformOrData.difficulty || "Medium";
+      activityCategory = platformOrData.category || "Algorithms";
+    } else {
+      platform = platformOrData || "LeetCode";
+      problemsSolved = Number(count) || 1;
+      activityNotes = notes || "";
+    }
+
     // Attempt asynchronous sync with backend if user has an active session
-    submitGrowthLog({ platform, problemsSolved, notes }).catch((err) => {
+    submitGrowthLog({ platform, problemsSolved, notes: activityNotes }).catch((err) => {
       console.warn("Offline or unauthenticated; saving activity locally:", err);
     });
 
@@ -328,7 +352,7 @@ export function AppProvider({ children }) {
       const nextStreak = isFirstActivityToday ? prev.currentStreak + 1 : prev.currentStreak;
       const nextLongest = Math.max(nextStreak, prev.longestStreak);
 
-      const updatedWeekly = [...prev.weeklyActivity];
+      const updatedWeekly = [...(prev.weeklyActivity || initialGrowthStats.weeklyActivity)];
       const todayIndex = updatedWeekly.length - 1;
       if (todayIndex >= 0) {
         updatedWeekly[todayIndex] = {
@@ -338,20 +362,36 @@ export function AppProvider({ children }) {
         };
       }
 
-      const updatedLeetCode =
-        platform === "LeetCode"
-          ? {
-              ...prev.leetcode,
-              solved: prev.leetcode.solved + problemsSolved,
-              medium: prev.leetcode.medium + problemsSolved,
-            }
-          : prev.leetcode;
+      // Update rolling 28-day monthly heatmap
+      const updatedMonthly = [...(prev.monthlyActivity || initialGrowthStats.monthlyActivity)];
+      const lastMonthIdx = updatedMonthly.length - 1;
+      if (lastMonthIdx >= 0) {
+        const newCount = updatedMonthly[lastMonthIdx].count + problemsSolved;
+        const level = newCount >= 5 ? 3 : newCount >= 3 ? 2 : newCount >= 1 ? 1 : 0;
+        updatedMonthly[lastMonthIdx] = {
+          ...updatedMonthly[lastMonthIdx],
+          count: newCount,
+          level,
+        };
+      }
+
+      // Accurately update platform specific counters
+      let updatedLeetCode = prev.leetcode;
+      if (platform === "LeetCode") {
+        const diffLower = (problemDifficulty || "medium").toLowerCase();
+        const diffKey = ["easy", "medium", "hard"].includes(diffLower) ? diffLower : "medium";
+        updatedLeetCode = {
+          ...prev.leetcode,
+          solved: (prev.leetcode?.solved || 0) + problemsSolved,
+          [diffKey]: (prev.leetcode?.[diffKey] || 0) + problemsSolved,
+        };
+      }
 
       const updatedCodeforces =
         platform === "Codeforces"
           ? {
               ...prev.codeforces,
-              solved: prev.codeforces.solved + problemsSolved,
+              solved: (prev.codeforces?.solved || 0) + problemsSolved,
             }
           : prev.codeforces;
 
@@ -359,7 +399,7 @@ export function AppProvider({ children }) {
         platform === "GitHub"
           ? {
               ...prev.github,
-              contributions: prev.github.contributions + problemsSolved,
+              contributions: (prev.github?.contributions || 0) + problemsSolved,
             }
           : prev.github;
 
@@ -367,19 +407,21 @@ export function AppProvider({ children }) {
         date: today,
         platform,
         problemsSolved,
-        notes: notes || `Completed ${problemsSolved} items on ${platform}.`,
+        difficulty: problemDifficulty,
+        category: activityCategory,
+        notes: activityNotes || `Completed ${problemsSolved} items on ${platform}.`,
       };
 
       const updatedAutonomous = [...(prev.autonomousProjects || [])];
-      if (platform === "GitHub" && notes) {
+      if (platform === "GitHub" && activityNotes) {
         updatedAutonomous.unshift({
           id: `proj-${Date.now()}`,
-          name: notes.length > 40 ? notes.slice(0, 37) + "..." : notes,
+          name: activityNotes.length > 40 ? activityNotes.slice(0, 37) + "..." : activityNotes,
           language: "JavaScript",
           commits: problemsSolved,
           date: today,
           status: "Completed",
-          description: notes,
+          description: activityNotes,
         });
       }
 
@@ -390,12 +432,13 @@ export function AppProvider({ children }) {
         lastActiveDate: today,
         streakAtRisk: false,
         streakBroken: false,
-        totalProblemsSolved: prev.totalProblemsSolved + problemsSolved,
+        totalProblemsSolved: (prev.totalProblemsSolved || 0) + problemsSolved,
         leetcode: updatedLeetCode,
         codeforces: updatedCodeforces,
         github: updatedGithub,
         weeklyActivity: updatedWeekly,
-        recentLogs: [newLog, ...prev.recentLogs].slice(0, 10),
+        monthlyActivity: updatedMonthly,
+        recentLogs: [newLog, ...(prev.recentLogs || [])].slice(0, 10),
         autonomousProjects: updatedAutonomous.slice(0, 10),
       };
     });

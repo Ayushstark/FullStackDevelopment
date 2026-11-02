@@ -4,6 +4,7 @@ import {
   initialCalendarEvents,
   initialGrowthStats,
   initialProfile,
+  streakMilestones,
   upcomingOpportunities,
 } from "./sampleData.js";
 
@@ -45,6 +46,13 @@ describe("sample opportunity and domain data", () => {
     expect(initialGrowthStats.codeforces.solved).toBeGreaterThan(0);
     expect(initialGrowthStats.github.contributions).toBeGreaterThan(0);
     expect(initialGrowthStats.weeklyActivity.length).toBe(7);
+    expect(initialGrowthStats.monthlyActivity.length).toBe(28);
+  });
+
+  it("exports streak milestone configurations for consistency tracking", () => {
+    expect(streakMilestones.length).toBe(4);
+    expect(streakMilestones.every((m) => m.id && m.name && m.targetDays > 0 && m.description)).toBe(true);
+    expect(streakMilestones.map((m) => m.targetDays)).toEqual([7, 14, 30, 100]);
   });
 
   it("contains upcoming calendar events and contests", () => {

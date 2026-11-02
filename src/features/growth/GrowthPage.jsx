@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
+import { streakMilestones } from "../../shared/data/sampleData.js";
 
 export function GrowthPage() {
   const {
@@ -37,10 +38,18 @@ export function GrowthPage() {
   const [selectedPlatform, setSelectedPlatform] = useState("LeetCode");
   const [problemsCount, setProblemsCount] = useState(2);
   const [logNotes, setLogNotes] = useState("");
+  const [difficulty, setDifficulty] = useState("Medium");
+  const [category, setCategory] = useState("Algorithms & DSA");
 
   const handleLogSubmit = (e) => {
     e.preventDefault();
-    logCodingActivity(selectedPlatform, Number(problemsCount) || 1, logNotes);
+    logCodingActivity({
+      platform: selectedPlatform,
+      problemsSolved: Number(problemsCount) || 1,
+      notes: logNotes,
+      difficulty,
+      category,
+    });
     setIsLogModalOpen(false);
     setLogNotes("");
   };
@@ -80,6 +89,22 @@ export function GrowthPage() {
 
   const upcomingContestsCount = calendarEvents.filter((e) => e.type === "Contest").length;
   const upcomingHackathonsCount = calendarEvents.filter((e) => e.type === "Hackathon").length;
+
+  const monthlyActivity = useMemo(
+    () => growthStats.monthlyActivity || [],
+    [growthStats.monthlyActivity]
+  );
+  const activeDaysCount = useMemo(
+    () => monthlyActivity.filter((d) => d.count > 0).length,
+    [monthlyActivity]
+  );
+  const consistencyRate = useMemo(
+    () =>
+      monthlyActivity.length > 0
+        ? Math.round((activeDaysCount / monthlyActivity.length) * 100)
+        : 0,
+    [activeDaysCount, monthlyActivity]
+  );
 
   return (
     <main className="page-content">
@@ -407,30 +432,47 @@ export function GrowthPage() {
             </div>
           </section>
 
-          {/* Weekly Velocity & Audit Trail */}
-          <section className="content-grid" style={{ marginBottom: 32 }}>
-            {/* Weekly Activity Heatmap */}
+          {/* Consistency Heatmap & Practice History */}
+          <section className="content-grid" style={{ marginBottom: 24 }}>
+            {/* 28-Day Activity Heatmap */}
             <div className="panel">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Weekly Activity</p>
-                  <h2>Last 7 Days</h2>
+                  <p className="eyebrow">Habit Tracking</p>
+                  <h2>28-Day Consistency Heatmap</h2>
                 </div>
               </div>
-              <p className="muted">Daily problem submissions and commits over the past week.</p>
+              <p className="muted">Rolling 4-week overview of daily coding consistency and intensity.</p>
 
-              <div className="weekly-activity-bar">
-                {growthStats.weeklyActivity.map((day, idx) => (
-                  <div className="activity-day-col" key={idx}>
+              <div className="heatmap-container">
+                <div className="heatmap-meta">
+                  <span>
+                    <strong>{activeDaysCount} / {monthlyActivity.length}</strong> active days
+                  </span>
+                  <span>
+                    <strong>{consistencyRate}%</strong> consistency score
+                  </span>
+                </div>
+                <div className="heatmap-grid">
+                  {monthlyActivity.map((day, idx) => (
                     <div
-                      className={`activity-day-indicator ${day.completed ? "completed" : ""}`}
-                      title={`${day.day}: ${day.count} problems solved`}
+                      key={idx}
+                      className={`heatmap-cell level-${day.level ?? 0}`}
+                      title={`${day.date || day.day}: ${day.count} problems solved`}
                     >
-                      {day.count}
+                      <span>{day.count > 0 ? day.count : "·"}</span>
+                      <small>{day.day}</small>
                     </div>
-                    <span>{day.day}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <div className="heatmap-legend">
+                  <span>Less</span>
+                  <span className="legend-swatch" style={{ background: "#ebe7dc", border: "1px solid #dfdacd" }} />
+                  <span className="legend-swatch" style={{ background: "#d8e8b7" }} />
+                  <span className="legend-swatch" style={{ background: "#b5db6c" }} />
+                  <span className="legend-swatch" style={{ background: "#234e40" }} />
+                  <span>More</span>
+                </div>
               </div>
             </div>
 
@@ -461,9 +503,93 @@ export function GrowthPage() {
                       <span style={{ color: "var(--color-text-muted)" }}>{log.date}</span>
                     </div>
                     <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>{log.notes}</p>
+                    {(log.category || log.difficulty) && (
+                      <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
+                        {log.category && (
+                          <span className="tag" style={{ fontSize: 10, padding: "2px 6px" }}>
+                            {log.category}
+                          </span>
+                        )}
+                        {log.difficulty && (
+                          <span
+                            className="tag"
+                            style={{
+                              fontSize: 10,
+                              padding: "2px 6px",
+                              color:
+                                log.difficulty === "Easy"
+                                  ? "#16a34a"
+                                  : log.difficulty === "Hard"
+                                  ? "#dc2626"
+                                  : "#d97706",
+                            }}
+                          >
+                            {log.difficulty}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+
+          {/* Streak Milestones Badges */}
+          <section className="panel" style={{ marginBottom: 32 }}>
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Milestones</p>
+                <h2>Streak Consistency Badges</h2>
+              </div>
+              <span className="tag" style={{ background: "#fef3c7", color: "#b45309" }}>
+                {growthStats.currentStreak} Days Current
+              </span>
+            </div>
+            <p className="muted">Unlock developer badges by maintaining unbroken coding streaks.</p>
+
+            <div className="milestones-grid">
+              {streakMilestones.map((m) => {
+                const isUnlocked = (growthStats.currentStreak || 0) >= m.targetDays;
+                const progressPct = Math.min(100, Math.round(((growthStats.currentStreak || 0) / m.targetDays) * 100));
+                const isInProgress = !isUnlocked && progressPct > 0;
+                return (
+                  <article key={m.id} className={`milestone-card ${isUnlocked ? "unlocked" : ""}`}>
+                    <div className="milestone-card-top">
+                      <span className="milestone-title">{m.name}</span>
+                      <span
+                        className={`milestone-badge-pill ${
+                          isUnlocked ? "unlocked" : isInProgress ? "in-progress" : "locked"
+                        }`}
+                      >
+                        {isUnlocked ? "Unlocked" : `${m.targetDays} Days`}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.4 }}>
+                      {m.description}
+                    </p>
+                    <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: 11,
+                          color: "var(--color-text-muted)",
+                          marginTop: 6,
+                        }}
+                      >
+                        <span>
+                          {isUnlocked ? "Achieved" : `${growthStats.currentStreak}/${m.targetDays} days`}
+                        </span>
+                        <span>{progressPct}%</span>
+                      </div>
+                      <div className="milestone-progress-bar">
+                        <div className="milestone-progress-fill" style={{ width: `${progressPct}%` }} />
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         </>
@@ -817,6 +943,37 @@ export function GrowthPage() {
                   </select>
                 </div>
 
+                {selectedPlatform === "LeetCode" && (
+                  <div className="form-group">
+                    <label htmlFor="diffSelect">Difficulty Level</label>
+                    <select
+                      id="diffSelect"
+                      className="form-select"
+                      value={difficulty}
+                      onChange={(e) => setDifficulty(e.target.value)}
+                    >
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="catSelect">Focus Area</label>
+                  <select
+                    id="catSelect"
+                    className="form-select"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  >
+                    <option value="Algorithms & DSA">Algorithms & DSA</option>
+                    <option value="Contest Round">Contest Round</option>
+                    <option value="System Design">System Design</option>
+                    <option value="Open Source & Git">Open Source & Git</option>
+                  </select>
+                </div>
+
                 <div className="form-group">
                   <label htmlFor="countInput">Items / Problems / Commits Completed *</label>
                   <input
@@ -832,11 +989,11 @@ export function GrowthPage() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="notesPractice">Details or Project Name</label>
+                  <label htmlFor="notesPractice">Details or Problem / Project Name</label>
                   <input
                     id="notesPractice"
                     className="form-input"
-                    placeholder="e.g. AI Governance Framework or Solved Two Sum"
+                    placeholder="e.g. Solved 3Sum Closest or Built Auth Middleware"
                     value={logNotes}
                     onChange={(e) => setLogNotes(e.target.value)}
                   />
