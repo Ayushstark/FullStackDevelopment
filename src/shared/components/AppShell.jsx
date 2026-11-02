@@ -29,7 +29,7 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
           <span className="brand-mark">O</span>
           <div className="brand-text-block">
             <span className="brand-title">OpportunityOS</span>
-            <span className="brand-subtitle">Find your next step</span>
+            <span className="brand-subtitle">Streak & Developer Growth</span>
           </div>
         </div>
 
