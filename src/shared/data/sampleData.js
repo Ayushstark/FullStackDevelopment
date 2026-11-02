@@ -446,3 +446,15 @@ export const streakMilestones = [
   { id: "legend", name: "100-Day Legend", targetDays: 100, description: "Elite dedication, top 1% developer consistency" },
 ];
 
+export const initialDailyChallenge = {
+  id: "lc-daily-2026-11-03",
+  title: "Minimum Operations to Reduce X to Zero",
+  platform: "LeetCode",
+  difficulty: "Medium",
+  category: "Sliding Window",
+  tags: ["Array", "Hash Table", "Sliding Window"],
+  link: "https://leetcode.com/problems/minimum-operations-to-reduce-x-to-zero/",
+  description: "Find the minimum number of operations to reduce x to exactly 0 by removing elements from the left or right of array nums. If impossible, return -1.",
+  completed: false,
+};
+

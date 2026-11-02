@@ -1,14 +1,16 @@
 import {
   ArrowRight,
   Check,
+  CheckCircle,
   ChevronRight,
   Code2,
+  ExternalLink,
   Flame,
   Globe,
   Plus,
   Terminal,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 
 export function DashboardPage() {
@@ -16,24 +18,36 @@ export function DashboardPage() {
     profile,
     calendarEvents,
     growthStats,
+    dailyChallenge,
+    completeDailyChallenge,
     setActivePage,
     logCodingActivity,
   } = useAppContext();
 
-  // Daily Consistency Checklist
-  const [tasks, setTasks] = useState([
-    { id: 1, text: "Solve daily LeetCode challenge", done: false },
-    { id: 2, text: "Commit progress to GitHub project", done: false },
-    { id: 3, text: "Review 1 problem editorial or concept", done: false },
-  ]);
+  // Daily Consistency Checklist with derived challenge completion
+  const [completedTaskIds, setCompletedTaskIds] = useState(() => new Set());
+  const isChallengeDone = Boolean(dailyChallenge?.completed);
+
+  const tasks = useMemo(
+    () => [
+      { id: 1, text: "Solve daily LeetCode challenge", done: isChallengeDone || completedTaskIds.has(1) },
+      { id: 2, text: "Commit progress to GitHub project", done: completedTaskIds.has(2) },
+      { id: 3, text: "Review 1 problem editorial or concept", done: completedTaskIds.has(3) },
+    ],
+    [isChallengeDone, completedTaskIds],
+  );
 
   const toggleTask = (taskId) => {
     try {
-      setTasks((currentTasks) =>
-        currentTasks.map((task) =>
-          task.id === taskId ? { ...task, done: !task.done } : task,
-        ),
-      );
+      setCompletedTaskIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(taskId)) {
+          next.delete(taskId);
+        } else {
+          next.add(taskId);
+        }
+        return next;
+      });
     } catch (err) {
       console.error("Failed to toggle daily task:", err);
     }
@@ -151,6 +165,103 @@ export function DashboardPage() {
           <ChevronRight size={16} />
         </button>
       </section>
+
+      {/* Featured Daily Coding Challenge Card */}
+      {dailyChallenge && (
+        <section
+          style={{
+            marginTop: 20,
+            background: dailyChallenge.completed
+              ? "linear-gradient(135deg, rgba(35, 78, 64, 0.22), rgba(16, 185, 129, 0.08))"
+              : "var(--bg-card)",
+            border: dailyChallenge.completed
+              ? "1px solid rgba(16, 185, 129, 0.4)"
+              : "1px solid var(--color-border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "20px 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 20,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span className="tag" style={{ background: "#ffedd5", color: "#c2410c", fontWeight: 700 }}>
+                {dailyChallenge.platform}
+              </span>
+              <span
+                className="tag"
+                style={{
+                  background:
+                    dailyChallenge.difficulty === "Hard"
+                      ? "#fee2e2"
+                      : dailyChallenge.difficulty === "Medium"
+                        ? "#fef3c7"
+                        : "#dcfce7",
+                  color:
+                    dailyChallenge.difficulty === "Hard"
+                      ? "#b91c1c"
+                      : dailyChallenge.difficulty === "Medium"
+                        ? "#b45309"
+                        : "#15803d",
+                  fontWeight: 700,
+                }}
+              >
+                {dailyChallenge.difficulty}
+              </span>
+              <span className="muted" style={{ fontSize: 12 }}>
+                {dailyChallenge.category}
+              </span>
+            </div>
+            <h3 style={{ margin: "0 0 6px", fontSize: 18, color: "var(--color-text-title)" }}>
+              {dailyChallenge.title}
+            </h3>
+            <p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
+              {dailyChallenge.description}
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <a
+              href={dailyChallenge.link}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="button button-secondary"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
+            >
+              Solve Problem <ExternalLink size={14} />
+            </a>
+            {dailyChallenge.completed ? (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  borderRadius: "var(--radius-md)",
+                  background: "#d8e8b7",
+                  color: "#233e14",
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                <CheckCircle size={15} /> Streak Protected!
+              </span>
+            ) : (
+              <button
+                className="button button-primary"
+                onClick={completeDailyChallenge}
+                type="button"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <CheckCircle size={15} /> Mark Solved
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Lower Grid: Platform Activity & Daily Practice Plan */}
       <section className="dashboard-lower-grid">
