@@ -109,3 +109,30 @@ export async function logoutUser() {
   }
 }
 
+export async function submitGrowthLog({ platform, problemsSolved, notes }) {
+  const token = getStoredToken();
+  if (!token) return null;
+
+  try {
+    const response = await fetch("/api/growth/log", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ platform, problemsSolved, notes }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.warn("Backend growth log rejected:", err.error);
+      return null;
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.warn("Could not sync growth log to server:", err);
+    return null;
+  }
+}
+

@@ -8,6 +8,7 @@ import {
   GitCommit,
   Plus,
   Search,
+  Shield,
   Terminal,
   Timer,
   Trophy,
@@ -21,6 +22,7 @@ export function GrowthPage() {
     growthStats,
     profile,
     logCodingActivity,
+    useStreakFreeze,
     calendarEvents,
     toggleCalendarReminder,
   } = useAppContext();
@@ -84,10 +86,10 @@ export function GrowthPage() {
       {/* Page Heading */}
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Developer Growth & Contests</p>
-          <h1>Practice, Compete & Build</h1>
+          <p className="eyebrow">Developer Growth</p>
+          <h1>Coding Practice & Daily Builds</h1>
           <p className="muted">
-            Track your coding streak, discover upcoming algorithmic contests, and team up for hackathons.
+            Track your coding streak, review daily automated builds, and discover upcoming contests.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -96,7 +98,7 @@ export function GrowthPage() {
             onClick={() => setIsLogModalOpen(true)}
             type="button"
           >
-            <Plus size={16} /> Log Today's Practice
+            <Plus size={16} /> Log Today's Activity
           </button>
         </div>
       </div>
@@ -109,6 +111,13 @@ export function GrowthPage() {
           type="button"
         >
           Overview & Practice
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "builds" ? "active" : ""}`}
+          onClick={() => setActiveTab("builds")}
+          type="button"
+        >
+          Daily Builds ({growthStats.autonomousProjects?.length || 0})
         </button>
         <button
           className={`tab-btn ${activeTab === "contests" ? "active" : ""}`}
@@ -127,24 +136,80 @@ export function GrowthPage() {
       </div>
 
       {/* Streak Alert / Active State Banner */}
-      {growthStats.streakAtRisk ? (
+      {growthStats.streakBroken ? (
+        <section
+          style={{
+            background: "rgba(239, 68, 68, 0.12)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            borderRadius: "var(--radius-lg)",
+            padding: "16px 20px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 24,
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <AlertTriangle size={26} color="#ef4444" />
+            <div>
+              <strong style={{ color: "#f87171", display: "block", fontSize: 15 }}>
+                Streak at risk of resetting!
+              </strong>
+              <span style={{ fontSize: 13, color: "#cbd5e1" }}>
+                You have been inactive for more than a day. Use a Streak Freeze to protect your{" "}
+                <strong>{growthStats.currentStreak}-day</strong> record!
+              </span>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="button button-accent button-sm"
+              onClick={useStreakFreeze}
+              disabled={(growthStats.streakFreezesAvailable ?? 0) <= 0}
+              type="button"
+            >
+              <Shield size={14} /> Use Streak Freeze ({growthStats.streakFreezesAvailable ?? 0} left)
+            </button>
+            <button
+              className="button button-primary button-sm"
+              onClick={() => setIsLogModalOpen(true)}
+              type="button"
+            >
+              Log Practice Now
+            </button>
+          </div>
+        </section>
+      ) : growthStats.streakAtRisk ? (
         <section className="streak-alert-banner" aria-label="Streak warning">
           <div className="streak-alert-content">
             <AlertTriangle size={24} color="#d97706" />
             <div>
-              <strong>Streak Alert: 0 problems logged today!</strong>
+              <strong>Streak Alert: No activity logged today yet!</strong>
               <span>
-                Your <strong>{growthStats.currentStreak}-day</strong> coding streak will reset at midnight if you do not log today's activity.
+                Your <strong>{growthStats.currentStreak}-day</strong> coding streak will reset at midnight if you do not log today.
               </span>
             </div>
           </div>
-          <button
-            className="button button-accent button-sm"
-            onClick={() => setIsLogModalOpen(true)}
-            type="button"
-          >
-            Log Activity Now
-          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            {growthStats.streakFreezesAvailable > 0 && (
+              <button
+                className="button button-secondary button-sm"
+                onClick={useStreakFreeze}
+                type="button"
+              >
+                <Shield size={14} /> Use Freeze ({growthStats.streakFreezesAvailable})
+              </button>
+            )}
+            <button
+              className="button button-accent button-sm"
+              onClick={() => setIsLogModalOpen(true)}
+              type="button"
+            >
+              Log Activity Now
+            </button>
+          </div>
         </section>
       ) : (
         <div
@@ -156,15 +221,22 @@ export function GrowthPage() {
             padding: "12px 18px",
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
             gap: 10,
             marginBottom: 24,
             fontSize: 13,
+            flexWrap: "wrap",
           }}
         >
-          <CheckCircle size={18} color="#10b981" />
-          <span>
-            Awesome work! You have logged activity for today. Current streak is active at{" "}
-            <strong>{growthStats.currentStreak} days</strong>.
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <CheckCircle size={18} color="#10b981" />
+            <span>
+              Awesome work! You have logged activity for today. Current streak is active at{" "}
+              <strong>{growthStats.currentStreak} days</strong>.
+            </span>
+          </div>
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>
+            🛡️ {growthStats.streakFreezesAvailable ?? 2} Streak Freezes available
           </span>
         </div>
       )}
@@ -341,8 +413,8 @@ export function GrowthPage() {
             <div className="panel">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Consistency Tracker</p>
-                  <h2>7-Day Activity Velocity</h2>
+                  <p className="eyebrow">Weekly Activity</p>
+                  <h2>Last 7 Days</h2>
                 </div>
               </div>
               <p className="muted">Daily problem submissions and commits over the past week.</p>
@@ -366,8 +438,8 @@ export function GrowthPage() {
             <div className="panel">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Audit Trail</p>
-                  <h2>Recent Problem Logs</h2>
+                  <p className="eyebrow">Recent Sessions</p>
+                  <h2>Practice History</h2>
                 </div>
               </div>
 
@@ -395,6 +467,78 @@ export function GrowthPage() {
             </div>
           </section>
         </>
+      )}
+
+      {/* TAB: DAILY BUILDS (Inspired by Autonomous Streak Projects) */}
+      {activeTab === "builds" && (
+        <section style={{ marginBottom: 32 }}>
+          <div className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Daily Streak Projects</p>
+                <h2>Autonomous Builds & Mini-Projects</h2>
+              </div>
+            </div>
+            <p className="muted" style={{ marginBottom: 20 }}>
+              Repositories and automated projects completed to build real-world software and keep your streak strong.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                gap: 16,
+              }}
+            >
+              {(growthStats.autonomousProjects || []).map((project) => (
+                <article
+                  key={project.id}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.03)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-lg)",
+                    padding: 18,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "#818cf8", textTransform: "uppercase" }}>
+                        {project.language}
+                      </span>
+                      <span className="tag" style={{ background: "rgba(52, 211, 153, 0.15)", color: "#34d399", fontSize: 11 }}>
+                        ✓ {project.status}
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: 16, margin: "0 0 6px 0", color: "#f8fafc" }}>
+                      {project.name}
+                    </h3>
+                    <p style={{ fontSize: 13, color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
+                      {project.description}
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: 12,
+                      color: "var(--color-text-muted)",
+                      paddingTop: 10,
+                      borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+                    }}
+                  >
+                    <span>{project.commits} commits</span>
+                    <span>{project.date}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* CONTESTS & HACKATHONS SECTION (shown on All, Contests, or Hackathons tab) */}
@@ -642,9 +786,9 @@ export function GrowthPage() {
             <div className="modal-header">
               <div>
                 <h2 style={{ margin: 0, fontSize: 18, color: "var(--color-primary)" }}>
-                  Log Problem-Solving Activity
+                  Log Today's Activity
                 </h2>
-                <p className="muted">Record today's coding session to advance your streak.</p>
+                <p className="muted">Record problems solved or repository commits to protect your streak.</p>
               </div>
               <button
                 className="close-btn"
@@ -658,23 +802,23 @@ export function GrowthPage() {
             <form onSubmit={handleLogSubmit}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label htmlFor="platSelect">Platform *</label>
+                  <label htmlFor="platSelect">Platform / Activity *</label>
                   <select
                     id="platSelect"
                     className="form-select"
                     value={selectedPlatform}
                     onChange={(e) => setSelectedPlatform(e.target.value)}
                   >
-                    <option value="LeetCode">LeetCode</option>
-                    <option value="Codeforces">Codeforces</option>
-                    <option value="AtCoder">AtCoder</option>
-                    <option value="GitHub">GitHub (Commits / PRs)</option>
+                    <option value="LeetCode">LeetCode (Algorithm practice)</option>
+                    <option value="Codeforces">Codeforces (Contest round)</option>
+                    <option value="AtCoder">AtCoder (Contest practice)</option>
+                    <option value="GitHub">GitHub (Build / Project commits)</option>
                     <option value="HackerRank">HackerRank</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="countInput">Problems / Items Completed *</label>
+                  <label htmlFor="countInput">Items / Problems / Commits Completed *</label>
                   <input
                     id="countInput"
                     type="number"
@@ -688,11 +832,11 @@ export function GrowthPage() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="notesPractice">Topic / Problem Titles</label>
+                  <label htmlFor="notesPractice">Details or Project Name</label>
                   <input
                     id="notesPractice"
                     className="form-input"
-                    placeholder="e.g. Solved Two Sum, Course Schedule (Topological Sort)"
+                    placeholder="e.g. AI Governance Framework or Solved Two Sum"
                     value={logNotes}
                     onChange={(e) => setLogNotes(e.target.value)}
                   />
@@ -708,7 +852,7 @@ export function GrowthPage() {
                   Cancel
                 </button>
                 <button type="submit" className="button button-primary">
-                  <Terminal size={15} /> Save & Protect Streak
+                  <Terminal size={15} /> Save Activity
                 </button>
               </div>
             </form>

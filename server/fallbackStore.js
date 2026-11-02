@@ -105,5 +105,26 @@ export const fallbackStore = {
     writeDb(db);
     return db.users[index];
   },
+
+  createGrowthLog(logData) {
+    const db = readDb();
+    if (!Array.isArray(db.growthLogs)) {
+      db.growthLogs = [];
+    }
+    const newLog = {
+      _id: `log-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      ...logData,
+    };
+    db.growthLogs.unshift(newLog);
+    writeDb(db);
+    return newLog;
+  },
+
+  getGrowthLogs(userId) {
+    const db = readDb();
+    if (!Array.isArray(db.growthLogs)) return [];
+    return db.growthLogs.filter((log) => log.userId === userId);
+  },
 };
 

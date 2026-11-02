@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { rateLimit } from "express-rate-limit";
 import { User } from "./models/User.js";
+import { GrowthLog } from "./models/GrowthLog.js";
 import { authMiddleware, JWT_SECRET } from "./middleware/auth.js";
 import { fallbackStore } from "./fallbackStore.js";
 
@@ -278,6 +279,64 @@ app.put("/api/user/profile", apiLimiter, authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Profile update error:", err);
     res.status(500).json({ error: "Failed to update profile." });
+  }
+});
+
+// Record a new activity or problem log
+app.post("/api/growth/log", apiLimiter, authMiddleware, async (req, res) => {
+  try {
+    const { platform, problemsSolved, notes } = req.body || {};
+
+    const validPlatforms = ["LeetCode", "Codeforces", "GitHub", "AtCoder", "HackerRank"];
+    if (!platform || !validPlatforms.includes(platform)) {
+      return res.status(400).json({ error: "Invalid or unsupported platform." });
+    }
+
+    const count = parseInt(problemsSolved, 10);
+    if (isNaN(count) || count < 1) {
+      return res.status(400).json({ error: "Problems or items count must be at least 1." });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    const logPayload = {
+      userId: req.user.id,
+      date: today,
+      platform,
+      problemsSolved: count,
+      notes: typeof notes === "string" ? notes.trim() : "",
+    };
+
+    let savedLog = null;
+    if (isMongoConnected) {
+      savedLog = await GrowthLog.create(logPayload);
+    } else {
+      savedLog = fallbackStore.createGrowthLog(logPayload);
+    }
+
+    res.status(201).json({
+      message: "Coding activity recorded successfully.",
+      log: savedLog,
+    });
+  } catch (err) {
+    console.error("Growth log error:", err);
+    res.status(500).json({ error: "Failed to save coding activity log." });
+  }
+});
+
+// Retrieve recent activity logs for current user
+app.get("/api/growth/logs", apiLimiter, authMiddleware, async (req, res) => {
+  try {
+    let logs = [];
+    if (isMongoConnected) {
+      logs = await GrowthLog.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20);
+    } else {
+      logs = fallbackStore.getGrowthLogs(req.user.id);
+    }
+
+    res.json({ logs });
+  } catch (err) {
+    console.error("Fetch growth logs error:", err);
+    res.status(500).json({ error: "Failed to fetch activity logs." });
   }
 });
 

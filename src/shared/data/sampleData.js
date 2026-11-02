@@ -284,6 +284,35 @@ export const initialGrowthStats = {
       notes: "Dynamic Programming knapsack practice.",
     },
   ],
+  autonomousProjects: [
+    {
+      id: "proj-1",
+      name: "AI Adoption Governance Framework",
+      language: "Python",
+      commits: 6,
+      date: "2026-10-28",
+      status: "Completed",
+      description: "Automated risk assessment and compliance checklist generator for internal AI tools.",
+    },
+    {
+      id: "proj-2",
+      name: "Thinking Effort Tuner",
+      language: "Python",
+      commits: 4,
+      date: "2026-10-27",
+      status: "Completed",
+      description: "CLI utility to benchmark reasoning token usage across LLM model tiers.",
+    },
+    {
+      id: "proj-3",
+      name: "Email Assistant Microservice",
+      language: "Python",
+      commits: 8,
+      date: "2026-10-25",
+      status: "Completed",
+      description: "FastAPI service with Docker Compose for inbox summarization and task routing.",
+    },
+  ],
 };
 
 export const initialCalendarEvents = [
