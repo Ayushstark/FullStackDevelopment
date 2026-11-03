@@ -196,13 +196,12 @@ const riseAt = (t, week, weeks, day) => {
   return easeOutCubic((t - d) / (1 - WAVE));
 };
 
-const YAW_3D = Math.PI / 4;
 const ELEV_3D = (34 * Math.PI) / 180;
 const YAW_RANGE = [(8 * Math.PI) / 180, (82 * Math.PI) / 180];
 const ELEV_RANGE = [(18 * Math.PI) / 180, (62 * Math.PI) / 180];
 
-const camera = (e, dYaw = 0, dElev = 0) => {
-  const yaw = Math.min(YAW_RANGE[1], Math.max(0, lerp(0, YAW_3D + dYaw, e)));
+const camera = (e, dYaw = 0, dElev = 0, defaultYaw = 45) => {
+  const yaw = Math.min(YAW_RANGE[1], Math.max(0, lerp(0, (defaultYaw * Math.PI) / 180 + dYaw, e)));
   const elev = lerp(Math.PI / 2, Math.min(ELEV_RANGE[1], Math.max(ELEV_RANGE[0], ELEV_3D + dElev)), e);
   return { cs: Math.cos(yaw), sn: Math.sin(yaw), se: Math.sin(elev), ce: Math.cos(elev) };
 };
@@ -334,30 +333,21 @@ function Stat({ label, value, unit, sub, accent, size, align }) {
     );
   }
   return (
-    <div className="grid grid-cols-[auto_auto] items-end gap-x-2" style={{ justifyContent: align }}>
-      {align === "end" ? (
-        <>
-          <div className="text-right text-[13px] leading-tight" style={{ color: MUTED }}>
-            {label}
-          </div>
-          <div />
-        </>
-      ) : (
-        <div className="col-span-2 text-[13px] leading-tight" style={{ color: MUTED }}>
-          {label}
-        </div>
-      )}
+    <div className={`skyline-stat-inline ${align === "end" ? "is-end" : "is-start"}`}>
+      <div className="skyline-stat-label" style={{ textAlign: align === "end" ? "right" : "left" }}>
+        {label}
+      </div>
       <div
-        className="text-right font-semibold tabular-nums transition-colors duration-500 motion-reduce:transition-none"
-        style={{ color: accent, fontSize: size, lineHeight: 0.95, letterSpacing: "-0.02em" }}
+        className="skyline-stat-value transition-colors duration-500 motion-reduce:transition-none"
+        style={{ color: accent, fontSize: size }}
       >
         {value}
       </div>
-      <div className="pb-[0.15em] leading-tight">
-        <div className="text-[15px]">{unit}</div>
-        <div className="whitespace-nowrap text-[13px]" style={{ color: MUTED }}>
+      <div className="skyline-stat-unit">
+        <span>{unit}</span>
+        <small style={{ color: MUTED }}>
           {sub}
-        </div>
+        </small>
       </div>
     </div>
   );
@@ -374,6 +364,10 @@ export default function ContributionSkyline({
   unit = "contribution",
   unitPlural,
   heightScale = 1,
+  maxHeight = 620,
+  zoom = 1,
+  defaultYaw = 45,
+  statScale = 1,
   duration = 1300,
   weekStart = 0,
   orbit = true,
@@ -434,6 +428,8 @@ export default function ContributionSkyline({
     duration,
     heightScale,
     orbit,
+    zoom,
+    defaultYaw,
     palette,
     legendLevel,
     onCellClick,
@@ -451,6 +447,8 @@ export default function ContributionSkyline({
       duration,
       heightScale,
       orbit,
+      zoom,
+      defaultYaw,
       palette,
       legendLevel,
       onCellClick,
@@ -461,7 +459,7 @@ export default function ContributionSkyline({
       setAnnounce,
       describe,
     };
-  }, [model, duration, heightScale, orbit, palette, legendLevel, onCellClick, view, describe]);
+  }, [model, duration, heightScale, orbit, zoom, defaultYaw, palette, legendLevel, onCellClick, view, describe]);
 
   React.useEffect(() => {
     const root = rootRef.current;
@@ -613,11 +611,12 @@ export default function ContributionSkyline({
       W = w;
       gutter = W < 520 ? 0 : labelW;
       dpr = Math.min(2, window.devicePixelRatio || 1);
-      const b2 = extent(camera(0), 0, true);
+      const b2 = extent(camera(0, 0, 0, cfg.current.defaultYaw), 0, true);
       H2 = 20 + 4 + ((b2.maxy - b2.miny) / (b2.maxx - b2.minx)) * (W - gutter - 4);
-      const b3 = extent(camera(1), 1, true);
+      const b3 = extent(camera(1, 0, 0, cfg.current.defaultYaw), 1, true);
       const natural = ((b3.maxy - b3.miny) / (b3.maxx - b3.minx)) * (W - 40) + 40;
-      H3 = Math.max(Math.min(natural, W * 0.72, 620), Math.min(natural, 240));
+      const viewportCap = Math.max(240, window.innerHeight - 440);
+      H3 = Math.max(Math.min(natural, W * 0.72, maxHeight, viewportCap), Math.min(natural, 240));
       Hmax = Math.ceil(Math.max(H2, H3));
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(Hmax * dpr);
@@ -631,7 +630,7 @@ export default function ContributionSkyline({
     const draw = () => {
       if (!W || !n) return;
       const e = easeInOutCubic(t);
-      const cam = camera(e, yaw, elev);
+      const cam = camera(e, yaw, elev, cfg.current.defaultYaw);
       const Hc = lerp(H2, H3, e);
       if (Math.abs(Hc - lastH) > 0.2) {
         stage.style.height = Hc.toFixed(1) + "px";
@@ -646,9 +645,9 @@ export default function ContributionSkyline({
       const ah = Hc - top - pad;
       const bw = Math.max(1e-6, b.maxx - b.minx);
       const bh = Math.max(1e-6, b.maxy - b.miny);
-      const s = Math.min(aw / bw, ah / bh);
-      const ox = left + (aw - bw * s) / 2 - b.minx * s;
-      const oy = top + (ah - bh * s) / 2 - b.miny * s;
+      const s = Math.min(aw / bw, ah / bh) * cfg.current.zoom;
+      const ox = left + aw / 2 - ((b.minx + b.maxx) / 2) * s;
+      const oy = top + ah / 2 - ((b.miny + b.maxy) / 2) * s;
       const { cs, sn, se, ce } = cam;
       const px = (x, y) => ox + (x * cs - y * sn) * s;
       const py = (x, y, z) => oy + ((x * sn + y * cs) * se - z * ce) * s;
@@ -892,7 +891,8 @@ export default function ContributionSkyline({
         const dyy = ev.clientY - drag.y;
         if (drag.moved || Math.hypot(dx, dyy) > 4) {
           drag.moved = true;
-          yawGoal = Math.min(YAW_RANGE[1] - YAW_3D, Math.max(YAW_RANGE[0] - YAW_3D, drag.yaw + dx * 0.006));
+          const yawBaseline = (cfg.current.defaultYaw * Math.PI) / 180;
+          yawGoal = Math.min(YAW_RANGE[1] - yawBaseline, Math.max(YAW_RANGE[0] - yawBaseline, drag.yaw + dx * 0.006));
           if (drag.mouse) elevGoal = Math.min(ELEV_RANGE[1] - ELEV_3D, Math.max(ELEV_RANGE[0] - ELEV_3D, drag.elev + dyy * 0.004));
           canvas.style.cursor = "grabbing";
           hovered = -1;
@@ -1026,6 +1026,7 @@ export default function ContributionSkyline({
       if (Math.round(stage.clientWidth) !== W) relayout();
     });
     ro.observe(stage);
+    window.addEventListener("resize", relayout);
 
     const mo = new MutationObserver(retheme);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style", "data-theme"] });
@@ -1066,6 +1067,7 @@ export default function ContributionSkyline({
       if (raf) cancelAnimationFrame(raf);
       io?.disconnect();
       ro.disconnect();
+      window.removeEventListener("resize", relayout);
       mo.disconnect();
       reduceMq.removeEventListener("change", onReduce);
       darkMq.removeEventListener("change", retheme);
@@ -1079,11 +1081,11 @@ export default function ContributionSkyline({
       canvas.removeEventListener("blur", onBlur);
       engine.current = null;
     };
-  }, [locale]);
+  }, [locale, maxHeight]);
 
   React.useEffect(() => {
     engine.current?.kick();
-  }, [view, legendLevel]);
+  }, [view, legendLevel, zoom, defaultYaw]);
 
   React.useEffect(() => {
     engine.current?.load();
@@ -1106,7 +1108,7 @@ export default function ContributionSkyline({
   };
   const is3d = view === "3d";
   const corners = showStats && width >= 560;
-  const bigSize = Math.round(Math.max(30, Math.min(56, width * 0.058)));
+  const bigSize = Math.round(Math.max(30, Math.min(56, width * 0.058)) * statScale);
   const statBlocks = [
     { label: "1 year total", value: nf.format(stats.total), unit: noun(stats.total), sub: range(stats.first, stats.last, true) },
     { label: "Busiest day", value: nf.format(stats.busiest.count), unit: noun(stats.busiest.count), sub: stats.busiest.date ? df.format(dayMs(stats.busiest.date)) : "—" },
