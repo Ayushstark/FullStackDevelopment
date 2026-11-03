@@ -59,13 +59,13 @@ mongoose
   })
   .then(() => {
     isMongoConnected = true;
-    console.log(`[MongoDB] Connected successfully to Database (${MONGODB_URI})`);
+    console.info(`[MongoDB] Connected successfully to Database (${MONGODB_URI})`);
   })
   .catch((err) => {
     isMongoConnected = false;
     console.warn(`[MongoDB] Notice: Could not connect to MongoDB at ${MONGODB_URI}: ${err.message}`);
-    console.log("[MongoDB] Operating in resilient fallback mode so login, registration, and sessions work seamlessly.");
-    console.log("[MongoDB] To connect a live database, set MONGODB_URI in server/.env or connect MongoDB Atlas.");
+    console.warn("[MongoDB] Operating in resilient fallback mode so login, registration, and sessions work seamlessly.");
+    console.warn("[MongoDB] To connect a live database, set MONGODB_URI in server/.env or connect MongoDB Atlas.");
   });
 
 function sanitizeUser(user) {
@@ -341,6 +341,6 @@ app.get("/api/growth/logs", apiLimiter, authMiddleware, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[OpportunityOS Backend] Server listening on http://localhost:${PORT}`);
+  console.info(`[OpportunityOS Backend] Server listening on http://localhost:${PORT}`);
 });
 

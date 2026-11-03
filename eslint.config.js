@@ -36,6 +36,12 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "no-var": "error",
+      "prefer-const": "error",
+      eqeqeq: ["error", "always", { null: "ignore" }],
+      "no-debugger": "error",
+      "no-console": ["error", { allow: ["error", "info", "warn"] }],
+      "object-shorthand": ["error", "always"],
     },
   },
 ];

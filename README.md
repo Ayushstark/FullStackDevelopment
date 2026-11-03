@@ -85,29 +85,28 @@ AI will support specific tasks instead of serving only as a conversational chatb
 
 The platform will distinguish source-backed facts from AI-generated recommendations. Match scores will be explainable indicators of relevance, not predictions of selection.
 
-## 5. Proposed Technology Stack
+## 5. Technology Stack
 
-| Component | Technology |
+The repository currently uses:
+
+| Component | Current implementation |
 |---|---|
-| Frontend | React |
-| Language | JavaScript or TypeScript |
-| Styling | CSS or Tailwind CSS |
-| Charts | Recharts or Chart.js |
-| Backend | Minimal API layer or serverless functions |
-| Database and authentication | Supabase or a suitable managed alternative |
-| AI integration | LLM API |
-| Opportunity discovery | Public APIs and permitted web extraction |
-| Notifications | Scheduled serverless jobs and an email service |
-| Version control | Git and GitHub |
-| Deployment | Vercel or a suitable hosting platform |
+| Frontend | React with Vite |
+| Language | JavaScript ES modules and JSX |
+| Styling | CSS |
+| Backend | Express on Node.js |
+| Database | MongoDB through Mongoose, with a local JSON fallback store |
+| Authentication | JWT and bcrypt |
+| Quality tools | ESLint and Vitest |
+| Deployment | GitHub Pages frontend workflow; backend deployment is separate future work |
+
+Opportunity aggregation, protected LLM integration, scheduled notifications, and production persistence remain planned capabilities; they are not implied to be implemented by the current starter.
 
 ### Architecture principle
 
-The project will follow a **frontend-first, minimal-backend architecture**.
+The current app is a JavaScript React frontend with a small JavaScript Express API. Vite proxies frontend `/api` requests to the local Express server during development. MongoDB can persist account data; the local JSON store supports development when MongoDB is unavailable.
 
-React will handle the primary user interface and interactive dashboards. Managed services will be used where appropriate for authentication and persistence, while a small server-side layer will handle protected API calls, AI requests, scheduled processing, and email notifications.
-
-API keys and secrets will never be exposed in client-side code.
+Secrets and provider credentials belong on the server and must never be exposed in client-side code.
 
 ## 6. High-Level Workflow
 
@@ -198,12 +197,16 @@ streak repo of mine:https://github.com/DARK-1926/Streak
 
 ## Starter setup
 
-The project now includes a Vite + React + TypeScript starter with a responsive dashboard, opportunity hub, shared application shell, typed sample data, and a CI/CD baseline.
+The project uses JavaScript throughout: Vite + React on the frontend and Express + Node.js on the backend. React components use JSX. It includes a dashboard, opportunity hub, shared application shell, sample data, and a CI/CD baseline.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
+
+The combined development command starts Vite at `http://localhost:5173` and the API at `http://localhost:5000`. The UI loads with sample data without MongoDB. Authentication and profile routes use the local fallback store when MongoDB is unavailable; this creates ignored local development state in `server/local_db.json`.
+
+To run only one process, use `npm run dev:client` or `npm run server` in a separate terminal. The API health endpoint is `http://localhost:5000/api/health`.
 
 For production, configure `CLIENT_ORIGINS` on the backend as a comma-separated list of exact frontend origins (for example, `https://opportunity.example.com`). Local Vite origins are enabled only outside production. Authentication endpoints are limited to 10 requests per IP per 15 minutes; other account endpoints are limited to 100 requests per IP per 15 minutes.
 
@@ -211,10 +214,11 @@ Quality checks:
 
 ```bash
 npm run lint
-npm run typecheck
 npm test
 npm run build
 ```
+
+ESLint parses and checks the project's JavaScript and JSX. This project does not use TypeScript.
 
 ## Repository structure
 
@@ -224,14 +228,16 @@ src/
   features/            # Product modules (dashboard, opportunities, growth, calendar)
   shared/
     components/        # Reusable UI primitives and shell
-    data/              # Temporary fixtures and seed data
-    types/             # Shared domain and UI types
-  styles/              # Global design tokens and responsive styles
+    context/            # Shared application state
+    data/               # Temporary fixtures and seed data
+    services/           # Shared API services
+  styles/               # Global design tokens and responsive styles
+server/                 # Express API, models, middleware, fallback store
 docs/                  # Product and engineering plans
 .github/workflows/     # Pull request quality gates and production deployment
 ```
 
-See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the phased delivery plan, architecture guardrails, and definition of done. Pull requests run lint, type checking, tests, and a production build. Pushes to `main` deploy the frontend to GitHub Pages.
+See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the phased delivery plan, architecture guardrails, and definition of done. Pull requests run lint, tests, a production dependency audit, and a production build. Pushes to `main` deploy the frontend to GitHub Pages.
 
 ## Engineering handbook
 

@@ -8,10 +8,10 @@ Build a focused workspace for discovering opportunities, preparing applications,
 
 ### Phase 1 — Foundation (current)
 
-- Establish the Vite + React + TypeScript application shell.
+- Establish the Vite + React JavaScript application shell.
 - Define feature boundaries for dashboard, opportunities, growth, calendar, and settings.
-- Add shared types, sample data, responsive styling, and navigation.
-- Enforce type safety, linting, and production builds in CI.
+- Add shared JavaScript modules, sample data, responsive styling, and navigation.
+- Enforce JavaScript/JSX linting, tests, and production builds in CI.
 
 ### Phase 2 — Core opportunity workflow
 
@@ -49,4 +49,4 @@ Build a focused workspace for discovering opportunities, preparing applications,
 
 ## Definition of done
 
-A feature is ready when its happy path and failure path are tested, types and lint pass, loading/empty/error states are visible, source attribution is preserved where applicable, and the feature is documented at its boundary.
+A feature is ready when its happy path and failure path are tested, JavaScript/JSX lint passes, loading/empty/error states are visible, source attribution is preserved where applicable, and the feature is documented at its boundary.
