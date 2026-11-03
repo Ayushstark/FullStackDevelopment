@@ -435,6 +435,8 @@ export function AppProvider({ children }) {
         });
       }
 
+      const updatedTodayCount = (prev.todayCompletedCount || 0) + problemsSolved;
+
       return {
         ...prev,
         currentStreak: nextStreak,
@@ -442,6 +444,7 @@ export function AppProvider({ children }) {
         lastActiveDate: today,
         streakAtRisk: false,
         streakBroken: false,
+        todayCompletedCount: updatedTodayCount,
         totalProblemsSolved: (prev.totalProblemsSolved || 0) + problemsSolved,
         leetcode: updatedLeetCode,
         codeforces: updatedCodeforces,
@@ -452,6 +455,16 @@ export function AppProvider({ children }) {
         autonomousProjects: updatedAutonomous.slice(0, 10),
       };
     });
+  };
+
+  // Update Daily Target Goal
+  const setDailyGoal = (goal) => {
+    try {
+      const target = Math.max(1, parseInt(goal, 10) || 1);
+      setGrowthStats((prev) => ({ ...prev, dailyGoal: target }));
+    } catch (err) {
+      console.error("Failed to update daily goal:", err);
+    }
   };
 
   // Streak Recovery / Freeze action
@@ -545,6 +558,7 @@ export function AppProvider({ children }) {
         deleteApplication,
         growthStats,
         logCodingActivity,
+        setDailyGoal,
         useStreakFreeze,
         dailyChallenge,
         completeDailyChallenge,

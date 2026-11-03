@@ -236,6 +236,9 @@ export const initialGrowthStats = {
   longestStreak: 26,
   lastActiveDate: "2026-10-28",
   streakAtRisk: true,
+  dailyGoal: 2, // Target problems or commits per day
+  todayCompletedCount: 0,
+  streakFreezesAvailable: 2,
   totalProblemsSolved: 342,
   leetcode: {
     solved: 215,
