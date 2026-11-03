@@ -13,7 +13,7 @@ import { useMemo, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 
 export function CalendarPage() {
-  const { calendarEvents, toggleCalendarReminder } = useAppContext();
+  const { calendarEvents, toggleCalendarReminder, addCalendarEvent } = useAppContext();
 
   const [activeTab, setActiveTab] = useState("All");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -50,7 +50,7 @@ export function CalendarPage() {
       isReminderSet: true,
     };
 
-    calendarEvents.push(newEvent);
+    addCalendarEvent(newEvent);
     setIsAddModalOpen(false);
     setTitle("");
     setOrganizer("");

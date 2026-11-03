@@ -2,15 +2,13 @@ import {
   Activity,
   BriefcaseBusiness,
   CalendarDays,
-  FileText,
   LayoutDashboard,
   Settings,
 } from "lucide-react";
-import { ApplicationsPage } from "../features/applications/ApplicationsPage.jsx";
+import { CareerPage } from "../features/career/CareerPage.jsx";
 import { CalendarPage } from "../features/calendar/CalendarPage.jsx";
 import { DashboardPage } from "../features/dashboard/DashboardPage.jsx";
 import { GrowthPage } from "../features/growth/GrowthPage.jsx";
-import { OpportunityPage } from "../features/opportunities/OpportunityPage.jsx";
 import { SettingsPage } from "../features/settings/SettingsPage.jsx";
 import { AppShell } from "../shared/components/AppShell.jsx";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
@@ -19,7 +17,6 @@ function AppContent() {
   const {
     activePage,
     setActivePage,
-    savedOpportunityIds,
     applications,
     growthStats,
   } = useAppContext();
@@ -34,15 +31,9 @@ function AppContent() {
     },
     { id: "calendar", label: "Contests & Events", icon: CalendarDays },
     {
-      id: "opportunities",
-      label: "Opportunities",
+      id: "career",
+      label: "Career & Pipeline",
       icon: BriefcaseBusiness,
-      badge: savedOpportunityIds.length > 0 ? savedOpportunityIds.length : undefined,
-    },
-    {
-      id: "applications",
-      label: "Applications",
-      icon: FileText,
       badge: applications.length > 0 ? applications.length : undefined,
     },
     { id: "settings", label: "Settings", icon: Settings },
@@ -50,10 +41,12 @@ function AppContent() {
 
   const renderActivePage = () => {
     switch (activePage) {
+      case "career":
+        return <CareerPage />;
       case "opportunities":
-        return <OpportunityPage />;
+        return <CareerPage defaultTab="opportunities" />;
       case "applications":
-        return <ApplicationsPage />;
+        return <CareerPage defaultTab="applications" />;
       case "growth":
         return <GrowthPage />;
       case "calendar":

@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   initialApplications,
   initialCalendarEvents,
+  initialDailyChallenge,
   initialGrowthStats,
   initialOpportunities,
   initialProfile,
@@ -23,6 +24,7 @@ const STORAGE_KEYS = {
   APPLICATIONS: "opportunity_os_applications_v1",
   GROWTH: "opportunity_os_growth_v1",
   CALENDAR: "opportunity_os_calendar_v1",
+  DAILY_CHALLENGE: "opportunity_os_daily_challenge_v1",
 };
 
 function loadFromStorage(key, fallback) {
@@ -136,6 +138,10 @@ export function AppProvider({ children }) {
     loadFromStorage(STORAGE_KEYS.CALENDAR, initialCalendarEvents),
   );
 
+  const [dailyChallenge, setDailyChallenge] = useState(() =>
+    loadFromStorage(STORAGE_KEYS.DAILY_CHALLENGE, initialDailyChallenge),
+  );
+
   const [selectedOpportunityForAnalysis, setSelectedOpportunityForAnalysis] =
     useState(null);
 
@@ -225,6 +231,10 @@ export function AppProvider({ children }) {
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.CALENDAR, calendarEvents);
   }, [calendarEvents]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.DAILY_CHALLENGE, dailyChallenge);
+  }, [dailyChallenge]);
 
   // Profile actions
   const updateProfile = (updated) => {
@@ -472,6 +482,23 @@ export function AppProvider({ children }) {
     );
   };
 
+  const addCalendarEvent = (newEvent) => {
+    setCalendarEvents((prev) => [newEvent, ...prev]);
+  };
+
+  // Daily Challenge actions
+  const completeDailyChallenge = () => {
+    if (dailyChallenge?.completed) return;
+    setDailyChallenge((prev) => ({ ...prev, completed: true }));
+    logCodingActivity({
+      platform: dailyChallenge?.platform || "LeetCode",
+      problemsSolved: 1,
+      difficulty: dailyChallenge?.difficulty || "Medium",
+      category: dailyChallenge?.category || "Algorithms & DSA",
+      notes: `Solved Daily Challenge: ${dailyChallenge?.title || "LeetCode Problem"}`,
+    });
+  };
+
   // Reset to original seed data
   const resetAllData = () => {
     localStorage.removeItem(STORAGE_KEYS.PROFILE);
@@ -519,8 +546,11 @@ export function AppProvider({ children }) {
         growthStats,
         logCodingActivity,
         useStreakFreeze,
+        dailyChallenge,
+        completeDailyChallenge,
         calendarEvents,
         toggleCalendarReminder,
+        addCalendarEvent,
         resetAllData,
       }}
     >
