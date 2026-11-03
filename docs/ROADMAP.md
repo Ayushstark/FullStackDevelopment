@@ -1,62 +1,50 @@
-# OpportunityOS delivery roadmap
+# DevRhythm roadmap
 
-This roadmap consolidates the repository issues into an executable plan. Dates are the current milestone targets; scope should be re-estimated when dependencies or source access change.
+## Product goal
 
-## Milestone 1 — Foundation (target: 2026-10-29)
+Build a focused analyzer that brings coding activity from supported platforms into one view and helps users understand their practice streaks and consistency. Platform coverage will depend on reliable, permitted access to activity data.
 
-**Outcome:** a repeatable, reviewable application baseline.
+## Delivery stages
 
-- #2/#3: audit the generated structure and verify the app locally
-- #4: make CI/CD checks reliable and actionable
-- #5: define API contracts and the database schema
-- #6: complete the shared layout, navigation, and dashboard shell
+### 1. Foundation
 
-**Exit criteria:** local setup works from a clean checkout, CI is green, architecture boundaries are documented, and the shell has loading/error/empty-state extension points.
+- Keep local setup and the JavaScript development workflow reliable.
+- Define a common activity record with platform, activity date, metric, source reference, and retrieval time.
+- Keep sample data clearly distinguishable from live platform data.
 
-## Milestone 2 — Core features (target: 2026-10-30)
+### 2. Platform activity
 
-**Outcome:** users can discover opportunities and manage applications.
+- Select platform integrations based on available APIs and access rules.
+- Normalize platform activity into the common record while retaining its original meaning and source.
+- Handle unavailable, partial, stale, and rate-limited platform responses.
 
-- #7: opportunity listing, search, filters, and source attribution
-- #8: opportunity and application-tracking API contracts
-- #9: source adapter or reliable seed dataset with normalization
-- #10: contests, hackathons, and developer-growth page
-- #11: application tracking interface
+### 3. Streak analysis
 
-**Exit criteria:** a user can search, inspect, save, and track an opportunity; stale or incomplete source data is clearly labeled.
+- Calculate daily activity and streaks using documented rules.
+- Show cross-platform activity over time without double-counting the same activity where it can be identified.
+- Explain how summaries are derived and represent missing days or unknown values honestly.
 
-## Milestone 3 — AI and integrations (target: 2026-11-02)
+### 4. Dashboard and insights
 
-**Outcome:** protected, explainable assistance improves application preparation.
+- Present platform activity, streak history, and consistency summaries in a responsive dashboard.
+- Allow users to inspect the underlying platform and date for summarized activity.
+- Add useful comparisons over time while avoiding unsupported predictions or rankings.
 
-- #12: resume-to-JD matching and skill-gap analysis
-- #13: editable AI-generated outreach drafts
-- #14: connect the frontend to backend APIs
-- #15: integrate Streak capabilities behind an adapter boundary
-- #16: finish custom loading, error, and empty states
+### 5. Quality and release
 
-**Exit criteria:** secrets remain server-side, AI output is editable and traceable to user-provided evidence, integrations degrade gracefully, and critical paths are covered by tests.
+- Test date boundaries, time zones, duplicate events, incomplete data, and integration failures.
+- Run lint, tests, dependency audit, and production build in CI.
+- Document platform limitations, data handling, setup, and deployment operations.
 
-## Milestone 4 — Release (target: 2026-11-04)
+## Guardrails
 
-**Outcome:** a demo-ready, deployable, and documented product.
-
-- #17: tests for critical application flows
-- #18: critical bug and integration-failure fixes
-- #19: production deployment and configuration verification
-- #20: README, architecture diagram, and setup guide
-- #21: demo, screenshots, and submission checklist
-
-**Exit criteria:** CI is green, production configuration is verified, rollback/incident notes exist, the demo follows a rehearsed script, and known limitations are documented.
-
-## Cross-cutting enterprise controls
-
-- **Delivery:** protected `main`, required CI checks, CODEOWNERS review, small PRs, and Dependabot updates.
-- **Quality:** lint, type safety, unit/integration tests, production build, dependency review, CodeQL, and explicit acceptance criteria.
-- **Security:** private vulnerability reporting, secret hygiene, least privilege, input validation, and no client-side provider keys.
-- **Operations:** environment-specific configuration, deployment health checks, source freshness, error monitoring, backups, and rollback instructions.
-- **Product governance:** user consent for AI processing, explainable recommendations, accessibility, responsive UX, and privacy-aware data retention.
+- Use JavaScript and JSX throughout the application.
+- Keep provider credentials server-side and never commit secrets.
+- Respect platform terms, rate limits, and API permissions; do not scrape where access is not permitted.
+- Preserve source attribution and retrieval timestamps.
+- Keep raw platform facts distinct from derived streak calculations.
+- Treat sample data as sample data; never present it as a user's live activity.
 
 ## Definition of done
 
-A work item is complete only when its success and failure states are implemented, tests cover the risk, documentation is updated, the change is observable in the target environment, and reviewers can verify the acceptance criteria from the PR.
+A feature is ready when its success and failure paths are covered, JavaScript lint and relevant tests pass, stale or missing source data is clear, and documentation describes the user-visible behavior and its limitations.

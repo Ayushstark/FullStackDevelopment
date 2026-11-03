@@ -1,52 +1,51 @@
-# OpportunityOS implementation plan
+# DevRhythm implementation plan
 
 ## Product direction
 
-Build a focused workspace for discovering opportunities, preparing applications, and measuring developer growth. Every integration should preserve source links, retrieval timestamps, and a clear boundary between verified facts and AI suggestions.
+Build a JavaScript application that analyzes coding activity and streaks from supported platforms. The product centers on platform activity, a normalized activity history, transparent streak calculations, and useful consistency summaries.
 
 ## Delivery phases
 
-### Phase 1 — Foundation (current)
+### Phase 1 — Foundation
 
-- Establish the Vite + React JavaScript application shell.
-- Define feature boundaries for dashboard, opportunities, growth, calendar, and settings.
-- Add shared JavaScript modules, sample data, responsive styling, and navigation.
-- Enforce JavaScript/JSX linting, tests, and production builds in CI.
+- Keep the Vite + React frontend and Express + Node.js backend runnable locally.
+- Document the current repository structure and JavaScript-only conventions.
+- Define the shared activity shape and rules for dates, time zones, and duplicate activity.
 
-### Phase 2 — Core opportunity workflow
+### Phase 2 — Activity data
 
-- Add authentication and persistent profiles with Supabase.
-- Model opportunities, saved items, applications, skills, and activity history.
-- Add source adapters behind a server-side API boundary.
-- Implement normalization, deduplication, freshness, and source attribution.
+- Identify supported platforms and the permitted way to access their data.
+- Implement platform adapters behind a server-side boundary.
+- Normalize activity while retaining platform, source, retrieval time, and platform-specific meaning.
+- Make loading, empty, stale, partial, and error states explicit.
 
-### Phase 3 — Application intelligence
+### Phase 3 — Streak analysis
 
-- Add protected LLM endpoints for description parsing and resume matching.
-- Store prompts, model output metadata, and user feedback without exposing secrets.
-- Make every recommendation editable and explainable; never invent qualifications.
+- Calculate daily activity and consecutive-day streaks with documented rules.
+- Support platform-specific activity definitions where platforms measure progress differently.
+- Validate time-zone boundaries, missing data, and duplicate events.
 
-### Phase 4 — Growth and events
+### Phase 4 — Dashboard
 
-- Integrate the Streak project through a documented adapter boundary.
-- Add coding activity, contests, hackathons, reminders, and calendar views.
-- Add scheduled jobs for refreshes and streak-risk notifications.
+- Present cross-platform practice history and streak summaries.
+- Let users inspect the source activity behind a summary.
+- Add comparisons over time that remain explainable and grounded in available data.
 
 ### Phase 5 — Quality and release
 
-- Add unit tests for data processing and integration tests for critical flows.
-- Add accessibility checks, error monitoring, rate limits, and security review.
-- Deploy the frontend from `main`; deploy protected API and scheduled jobs separately.
-- Use preview deployments for pull requests and require CI before merge.
+- Cover normalization, calculations, and integration failures with tests.
+- Keep lint, tests, production dependency audit, and build checks in CI.
+- Document configuration, platform limitations, data handling, and deployment.
 
 ## Engineering guardrails
 
-- Keep API keys and service credentials server-side only.
-- Prefer small feature modules over cross-cutting component imports.
-- Treat external data as untrusted and validate it at the boundary.
-- Record uncertainty instead of presenting missing data as fact.
-- Keep pull requests small, reviewed, and linked to an issue.
+- Use JavaScript and JSX; do not introduce TypeScript.
+- Follow the Airbnb JavaScript Style Guide through the repository ESLint baseline.
+- Keep platform secrets on the server.
+- Validate external data and preserve its source attribution.
+- Do not present sample or stale data as live, and do not infer activity the source does not provide.
+- Keep platform-specific behavior in its adapter and shared analysis behavior in focused modules.
 
 ## Definition of done
 
-A feature is ready when its happy path and failure path are tested, JavaScript/JSX lint passes, loading/empty/error states are visible, source attribution is preserved where applicable, and the feature is documented at its boundary.
+A feature is ready when its success and failure cases are handled, relevant tests and lint pass, data freshness and source are clear, and the documentation describes its behavior and limitations.

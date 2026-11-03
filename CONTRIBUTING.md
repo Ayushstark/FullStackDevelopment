@@ -1,4 +1,4 @@
-# Contributing to OpportunityOS
+# Contributing to DevRhythm
 
 ## Development flow
 
@@ -28,6 +28,6 @@ Do not commit `node_modules`, build artifacts, credentials, or `.env` files. API
 
 ## Review standard
 
-Reviewers should verify behavior, failure states, accessibility, data-source attribution, security boundaries, tests, and operational impact. A feature is not complete when only the happy path works.
+Reviewers should verify behavior, failure states, accessibility, platform-data attribution, security boundaries, tests, and operational impact. A feature is not complete when only the happy path works.
 
 Follow the [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript) for JavaScript conventions. The repository's ESLint configuration is the executable baseline; use it to resolve style questions consistently.
