@@ -1533,6 +1533,8 @@ body { background: var(--bg-page); color: var(--color-text-main); }
 .button-secondary:hover:not(:disabled) { background: #fffefa; border-color: #c9c5b9; color: #202923; }
 .button-danger { background: #fbefea; color: #9f4b34; border-color: #efd8cd; }
 .stat-card, .panel, .opportunity-card, .platform-card { background: #fffdf7; border: 1px solid #e9e5da; border-radius: 15px; box-shadow: var(--shadow-sm); }
+.stat-card strong { color: #202923; }
+.stat-card .muted { color: #788076; }
 .stat-card::before, .panel::before { display: none; }
 .stat-card:hover, .opportunity-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: #d7d8c9; }
 .panel { padding: 24px; }

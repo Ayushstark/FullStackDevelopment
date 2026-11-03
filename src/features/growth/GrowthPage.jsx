@@ -9,6 +9,7 @@ import {
   Plus,
   Search,
   Shield,
+  Target,
   Terminal,
   Timer,
   Trophy,
@@ -24,6 +25,7 @@ export function GrowthPage() {
     growthStats,
     profile,
     logCodingActivity,
+    setDailyGoal,
     useStreakFreeze,
     calendarEvents,
     toggleCalendarReminder,
@@ -33,6 +35,10 @@ export function GrowthPage() {
   const [activeTab, setActiveTab] = useState("all"); // 'all' | 'practice' | 'contests' | 'hackathons'
   const [searchQuery, setSearchQuery] = useState("");
   const [platformFilter, setPlatformFilter] = useState("all");
+
+  // Practice History Filter State
+  const [logSearchQuery, setLogSearchQuery] = useState("");
+  const [logPlatformFilter, setLogPlatformFilter] = useState("all");
 
   // Log Modal State
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -106,6 +112,22 @@ export function GrowthPage() {
         : 0,
     [activeDaysCount, monthlyActivity]
   );
+
+  const filteredLogs = useMemo(() => {
+    return (growthStats.recentLogs || []).filter((log) => {
+      if (logPlatformFilter !== "all" && (log.platform || "").toLowerCase() !== logPlatformFilter.toLowerCase()) {
+        return false;
+      }
+      if (logSearchQuery.trim()) {
+        const q = logSearchQuery.toLowerCase();
+        const matchesNotes = log.notes && log.notes.toLowerCase().includes(q);
+        const matchesPlatform = log.platform && log.platform.toLowerCase().includes(q);
+        const matchesCategory = log.category && log.category.toLowerCase().includes(q);
+        return matchesNotes || matchesPlatform || matchesCategory;
+      }
+      return true;
+    });
+  }, [growthStats.recentLogs, logPlatformFilter, logSearchQuery]);
 
   return (
     <main className="page-content">
@@ -242,7 +264,7 @@ export function GrowthPage() {
           style={{
             background: "var(--color-success-bg)",
             border: "1px solid var(--color-success-border)",
-            color: "#34d399",
+            color: "#166534",
             borderRadius: "var(--radius-lg)",
             padding: "12px 18px",
             display: "flex",
@@ -255,17 +277,67 @@ export function GrowthPage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <CheckCircle size={18} color="#10b981" />
+            <CheckCircle size={18} color="#166534" />
             <span>
               Awesome work! You have logged activity for today. Current streak is active at{" "}
               <strong>{growthStats.currentStreak} days</strong>.
             </span>
           </div>
-          <span style={{ fontSize: 12, color: "#94a3b8" }}>
+          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
             🛡️ {growthStats.streakFreezesAvailable ?? 2} Streak Freezes available
           </span>
         </div>
       )}
+
+      {/* Daily Target Progress & Streak Goal */}
+      <section
+        className="panel"
+        style={{
+          marginBottom: 24,
+          padding: "18px 22px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 20,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: "1 1 300px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-title)", display: "flex", alignItems: "center", gap: 6 }}>
+              <Target size={15} color="var(--color-primary)" /> Daily Milestone Target
+            </span>
+            <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+              {growthStats.todayCompletedCount || 0} / {growthStats.dailyGoal || 2} items completed today
+            </span>
+          </div>
+          <div style={{ height: 8, background: "rgba(0, 0, 0, 0.06)", borderRadius: 99, overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.min(100, Math.round(((growthStats.todayCompletedCount || 0) / (growthStats.dailyGoal || 2)) * 100))}%`,
+                background: (growthStats.todayCompletedCount || 0) >= (growthStats.dailyGoal || 2) ? "#16a34a" : "var(--color-primary)",
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Set Daily Target:</span>
+          <select
+            className="form-select"
+            value={growthStats.dailyGoal || 2}
+            onChange={(e) => setDailyGoal(e.target.value)}
+            style={{ width: "auto", padding: "6px 10px", fontSize: 12 }}
+          >
+            <option value="1">1 Activity / day (Relaxed)</option>
+            <option value="2">2 Activities / day (Standard)</option>
+            <option value="3">3 Activities / day (Ambitious)</option>
+            <option value="5">5 Activities / day (Intensive)</option>
+          </select>
+        </div>
+      </section>
 
       {/* Top Metrics Cards */}
       <section className="stats-grid" aria-label="Streak and platform statistics">
@@ -447,6 +519,93 @@ export function GrowthPage() {
             />
           </section>
 
+          {/* Multi-Platform Streak & Contributions Aggregator */}
+          <section className="panel" style={{ marginBottom: 24, padding: "20px 24px" }}>
+            <div className="panel-heading" style={{ marginBottom: 16 }}>
+              <div>
+                <p className="eyebrow">Unified Activity Stream</p>
+                <h2 style={{ fontSize: 18 }}>Multi-Platform Streak Distribution</h2>
+              </div>
+            </div>
+            <p className="muted" style={{ marginBottom: 16, fontSize: 13 }}>
+              Aggregated breakdown of consistency across LeetCode, Codeforces, and autonomous GitHub builds.
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+              <div
+                style={{
+                  background: "rgba(0, 0, 0, 0.02)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <div style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: "#fef3c7", color: "#b45309", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14 }}>
+                  LC
+                </div>
+                <div>
+                  <strong style={{ display: "block", fontSize: 16, color: "var(--color-text-title)" }}>
+                    {growthStats.leetcode.solved} Solved
+                  </strong>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                    Top {Math.round(growthStats.leetcode.ranking / 1000)}k globally
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "rgba(0, 0, 0, 0.02)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <div style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: "#e0e7ff", color: "#3730a3", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14 }}>
+                  CF
+                </div>
+                <div>
+                  <strong style={{ display: "block", fontSize: 16, color: "var(--color-text-title)" }}>
+                    {growthStats.codeforces.rating} Rating
+                  </strong>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                    {growthStats.codeforces.rank} · {growthStats.codeforces.contests} rounds
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "rgba(0, 0, 0, 0.02)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <div style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: "#f3e8ff", color: "#6b21a8", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14 }}>
+                  GH
+                </div>
+                <div>
+                  <strong style={{ display: "block", fontSize: 16, color: "var(--color-text-title)" }}>
+                    {growthStats.github.contributions} Commits
+                  </strong>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                    {growthStats.github.streak} day build streak
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Consistency Heatmap & Practice History */}
           <section className="content-grid" style={{ marginBottom: 24 }}>
             {/* 28-Day Activity Heatmap */}
@@ -493,59 +652,113 @@ export function GrowthPage() {
 
             {/* Recent Daily Logs */}
             <div className="panel">
-              <div className="panel-heading">
+              <div className="panel-heading" style={{ flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <p className="eyebrow">Recent Sessions</p>
                   <h2>Practice History</h2>
                 </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ position: "relative" }}>
+                    <Search
+                      size={14}
+                      style={{
+                        position: "absolute",
+                        left: 10,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "var(--color-text-muted)",
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Search topics, notes..."
+                      value={logSearchQuery}
+                      onChange={(e) => setLogSearchQuery(e.target.value)}
+                      style={{ paddingLeft: 30, paddingRight: 10, fontSize: 12, height: 32, width: 170 }}
+                    />
+                  </div>
+                  <select
+                    className="form-select"
+                    value={logPlatformFilter}
+                    onChange={(e) => setLogPlatformFilter(e.target.value)}
+                    style={{ fontSize: 12, height: 32, padding: "0 8px" }}
+                    aria-label="Filter practice history by platform"
+                  >
+                    <option value="all">All Platforms</option>
+                    <option value="LeetCode">LeetCode</option>
+                    <option value="Codeforces">Codeforces</option>
+                    <option value="GitHub">GitHub</option>
+                    <option value="AtCoder">AtCoder</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {growthStats.recentLogs.map((log, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      padding: "12px 14px",
-                      background: "rgba(255, 255, 255, 0.03)",
-                      borderRadius: "var(--radius-md)",
-                      border: "1px solid var(--color-border)",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <strong style={{ color: "var(--color-text-title)" }}>
-                        {log.platform} · {log.problemsSolved} Solved
-                      </strong>
-                      <span style={{ color: "var(--color-text-muted)" }}>{log.date}</span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>{log.notes}</p>
-                    {(log.category || log.difficulty) && (
-                      <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
-                        {log.category && (
-                          <span className="tag" style={{ fontSize: 10, padding: "2px 6px" }}>
-                            {log.category}
-                          </span>
-                        )}
-                        {log.difficulty && (
-                          <span
-                            className="tag"
-                            style={{
-                              fontSize: 10,
-                              padding: "2px 6px",
-                              color:
-                                log.difficulty === "Easy"
-                                  ? "#16a34a"
-                                  : log.difficulty === "Hard"
-                                  ? "#dc2626"
-                                  : "#d97706",
-                            }}
-                          >
-                            {log.difficulty}
-                          </span>
-                        )}
-                      </div>
+                {filteredLogs.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "24px 12px", color: "var(--color-text-muted)" }}>
+                    <p style={{ margin: 0, fontSize: 13 }}>No practice logs match your filter criteria.</p>
+                    {(logSearchQuery || logPlatformFilter !== "all") && (
+                      <button
+                        className="button button-secondary"
+                        onClick={() => {
+                          setLogSearchQuery("");
+                          setLogPlatformFilter("all");
+                        }}
+                        style={{ marginTop: 8, fontSize: 12, padding: "4px 10px" }}
+                        type="button"
+                      >
+                        Reset Filters
+                      </button>
                     )}
                   </div>
-                ))}
+                ) : (
+                  filteredLogs.map((log, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: "12px 14px",
+                        background: "rgba(0, 0, 0, 0.02)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                        <strong style={{ color: "var(--color-text-title)" }}>
+                          {log.platform} · {log.problemsSolved} Solved
+                        </strong>
+                        <span style={{ color: "var(--color-text-muted)" }}>{log.date}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-main)" }}>{log.notes}</p>
+                      {(log.category || log.difficulty) && (
+                        <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
+                          {log.category && (
+                            <span className="tag" style={{ fontSize: 10, padding: "2px 6px" }}>
+                              {log.category}
+                            </span>
+                          )}
+                          {log.difficulty && (
+                            <span
+                              className="tag"
+                              style={{
+                                fontSize: 10,
+                                padding: "2px 6px",
+                                color:
+                                  log.difficulty === "Easy"
+                                    ? "#16a34a"
+                                    : log.difficulty === "Hard"
+                                    ? "#dc2626"
+                                    : "#d97706",
+                              }}
+                            >
+                              {log.difficulty}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </section>
@@ -647,17 +860,17 @@ export function GrowthPage() {
                 >
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "#818cf8", textTransform: "uppercase" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase" }}>
                         {project.language}
                       </span>
-                      <span className="tag" style={{ background: "rgba(52, 211, 153, 0.15)", color: "#34d399", fontSize: 11 }}>
+                      <span className="tag" style={{ background: "rgba(52, 211, 153, 0.15)", color: "#166534", fontWeight: 600, fontSize: 11 }}>
                         ✓ {project.status}
                       </span>
                     </div>
                     <h3 style={{ fontSize: 16, margin: "0 0 6px 0", color: "var(--color-text-title)" }}>
                       {project.name}
                     </h3>
-                    <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 13, color: "var(--color-text-main)", margin: 0, lineHeight: 1.5 }}>
                       {project.description}
                     </p>
                   </div>
@@ -843,7 +1056,7 @@ export function GrowthPage() {
                       {evt.title}
                     </h3>
 
-                    <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 14px 0", lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 13, color: "var(--color-text-main)", margin: "0 0 14px 0", lineHeight: 1.5 }}>
                       {evt.description}
                     </p>
 
@@ -855,10 +1068,11 @@ export function GrowthPage() {
                             key={idx}
                             style={{
                               fontSize: 11,
-                              background: "rgba(255, 255, 255, 0.05)",
+                              background: "rgba(0, 0, 0, 0.04)",
                               padding: "2px 8px",
                               borderRadius: 4,
                               color: "var(--color-text-main)",
+                              fontWeight: 500,
                             }}
                           >
                             {tag}
