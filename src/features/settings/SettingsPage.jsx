@@ -23,7 +23,7 @@ export function SettingsPage() {
     resetAllData,
     user,
     logout,
-    openAuthModal,
+    openAuthPage,
   } = useAppContext();
 
   // Local form state
@@ -304,7 +304,7 @@ export function SettingsPage() {
                 </p>
                 <button
                   className="button button-accent button-sm"
-                  onClick={openAuthModal}
+                  onClick={openAuthPage}
                   type="button"
                 >
                   <LogIn size={15} /> Sign In / Register Account

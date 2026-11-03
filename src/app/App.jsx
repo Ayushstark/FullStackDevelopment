@@ -7,6 +7,7 @@ import {
 import { CareerPage } from "../features/career/CareerPage.jsx";
 import { CalendarPage } from "../features/calendar/CalendarPage.jsx";
 import { DashboardPage } from "../features/dashboard/DashboardPage.jsx";
+import { AuthPage } from "../features/auth/AuthPage.jsx";
 import { SettingsPage } from "../features/settings/SettingsPage.jsx";
 import { AppShell } from "../shared/components/AppShell.jsx";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
@@ -16,6 +17,7 @@ function AppContent() {
     activePage,
     setActivePage,
     applications,
+    closeAuthPage,
   } = useAppContext();
 
   const navigation = [
@@ -29,6 +31,10 @@ function AppContent() {
     },
     { id: "settings", label: "Settings", icon: Settings },
   ];
+
+  if (activePage === "auth") {
+    return <AuthPage onClose={closeAuthPage} />;
+  }
 
   const renderActivePage = () => {
     switch (activePage) {

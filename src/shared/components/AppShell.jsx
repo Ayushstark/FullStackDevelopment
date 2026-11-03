@@ -2,16 +2,13 @@ import { Activity, LogIn, LogOut, User } from "lucide-react";
 import PillNav from "../../components/ui/PillNav.jsx";
 import GridScan from "../../components/ui/GridScan.jsx";
 import { useAppContext } from "../context/AppContext.jsx";
-import { AuthModal } from "./AuthModal.jsx";
 
 export function AppShell({ navigation, activePage, onNavigate, children }) {
   const {
     profile,
     user,
     logout,
-    isAuthModalOpen,
-    openAuthModal,
-    closeAuthModal,
+    openAuthPage,
   } = useAppContext();
 
   const initials = profile.name
@@ -113,7 +110,7 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
               </button>
             </div>
           ) : (
-            <button className="button button-accent button-sm" onClick={openAuthModal} type="button">
+            <button className="button button-accent button-sm" onClick={openAuthPage} type="button">
               <LogIn size={15} /> Sign In / Register
             </button>
           )}
@@ -121,8 +118,6 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
       </header>
 
       <div className="main-area">{children}</div>
-
-      <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
     </div>
   );
 }
