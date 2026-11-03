@@ -10,7 +10,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "typecheck": "node -e \"console.log('Pure JavaScript project - no TypeScript needed.')\"",
     "test": "vitest run",
     "audit:production": "npm audit --omit=dev --audit-level=high"
   },
