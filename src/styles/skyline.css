@@ -104,6 +104,42 @@
 .duration-150 { transition-duration: 150ms; }
 .hover\:scale-125:hover { transform: scale(1.25); }
 
+/* Explicit layout for the skyline's side statistics. These were originally
+   Tailwind arbitrary grid utilities, which this project does not generate. */
+.skyline-stat-inline {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  grid-template-rows: auto auto;
+  align-items: end;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+.skyline-stat-inline.is-start { justify-content: start; }
+.skyline-stat-inline.is-end { justify-content: end; }
+.skyline-stat-label {
+  grid-column: 1 / -1;
+  color: var(--color-muted-foreground, #737373);
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.skyline-stat-value {
+  text-align: right;
+  font-size: var(--stat-size, 42px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.skyline-stat-unit {
+  padding-bottom: 0.15em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.skyline-stat-unit > span { display: block; font-size: 15px; }
+.skyline-stat-unit > small { display: block; margin-top: 3px; font-size: 13px; white-space: nowrap; }
+
 @media (min-width: 640px) {
   .sm\:p-5 { padding: 1.25rem; }
   .sm\:px-4 { padding-left: 1rem; padding-right: 1rem; }

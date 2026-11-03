@@ -1,393 +1,218 @@
-import {
-  ArrowRight,
-  Check,
-  CheckCircle,
-  ChevronRight,
-  Code2,
-  ExternalLink,
-  Flame,
-  Globe,
-  Plus,
-  Terminal,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { Award, Code2, Flame, GitCommit, Shield, Terminal } from "lucide-react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
+import BorderGlow from "../../components/ui/BorderGlow.jsx";
+import ContributionSkyline from "../../components/ui/contribution-skyline.jsx";
+
+const glowColors = ["#38bdf8", "#22d3ee", "#a3e635"];
+
+function HomeStat({ icon: Icon, label, value, detail, tint = "#7dd3fc" }) {
+  return (
+    <BorderGlow
+      className="home-stat-glow"
+      edgeSensitivity={30}
+      glowColor="190 95 65"
+      backgroundColor="#0d1114"
+      borderRadius={14}
+      glowRadius={24}
+      glowIntensity={0.7}
+      coneSpread={25}
+      animated={false}
+      colors={glowColors}
+    >
+      <article className="home-stat-card">
+        <span className="home-stat-icon" style={{ color: tint }}><Icon size={17} /></span>
+        <span className="home-stat-label">{label}</span>
+        <strong>{value}</strong>
+        <small>{detail}</small>
+      </article>
+    </BorderGlow>
+  );
+}
+
+function PlatformCard({ icon: Icon, name, handle, accent, children }) {
+  return (
+    <BorderGlow
+      className="home-platform-glow"
+      edgeSensitivity={30}
+      glowColor="190 95 65"
+      backgroundColor="#0d1114"
+      borderRadius={15}
+      glowRadius={24}
+      glowIntensity={0.7}
+      coneSpread={25}
+      animated={false}
+      colors={glowColors}
+    >
+      <article className="home-platform-card">
+        <header className="home-platform-header">
+          <span className="home-platform-icon" style={{ color: accent }}><Icon size={18} /></span>
+          <div>
+            <h3>{name}</h3>
+            {handle && <small>@{handle}</small>}
+          </div>
+          <span className="home-platform-dot" style={{ background: accent }} />
+        </header>
+        {children}
+      </article>
+    </BorderGlow>
+  );
+}
 
 export function DashboardPage() {
-  const {
-    profile,
-    calendarEvents,
-    growthStats,
-    dailyChallenge,
-    completeDailyChallenge,
-    setActivePage,
-    logCodingActivity,
-  } = useAppContext();
+  const { profile, growthStats, logCodingActivity, useStreakFreeze } = useAppContext();
+  const leetcode = growthStats.leetcode ?? {};
+  const codeforces = growthStats.codeforces ?? {};
+  const github = growthStats.github ?? {};
+  const totalLeetCode = Math.max(leetcode.solved ?? 0, 1);
+  const easyPct = Math.round(((leetcode.easy ?? 0) / totalLeetCode) * 100);
+  const mediumPct = Math.round(((leetcode.medium ?? 0) / totalLeetCode) * 100);
+  const hardPct = Math.round(((leetcode.hard ?? 0) / totalLeetCode) * 100);
+  const needsAttention = growthStats.streakAtRisk || growthStats.streakBroken;
 
-  // Daily Consistency Checklist with derived challenge completion
-  const [completedTaskIds, setCompletedTaskIds] = useState(() => new Set());
-  const isChallengeDone = Boolean(dailyChallenge?.completed);
-
-  const tasks = useMemo(
-    () => [
-      { id: 1, text: "Solve daily LeetCode challenge", done: isChallengeDone || completedTaskIds.has(1) },
-      { id: 2, text: "Commit progress to GitHub project", done: completedTaskIds.has(2) },
-      { id: 3, text: "Review 1 problem editorial or concept", done: completedTaskIds.has(3) },
-    ],
-    [isChallengeDone, completedTaskIds],
-  );
-
-  const toggleTask = (taskId) => {
-    try {
-      setCompletedTaskIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(taskId)) {
-          next.delete(taskId);
-        } else {
-          next.add(taskId);
-        }
-        return next;
-      });
-    } catch (err) {
-      console.error("Failed to toggle daily task:", err);
-    }
+  const logPractice = () => {
+    logCodingActivity({
+      platform: "LeetCode",
+      problemsSolved: 1,
+      notes: "Daily practice",
+      difficulty: "Medium",
+      category: "Algorithms & DSA",
+    });
   };
 
-  const remainingTasks = tasks.filter((task) => !task.done).length;
-  const firstName = profile?.name ? profile.name.split(" ")[0] : "Developer";
-  const formattedDate = new Intl.DateTimeFormat("en", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  }).format(new Date());
-
-  // Filter upcoming coding contests
-  const upcomingContests = (calendarEvents || []).filter(
-    (event) => event.type === "Contest" || event.type === "Hackathon",
-  );
-  const nextContest = upcomingContests[0];
-
   return (
-    <main className="page-content dashboard-page">
-      {/* Top Greeting */}
-      <div className="dashboard-greeting">
-        <div>
-          <p className="eyebrow">{formattedDate}</p>
-          <h1>Good morning, {firstName}.</h1>
-          <p className="muted">
-            {growthStats.streakAtRisk
-              ? "Your streak needs attention today. Solve 1 problem to keep it going!"
-              : "Consistency is your superpower. Your daily streak is active and strong."}
-          </p>
-        </div>
-        <button
-          className="button button-primary"
-          onClick={() => setActivePage("growth")}
-          type="button"
-        >
-          <Flame size={16} /> Log Practice
-        </button>
-      </div>
-
-      {/* Hero Streak Banner */}
-      <section className="dashboard-hero">
-        <div className="hero-copy">
-          <span className="hero-kicker">Developer Consistency</span>
-          <h2>
-            {growthStats.streakAtRisk
-              ? "Keep the momentum going."
-              : "Streak is on track today!"}
-          </h2>
+    <main className="page-content dashboard-page home-dashboard">
+      <section className={`home-streak-section ${needsAttention ? "is-at-risk" : ""}`} aria-labelledby="home-streak-title">
+        <div className="home-streak-copy">
+          <span className="home-section-kicker"><Flame size={14} /> Your coding rhythm</span>
+          <h1 id="home-streak-title">Your streak</h1>
           <p>
-            {growthStats.streakAtRisk
-              ? "Log your practice on LeetCode, Codeforces, or GitHub to safeguard your streak."
-              : `${growthStats.currentStreak}-day coding streak maintained. Best record: ${growthStats.longestStreak} days.`}
+            {growthStats.streakBroken
+              ? "Your streak needs a fresh start. Log today’s practice to begin again."
+              : growthStats.streakAtRisk
+                ? "Log a practice session today to keep your streak alive."
+                : "You’re keeping a steady pace. Keep showing up, one day at a time."}
           </p>
-          <button
-            className="hero-action"
-            onClick={() => {
-              if (growthStats.streakAtRisk) {
-                logCodingActivity("LeetCode", 1, "Daily problem solved");
-              } else {
-                setActivePage("growth");
-              }
-            }}
-            type="button"
-          >
-            {growthStats.streakAtRisk ? "Quick-Check In (+1 Problem)" : "View Practice History"}
-            <ArrowRight size={16} />
-          </button>
         </div>
-        <div className="hero-orbit" aria-hidden="true">
-          <span className="orbit-ring orbit-ring-one" />
-          <span className="orbit-ring orbit-ring-two" />
-          <span className="orbit-core">
-            <Flame size={28} />
-          </span>
-          <span className="orbit-caption">
-            {growthStats.currentStreak}
-            <small>day streak</small>
-          </span>
+        <div className="home-streak-total" aria-label={`${growthStats.currentStreak} day current streak`}>
+          <strong>{growthStats.currentStreak ?? 0}</strong>
+          <span>day streak</span>
         </div>
-      </section>
-
-      {/* Metrics Row: Streak-First */}
-      <section className="dashboard-metrics" aria-label="Consistency and Practice Metrics">
-        <button
-          className="metric-item"
-          onClick={() => setActivePage("growth")}
-          type="button"
-        >
-          <span className="metric-value">{growthStats.currentStreak}d</span>
-          <span className="metric-label">
-            {growthStats.streakAtRisk ? "Streak (Action needed)" : "Active Streak"}
-          </span>
-          <ChevronRight size={16} />
-        </button>
-        <button
-          className="metric-item"
-          onClick={() => setActivePage("growth")}
-          type="button"
-        >
-          <span className="metric-value">{growthStats.totalProblemsSolved}</span>
-          <span className="metric-label">Problems Solved</span>
-          <ChevronRight size={16} />
-        </button>
-        <button
-          className="metric-item"
-          onClick={() => setActivePage("calendar")}
-          type="button"
-        >
-          <span className="metric-value">
-            {upcomingContests.length.toString().padStart(2, "0")}
-          </span>
-          <span className="metric-label">Upcoming Contests</span>
-          <ChevronRight size={16} />
-        </button>
-      </section>
-
-      {/* Featured Daily Coding Challenge Card */}
-      {dailyChallenge && (
-        <section
-          style={{
-            marginTop: 20,
-            background: dailyChallenge.completed
-              ? "linear-gradient(135deg, rgba(35, 78, 64, 0.22), rgba(16, 185, 129, 0.08))"
-              : "var(--bg-card)",
-            border: dailyChallenge.completed
-              ? "1px solid rgba(16, 185, 129, 0.4)"
-              : "1px solid var(--color-border)",
-            borderRadius: "var(--radius-lg)",
-            padding: "20px 24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 20,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ maxWidth: 640 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span className="tag" style={{ background: "#ffedd5", color: "#c2410c", fontWeight: 700 }}>
-                {dailyChallenge.platform}
-              </span>
-              <span
-                className="tag"
-                style={{
-                  background:
-                    dailyChallenge.difficulty === "Hard"
-                      ? "#fee2e2"
-                      : dailyChallenge.difficulty === "Medium"
-                        ? "#fef3c7"
-                        : "#dcfce7",
-                  color:
-                    dailyChallenge.difficulty === "Hard"
-                      ? "#b91c1c"
-                      : dailyChallenge.difficulty === "Medium"
-                        ? "#b45309"
-                        : "#15803d",
-                  fontWeight: 700,
-                }}
-              >
-                {dailyChallenge.difficulty}
-              </span>
-              <span className="muted" style={{ fontSize: 12 }}>
-                {dailyChallenge.category}
-              </span>
-            </div>
-            <h3 style={{ margin: "0 0 6px", fontSize: 18, color: "var(--color-text-title)" }}>
-              {dailyChallenge.title}
-            </h3>
-            <p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
-              {dailyChallenge.description}
-            </p>
+        <div className="home-streak-actions">
+          <div className="home-streak-best">
+            <span>Personal best</span>
+            <strong>{growthStats.longestStreak ?? 0} days</strong>
           </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <a
-              href={dailyChallenge.link}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="button button-secondary"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
-            >
-              Solve Problem <ExternalLink size={14} />
-            </a>
-            {dailyChallenge.completed ? (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "8px 14px",
-                  borderRadius: "var(--radius-md)",
-                  background: "#d8e8b7",
-                  color: "#233e14",
-                  fontSize: 13,
-                  fontWeight: 700,
-                }}
-              >
-                <CheckCircle size={15} /> Streak Protected!
-              </span>
-            ) : (
-              <button
-                className="button button-primary"
-                onClick={completeDailyChallenge}
-                type="button"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                <CheckCircle size={15} /> Mark Solved
-              </button>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Lower Grid: Platform Activity & Daily Practice Plan */}
-      <section className="dashboard-lower-grid">
-        {/* Left Section: Platform Breakdown & Activity */}
-        <div className="dashboard-section">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Practice snapshot</p>
-              <h2>Coding Platforms</h2>
-            </div>
-            <button
-              className="quiet-link"
-              onClick={() => setActivePage("growth")}
-              type="button"
-            >
-              Full analytics <ArrowRight size={15} />
+          {needsAttention && (growthStats.streakFreezesAvailable ?? 0) > 0 && (
+            <button className="button button-secondary button-sm" onClick={useStreakFreeze} type="button">
+              <Shield size={14} /> Use freeze ({growthStats.streakFreezesAvailable})
             </button>
-          </div>
-
-          <div className="preview-list">
-            {/* LeetCode Row */}
-            <button
-              className="preview-role"
-              onClick={() => setActivePage("growth")}
-              type="button"
-            >
-              <span className="role-index role-index-1">
-                <Code2 size={16} />
-              </span>
-              <span className="preview-role-main">
-                <strong>LeetCode Practice</strong>
-                <small>
-                  {growthStats.leetcode?.solved ?? 0} Solved <i>·</i>{" "}
-                  {growthStats.leetcode?.easy ?? 0} Easy, {growthStats.leetcode?.medium ?? 0} Med, {growthStats.leetcode?.hard ?? 0} Hard
-                </small>
-              </span>
-              <span className="preview-deadline" style={{ color: "var(--color-primary)" }}>
-                {profile.platformHandles?.leetcode || "Active"}
-              </span>
-              <ChevronRight size={16} />
-            </button>
-
-            {/* Codeforces Row */}
-            <button
-              className="preview-role"
-              onClick={() => setActivePage("growth")}
-              type="button"
-            >
-              <span className="role-index role-index-2">
-                <Terminal size={16} />
-              </span>
-              <span className="preview-role-main">
-                <strong>Codeforces Contests</strong>
-                <small>
-                  {growthStats.codeforces?.solved ?? 0} Solved <i>·</i> Rating: {growthStats.codeforces?.rating ?? 1420} ({growthStats.codeforces?.rank ?? "Specialist"})
-                </small>
-              </span>
-              <span className="preview-deadline" style={{ color: "var(--color-primary)" }}>
-                {profile.platformHandles?.codeforces || "Active"}
-              </span>
-              <ChevronRight size={16} />
-            </button>
-
-            {/* GitHub Contributions Row */}
-            <button
-              className="preview-role"
-              onClick={() => setActivePage("growth")}
-              type="button"
-            >
-              <span className="role-index role-index-3">
-                <Globe size={16} />
-              </span>
-              <span className="preview-role-main">
-                <strong>GitHub Activity</strong>
-                <small>
-                  {growthStats.github?.contributions ?? 0} Contributions <i>·</i> {growthStats.github?.repos ?? 0} Repositories
-                </small>
-              </span>
-              <span className="preview-deadline" style={{ color: "var(--color-primary)" }}>
-                {growthStats.github?.streak ?? 0}d streak
-              </span>
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Right Section: Daily Consistency Plan */}
-        <aside className="dashboard-section daily-plan">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Daily discipline</p>
-              <h2>Today’s plan</h2>
-            </div>
-            <span className="plan-count">{remainingTasks} left</span>
-          </div>
-
-          <div className="plan-list">
-            {tasks.map((task) => (
-              <button
-                className={`plan-item ${task.done ? "is-done" : ""}`}
-                key={task.id}
-                onClick={() => toggleTask(task.id)}
-                type="button"
-              >
-                <span className="plan-check">
-                  {task.done && <Check size={13} />}
-                </span>
-                <span>{task.text}</span>
-              </button>
-            ))}
-          </div>
-
-          <button
-            className="plan-add"
-            onClick={() => setActivePage("calendar")}
-            type="button"
-          >
-            <Plus size={15} /> View contest calendar
-          </button>
-
-          {nextContest && (
-            <p className="plan-note">
-              Next event: <strong>{nextContest.title} ({nextContest.date})</strong>
-            </p>
           )}
-        </aside>
+          <button className="button button-primary" onClick={logPractice} type="button">
+            <Flame size={16} /> Log today’s practice
+          </button>
+        </div>
+      </section>
+
+      <section className="home-activity-section" aria-labelledby="home-activity-title">
+        <div className="home-section-heading">
+          <div>
+            <span className="home-section-kicker"><Code2 size={14} /> Activity landscape</span>
+            <h2 id="home-activity-title">Your year in code</h2>
+          </div>
+          <span className="home-section-caption">Practice, commits, and consistency</span>
+        </div>
+        <BorderGlow
+          className="home-skyline-glow"
+          edgeSensitivity={30}
+          glowColor="190 95 65"
+          backgroundColor="rgba(6, 14, 18, 0.74)"
+          borderRadius={15}
+          glowRadius={24}
+          glowIntensity={0.7}
+          coneSpread={25}
+          animated={false}
+          colors={glowColors}
+        >
+          <ContributionSkyline
+            endDate={new Date()}
+            title={<span className="home-skyline-title"><GitCommit size={16} /> 3D contribution heatmap</span>}
+            palette={["#173b2a", "#16803d", "#36c56a", "#8cf0ad"]}
+            defaultView="3d"
+            defaultYaw={24}
+            zoom={1}
+            statScale={0.72}
+            maxHeight={480}
+            className="home-skyline-panel"
+          />
+        </BorderGlow>
+      </section>
+
+      <section className="home-practice-section" aria-labelledby="home-statistics-title">
+        <div className="home-section-heading">
+          <div>
+            <span className="home-section-kicker"><Award size={14} /> Streak &amp; practice</span>
+            <h2 id="home-statistics-title">Practice statistics</h2>
+          </div>
+        </div>
+
+        <div className="home-stats-grid">
+          <HomeStat icon={Code2} label="Problems solved" value={growthStats.totalProblemsSolved ?? 0} detail="Across connected platforms" />
+          <HomeStat icon={Terminal} label="Codeforces rating" value={codeforces.rating ?? 0} detail={`${codeforces.rank ?? "Unranked"} · ${codeforces.contests ?? 0} contests`} tint="#91c7fa" />
+          <HomeStat icon={GitCommit} label="GitHub contributions" value={github.contributions ?? 0} detail={`${github.repos ?? 0} active repositories`} tint="#a78bfa" />
+        </div>
+
+        <div className="home-section-heading home-platform-heading">
+          <div>
+            <span className="home-section-kicker">Connected platforms</span>
+            <h2>Platform statistics</h2>
+          </div>
+        </div>
+
+        <div className="home-platform-grid">
+          <PlatformCard
+            icon={Code2}
+            name="LeetCode"
+            handle={profile.platformHandles?.leetcode}
+            accent="#f6b34b"
+          >
+            <div className="home-platform-total"><strong>{leetcode.solved ?? 0}</strong><span>problems solved</span></div>
+            <div className="difficulty-list">
+              <div className="difficulty-row"><span>Easy</span><strong>{leetcode.easy ?? 0}</strong><div><i style={{ width: `${easyPct}%`, background: "#4ade80" }} /></div></div>
+              <div className="difficulty-row"><span>Medium</span><strong>{leetcode.medium ?? 0}</strong><div><i style={{ width: `${mediumPct}%`, background: "#fbbf24" }} /></div></div>
+              <div className="difficulty-row"><span>Hard</span><strong>{leetcode.hard ?? 0}</strong><div><i style={{ width: `${hardPct}%`, background: "#fb7185" }} /></div></div>
+            </div>
+            <p className="home-platform-footnote">Global rank · {leetcode.ranking ? `Top ${Math.round(leetcode.ranking / 1000)}k` : "Connect your profile"}</p>
+          </PlatformCard>
+
+          <PlatformCard
+            icon={Terminal}
+            name="Codeforces"
+            handle={profile.platformHandles?.codeforces}
+            accent="#60a5fa"
+          >
+            <div className="home-platform-total"><strong>{codeforces.rating ?? 0}</strong><span>current rating</span></div>
+            <div className="home-platform-pairs">
+              <div><span>Rank</span><strong>{codeforces.rank ?? "Unranked"}</strong></div>
+              <div><span>Problems solved</span><strong>{codeforces.solved ?? 0}</strong></div>
+              <div><span>Contests</span><strong>{codeforces.contests ?? 0}</strong></div>
+            </div>
+            <p className="home-platform-footnote">Competitive programming profile</p>
+          </PlatformCard>
+
+          <PlatformCard
+            icon={GitCommit}
+            name="GitHub"
+            handle={profile.platformHandles?.github}
+            accent="#c4a7ff"
+          >
+            <div className="home-platform-total"><strong>{github.contributions ?? 0}</strong><span>contributions</span></div>
+            <div className="home-platform-pairs">
+              <div><span>Repositories</span><strong>{github.repos ?? 0}</strong></div>
+              <div><span>Current streak</span><strong>{github.streak ?? 0} days</strong></div>
+            </div>
+            <p className="home-platform-footnote">Open source and project activity</p>
+          </PlatformCard>
+        </div>
       </section>
     </main>
   );
