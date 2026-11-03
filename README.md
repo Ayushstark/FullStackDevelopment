@@ -73,7 +73,7 @@ docs/                    project and engineering documentation
 .github/workflows/       CI, CodeQL, and frontend deployment
 ```
 
-See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the product plan, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the repository boundaries, [docs/ROADMAP.md](docs/ROADMAP.md) for delivery stages, and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.
+Before contributing, read [docs/ENGINEERING_STANDARDS.md](docs/ENGINEERING_STANDARDS.md). See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the product plan, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the repository boundaries, [docs/ROADMAP.md](docs/ROADMAP.md) for delivery stages, and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.
 
 ## Engineering and security
 

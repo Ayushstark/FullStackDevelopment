@@ -19,6 +19,10 @@
 - [ ] `npm test`
 - [ ] `npm run build`
 
+## Contributor standards
+
+- [ ] I read and followed [DevRhythm Engineering Standards](../docs/ENGINEERING_STANDARDS.md).
+
 ## Product and operational checks
 
 - [ ] Loading, empty, success, and error states are handled
