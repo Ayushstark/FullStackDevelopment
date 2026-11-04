@@ -58,7 +58,7 @@ const userSchema = new mongoose.Schema(
     platformHandles: {
       leetcode: { type: String, default: "alex_shah" },
       codeforces: { type: String, default: "alex_coder" },
-      codechef: { type: String, default: "" },
+      codechef: { type: String, default: "alex_chef" },
       geeksforgeeks: { type: String, default: "" },
       github: { type: String, default: "alexshah-dev" },
     },

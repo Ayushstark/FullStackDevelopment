@@ -1,14 +1,16 @@
 import {
+  Activity,
   BriefcaseBusiness,
   CalendarDays,
   LayoutDashboard,
   Settings,
 } from "lucide-react";
-import { CareerPage } from "../features/career/CareerPage.jsx";
-import { CalendarPage } from "../features/calendar/CalendarPage.jsx";
-import { DashboardPage } from "../features/dashboard/DashboardPage.jsx";
-import { AuthPage } from "../features/auth/AuthPage.jsx";
-import { SettingsPage } from "../features/settings/SettingsPage.jsx";
+import { CareerPage } from "../features/career";
+import { CalendarPage } from "../features/calendar";
+import { DashboardPage } from "../features/dashboard";
+import { GrowthPage } from "../features/growth";
+import { AuthPage } from "../features/auth";
+import { SettingsPage } from "../features/settings";
 import { AppShell } from "../shared/components/AppShell.jsx";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
 
@@ -17,11 +19,22 @@ function AppContent() {
     activePage,
     setActivePage,
     applications,
+    growthStats,
     closeAuthPage,
   } = useAppContext();
 
   const navigation = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
+    {
+      id: "growth",
+      label: "Individual Analytics",
+      icon: Activity,
+      badge: growthStats?.streakBroken
+        ? "Broken"
+        : growthStats?.streakAtRisk
+        ? "At Risk"
+        : undefined,
+    },
     { id: "calendar", label: "Contests & Events", icon: CalendarDays },
     {
       id: "career",
@@ -44,6 +57,8 @@ function AppContent() {
         return <CareerPage defaultTab="opportunities" />;
       case "applications":
         return <CareerPage defaultTab="applications" />;
+      case "growth":
+        return <GrowthPage />;
       case "calendar":
         return <CalendarPage />;
       case "settings":

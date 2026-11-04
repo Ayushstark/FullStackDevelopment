@@ -172,7 +172,7 @@ export const initialProfile = {
   platformHandles: {
     leetcode: "alex_shah",
     codeforces: "alex_coder",
-    codechef: "",
+    codechef: "alex_chef",
     geeksforgeeks: "",
     github: "alexshah-dev",
   },
@@ -254,6 +254,17 @@ export const initialGrowthStats = {
     rank: "Pupil",
     solved: 75,
     contests: 12,
+  },
+  codechef: {
+    rating: 1650,
+    highestRating: 1720,
+    stars: "3★",
+    starsCount: 3,
+    division: "Div 2",
+    globalRank: "24500",
+    countryRank: "8200",
+    solved: 142,
+    lastSynced: null,
   },
   github: {
     contributions: 512,

@@ -1,11 +1,14 @@
 import {
   Bell,
+  Calendar,
   CalendarDays,
   Clock,
   ExternalLink,
   Flame,
   Globe,
   Plus,
+  Search,
+  Timer,
   Trophy,
   X,
 } from "lucide-react";
@@ -16,9 +19,11 @@ export function CalendarPage() {
   const { calendarEvents, toggleCalendarReminder, addCalendarEvent } = useAppContext();
 
   const [activeTab, setActiveTab] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [platformFilter, setPlatformFilter] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // New event local state
+  // New event modal local state
   const [title, setTitle] = useState("");
   const [organizer, setOrganizer] = useState("");
   const [eventType, setEventType] = useState("Contest");
@@ -27,10 +32,52 @@ export function CalendarPage() {
   const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
 
+  const contestsCount = useMemo(
+    () => calendarEvents.filter((e) => e.type === "Contest").length,
+    [calendarEvents],
+  );
+  const hackathonsCount = useMemo(
+    () => calendarEvents.filter((e) => e.type === "Hackathon").length,
+    [calendarEvents],
+  );
+  const deadlinesCount = useMemo(
+    () => calendarEvents.filter((e) => e.type === "Deadline").length,
+    [calendarEvents],
+  );
+  const remindersCount = useMemo(
+    () => calendarEvents.filter((e) => e.isReminderSet).length,
+    [calendarEvents],
+  );
+
   const filteredEvents = useMemo(() => {
-    if (activeTab === "All") return calendarEvents;
-    return calendarEvents.filter((event) => event.type === activeTab);
-  }, [calendarEvents, activeTab]);
+    return calendarEvents.filter((item) => {
+      // Type matching based on tab
+      if (activeTab === "Contest" && item.type !== "Contest") return false;
+      if (activeTab === "Hackathon" && item.type !== "Hackathon") return false;
+      if (activeTab === "Deadline" && item.type !== "Deadline") return false;
+      if (activeTab === "Reminders" && !item.isReminderSet) return false;
+
+      // Platform / Organizer filter
+      if (
+        platformFilter !== "all" &&
+        item.organizer.toLowerCase() !== platformFilter.toLowerCase()
+      ) {
+        return false;
+      }
+
+      // Search matching
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = item.title.toLowerCase().includes(query);
+        const matchesOrganizer = item.organizer.toLowerCase().includes(query);
+        const matchesDesc = item.description?.toLowerCase().includes(query);
+        const matchesTags = item.tags?.some((t) => t.toLowerCase().includes(query));
+        return matchesTitle || matchesOrganizer || matchesDesc || matchesTags;
+      }
+
+      return true;
+    });
+  }, [calendarEvents, activeTab, platformFilter, searchQuery]);
 
   const handleAddEvent = (e) => {
     e.preventDefault();
@@ -45,7 +92,7 @@ export function CalendarPage() {
       time: time.trim() || "All Day",
       link: link.trim() || "#",
       status: "Upcoming",
-      description: description.trim() || "User-added deadline/event",
+      description: description.trim() || "User-added event or deadline",
       tags: [eventType],
       isReminderSet: true,
     };
@@ -61,13 +108,15 @@ export function CalendarPage() {
   };
 
   return (
-    <main className="page-content">
+    <main className="page-content calendar-page">
       {/* Page Heading */}
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Plan ahead</p>
-          <h1>Deadlines & events</h1>
-          <p className="muted">Keep applications, contests, and reminders in one place.</p>
+          <p className="eyebrow">Contests &amp; Hackathons</p>
+          <h1>Curated Events &amp; Challenges</h1>
+          <p className="muted">
+            Discover upcoming coding rounds, competitive arenas, and global hackathons with live reminders.
+          </p>
         </div>
         <button
           className="button button-primary"
@@ -92,150 +141,283 @@ export function CalendarPage() {
           onClick={() => setActiveTab("Contest")}
           type="button"
         >
-          Contests ({calendarEvents.filter((e) => e.type === "Contest").length})
+          Coding Contests ({contestsCount})
         </button>
         <button
           className={`tab-btn ${activeTab === "Hackathon" ? "active" : ""}`}
           onClick={() => setActiveTab("Hackathon")}
           type="button"
         >
-          Hackathons ({calendarEvents.filter((e) => e.type === "Hackathon").length})
+          Hackathons &amp; Builders ({hackathonsCount})
         </button>
         <button
           className={`tab-btn ${activeTab === "Deadline" ? "active" : ""}`}
           onClick={() => setActiveTab("Deadline")}
           type="button"
         >
-          Application Deadlines ({calendarEvents.filter((e) => e.type === "Deadline").length})
+          Application Deadlines ({deadlinesCount})
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "Reminders" ? "active" : ""}`}
+          onClick={() => setActiveTab("Reminders")}
+          type="button"
+        >
+          My Alerts ({remindersCount})
         </button>
       </div>
 
-      {/* Events List */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {filteredEvents.map((evt) => (
-          <article
-            key={evt.id}
-            className="panel"
-            style={{
-              padding: "18px 22px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 16,
-              flexWrap: "wrap",
+      {/* Search & Platform Filter Bar */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
+        <div
+          className="search-bar"
+          style={{
+            flex: "1 1 280px",
+            margin: 0,
+            background: "rgba(255, 255, 255, 0.04)",
+          }}
+        >
+          <Search size={18} />
+          <input
+            placeholder="Search events by name, platform, or topic (e.g. Div. 2, Web3, Algorithms)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--color-text-muted)",
+                cursor: "pointer",
+                padding: "0 6px",
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span className="muted" style={{ fontSize: 13 }}>Platform:</span>
+          <select
+            className="form-select"
+            style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
+            value={platformFilter}
+            onChange={(e) => setPlatformFilter(e.target.value)}
+          >
+            <option value="all">All Platforms</option>
+            <option value="Codeforces">Codeforces</option>
+            <option value="LeetCode">LeetCode</option>
+            <option value="CodeChef">CodeChef</option>
+            <option value="AtCoder">AtCoder</option>
+            <option value="GitHub">GitHub</option>
+            <option value="ETHGlobal">ETHGlobal</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Events Grid */}
+      {filteredEvents.length === 0 ? (
+        <div className="empty-state" style={{ padding: "48px 20px", textAlign: "center" }}>
+          <Trophy size={40} color="var(--color-text-muted)" style={{ margin: "0 auto 12px" }} />
+          <h3 style={{ margin: "0 0 6px", fontSize: 17, color: "var(--color-text-title)" }}>
+            No matching events found
+          </h3>
+          <p className="muted" style={{ maxWidth: 440, margin: "0 auto 14px", fontSize: 13 }}>
+            Try clearing your search query or switching your platform filter to see more events.
+          </p>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            onClick={() => {
+              setSearchQuery("");
+              setPlatformFilter("all");
+              setActiveTab("All");
             }}
           >
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "var(--radius-md)",
-                  display: "grid",
-                  placeItems: "center",
-                  flexShrink: 0,
-                  background:
-                    evt.type === "Contest"
-                      ? "rgba(245, 158, 11, 0.12)"
-                      : evt.type === "Hackathon"
-                        ? "rgba(168, 85, 247, 0.12)"
-                        : "rgba(239, 68, 68, 0.12)",
-                  color:
-                    evt.type === "Contest"
-                      ? "#fbbf24"
-                      : evt.type === "Hackathon"
-                        ? "#c084fc"
-                        : "#f87171",
-                  border:
-                    evt.type === "Contest"
-                      ? "1px solid rgba(245, 158, 11, 0.25)"
-                      : evt.type === "Hackathon"
-                        ? "1px solid rgba(168, 85, 247, 0.25)"
-                        : "1px solid rgba(239, 68, 68, 0.25)",
-                }}
-              >
-                {evt.type === "Contest" ? (
-                  <Trophy size={20} />
-                ) : evt.type === "Hackathon" ? (
-                  <Flame size={20} />
-                ) : (
-                  <CalendarDays size={20} />
+            Reset Filters
+          </button>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {filteredEvents.map((evt) => (
+            <article
+              key={evt.id}
+              className="panel"
+              style={{
+                padding: 20,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                gap: 16,
+                transition: "border-color 0.15s ease",
+              }}
+            >
+              <div>
+                {/* Header: Platform pill & Type tag */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "var(--color-primary-light, #818cf8)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {evt.organizer}
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {evt.status === "Live" && (
+                      <span
+                        style={{
+                          background: "var(--color-success-bg)",
+                          color: "#34d399",
+                          border: "1px solid var(--color-success-border)",
+                          fontSize: 10,
+                          padding: "2px 6px",
+                          borderRadius: 99,
+                          fontWeight: 700,
+                        }}
+                      >
+                        ● LIVE NOW
+                      </span>
+                    )}
+                    <span
+                      className={`tag ${
+                        evt.type === "Contest"
+                          ? "tag-research"
+                          : evt.type === "Hackathon"
+                            ? "tag-hackathon"
+                            : ""
+                      }`}
+                      style={{ fontSize: 11 }}
+                    >
+                      {evt.type}
+                    </span>
+                  </div>
+                </div>
+
+                <h3
+                  style={{
+                    fontSize: 16,
+                    margin: "0 0 8px 0",
+                    color: "var(--color-text-title)",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {evt.title}
+                </h3>
+
+                <p
+                  className="muted"
+                  style={{
+                    fontSize: 13,
+                    margin: "0 0 14px 0",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {evt.description}
+                </p>
+
+                {/* Topic Tags */}
+                {evt.tags && evt.tags.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                    {evt.tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: 11,
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid var(--color-border)",
+                          padding: "2px 8px",
+                          borderRadius: 4,
+                          color: "var(--color-text-main)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
 
+              {/* Footer: Date, Time & Action Link */}
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span
-                    className={`tag ${
-                      evt.type === "Contest"
-                        ? ""
-                        : evt.type === "Hackathon"
-                          ? "tag-hackathon"
-                          : "tag-research"
-                    }`}
-                  >
-                    {evt.type}
-                  </span>
-                  <strong style={{ fontSize: 15, color: "var(--color-text-title)" }}>
-                    {evt.title}
-                  </strong>
-                  {evt.status === "Live" && (
-                    <span
-                      style={{
-                        background: "var(--color-success-bg)",
-                        color: "#34d399",
-                        border: "1px solid var(--color-success-border)",
-                        fontSize: 11,
-                        padding: "2px 8px",
-                        borderRadius: 99,
-                        fontWeight: 700,
-                      }}
-                    >
-                      ● LIVE NOW
-                    </span>
-                  )}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 5,
+                    fontSize: 12,
+                    color: "var(--color-text-muted)",
+                    paddingTop: 12,
+                    borderTop: "1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06))",
+                    marginBottom: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Calendar size={14} />
+                    <span>{evt.date}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Clock size={14} />
+                    <span>{evt.time}</span>
+                  </div>
                 </div>
 
-                <p className="muted" style={{ margin: "0 0 6px", fontSize: 13 }}>
-                  {evt.organizer} · {evt.description}
-                </p>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    className={`button button-sm ${
+                      evt.isReminderSet ? "button-accent" : "button-secondary"
+                    }`}
+                    onClick={() => toggleCalendarReminder(evt.id)}
+                    style={{ fontSize: 12 }}
+                  >
+                    <Bell size={13} fill={evt.isReminderSet ? "currentColor" : "none"} />
+                    {evt.isReminderSet ? "Alert Set" : "Notify Me"}
+                  </button>
 
-                <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--color-text-muted)" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <CalendarDays size={13} /> {evt.date}
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Clock size={13} /> {evt.time}
-                  </span>
+                  <a
+                    href={evt.link}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="button button-primary button-sm"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  >
+                    Register <ExternalLink size={12} />
+                  </a>
                 </div>
               </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button
-                className={`button button-sm ${
-                  evt.isReminderSet ? "button-accent" : "button-secondary"
-                }`}
-                onClick={() => toggleCalendarReminder(evt.id)}
-                type="button"
-                title={evt.isReminderSet ? "Reminder active" : "Set reminder"}
-              >
-                <Bell size={13} fill={evt.isReminderSet ? "currentColor" : "none"} />
-                {evt.isReminderSet ? "Alert Set" : "Notify Me"}
-              </button>
-
-              <a
-                href={evt.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="button button-primary button-sm"
-              >
-                <Globe size={13} /> Portal <ExternalLink size={12} />
-              </a>
-            </div>
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
+      )}
 
       {/* Add Custom Event Modal */}
       {isAddModalOpen && (
@@ -312,11 +494,11 @@ export function CalendarPage() {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="evtTime">Time / Duration</label>
+                    <label htmlFor="evtTime">Time / Window</label>
                     <input
                       id="evtTime"
                       className="form-input"
-                      placeholder="e.g. 18:30 IST (2 hrs)"
+                      placeholder="e.g. 17:30 UTC"
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
                     />
@@ -329,18 +511,19 @@ export function CalendarPage() {
                     id="evtLink"
                     type="url"
                     className="form-input"
-                    placeholder="https://..."
+                    placeholder="https://codeforces.com/contest/..."
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="evtDesc">Details / Notes</label>
+                  <label htmlFor="evtDesc">Short Description</label>
                   <textarea
                     id="evtDesc"
                     className="form-textarea"
-                    placeholder="Description or notes about participation..."
+                    placeholder="Div. 2 rated round; 2 hours duration."
+                    rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
@@ -356,7 +539,7 @@ export function CalendarPage() {
                   Cancel
                 </button>
                 <button type="submit" className="button button-primary">
-                  Add Event
+                  Save Event
                 </button>
               </div>
             </form>
@@ -366,4 +549,3 @@ export function CalendarPage() {
     </main>
   );
 }
-

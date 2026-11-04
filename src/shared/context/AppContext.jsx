@@ -16,6 +16,7 @@ import {
   registerUser,
   submitGrowthLog,
 } from "../services/authService.js";
+import { fetchLiveCodeChefStats } from "../services/codechefService.js";
 
 const STORAGE_KEYS = {
   PROFILE: "opportunity_os_profile_v1",
@@ -129,6 +130,7 @@ export function AppProvider({ children }) {
       const status = calculateStreakStatus(loaded.lastActiveDate, loaded.currentStreak);
       return {
         ...loaded,
+        codechef: loaded.codechef || initialGrowthStats.codechef,
         streakAtRisk: status.streakAtRisk,
         streakBroken: status.isBroken,
         streakFreezesAvailable: loaded.streakFreezesAvailable ?? 2,
@@ -331,29 +333,22 @@ export function AppProvider({ children }) {
   };
 
   // Developer Growth & Streak actions (Streak Module)
-  const logCodingActivity = (
-    platformOrData,
-    count,
-    notes,
-    difficulty = "Medium",
-    category = "Algorithms",
-  ) => {
+  const logCodingActivity = (activityOrPlatform = {}, optionalCount = 1) => {
     let platform = "LeetCode";
     let problemsSolved = 1;
     let activityNotes = "";
-    let problemDifficulty = difficulty;
-    let activityCategory = category;
+    let problemDifficulty = "Medium";
+    let activityCategory = "Algorithms";
 
-    if (typeof platformOrData === "object" && platformOrData !== null) {
-      platform = platformOrData.platform || "LeetCode";
-      problemsSolved = Number(platformOrData.problemsSolved) || 1;
-      activityNotes = platformOrData.notes || "";
-      problemDifficulty = platformOrData.difficulty || "Medium";
-      activityCategory = platformOrData.category || "Algorithms";
+    if (typeof activityOrPlatform === "object" && activityOrPlatform !== null) {
+      platform = activityOrPlatform.platform || "LeetCode";
+      problemsSolved = Number(activityOrPlatform.problemsSolved) || 1;
+      activityNotes = activityOrPlatform.notes || "";
+      problemDifficulty = activityOrPlatform.difficulty || "Medium";
+      activityCategory = activityOrPlatform.category || "Algorithms";
     } else {
-      platform = platformOrData || "LeetCode";
-      problemsSolved = Number(count) || 1;
-      activityNotes = notes || "";
+      platform = activityOrPlatform || "LeetCode";
+      problemsSolved = Number(optionalCount) || 1;
     }
 
     // Attempt asynchronous sync with backend if user has an active session
@@ -422,6 +417,14 @@ export function AppProvider({ children }) {
             }
           : prev.codeforces;
 
+      const updatedCodechef =
+        platform === "CodeChef"
+          ? {
+              ...prev.codechef,
+              solved: (prev.codechef?.solved || 0) + problemsSolved,
+            }
+          : prev.codechef;
+
       const updatedGithub =
         platform === "GitHub"
           ? {
@@ -479,6 +482,7 @@ export function AppProvider({ children }) {
         totalProblemsSolved: (prev.totalProblemsSolved || 0) + (platform === "GitHub" ? 0 : problemsSolved),
         leetcode: updatedLeetCode,
         codeforces: updatedCodeforces,
+        codechef: updatedCodechef,
         github: updatedGithub,
         difficultyTotals,
         weeklyActivity: updatedWeekly,
@@ -515,6 +519,82 @@ export function AppProvider({ children }) {
       });
     } catch (err) {
       console.error("Failed to use streak freeze:", err);
+    }
+  };
+
+  // Rekindle broken streak
+  const rekindleStreak = () => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      setGrowthStats((prev) => ({
+        ...prev,
+        currentStreak: 1,
+        streakBroken: false,
+        streakAtRisk: false,
+        lastActiveDate: today,
+      }));
+    } catch (err) {
+      console.error("Failed to rekindle streak:", err);
+    }
+  };
+
+  // Real-time CodeChef Data Synchronization
+  const syncCodeChefData = async (handleToUse, options = { force: true }) => {
+    const handle = handleToUse || profile.platformHandles?.codechef;
+    if (!handle) {
+      return { success: false, error: "No CodeChef handle configured." };
+    }
+
+    setGrowthStats((prev) => ({
+      ...prev,
+      codechef: {
+        ...(prev.codechef || initialGrowthStats.codechef),
+        loading: true,
+        error: null,
+      },
+    }));
+
+    const result = await fetchLiveCodeChefStats(handle, options);
+
+    if (result.success && result.data) {
+      const live = result.data;
+      setGrowthStats((prev) => {
+        const currentCodeChef = prev.codechef || initialGrowthStats.codechef;
+        const prevSolved = currentCodeChef.solved ?? 0;
+        const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : prevSolved;
+        const diffSolved = liveSolved - prevSolved;
+
+        return {
+          ...prev,
+          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          codechef: {
+            ...currentCodeChef,
+            rating: typeof live.rating === "number" ? live.rating : (currentCodeChef.rating ?? 0),
+            highestRating: typeof live.highestRating === "number" ? live.highestRating : (currentCodeChef.highestRating ?? 0),
+            stars: live.stars ?? currentCodeChef.stars,
+            starsCount: typeof live.starsCount === "number" ? live.starsCount : (currentCodeChef.starsCount ?? 1),
+            division: live.division || currentCodeChef.division,
+            globalRank: live.globalRank ?? currentCodeChef.globalRank,
+            countryRank: live.countryRank ?? currentCodeChef.countryRank,
+            solved: liveSolved,
+            name: live.name || currentCodeChef.name,
+            lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            loading: false,
+            error: null,
+          },
+        };
+      });
+      return { success: true, data: result.data };
+    } else {
+      setGrowthStats((prev) => ({
+        ...prev,
+        codechef: {
+          ...(prev.codechef || initialGrowthStats.codechef),
+          loading: false,
+          error: result.error || "Failed to sync CodeChef statistics.",
+        },
+      }));
+      return { success: false, error: result.error };
     }
   };
 
@@ -591,6 +671,8 @@ export function AppProvider({ children }) {
         logCodingActivity,
         setDailyGoal,
         useStreakFreeze,
+        rekindleStreak,
+        syncCodeChefData,
         dailyChallenge,
         completeDailyChallenge,
         calendarEvents,

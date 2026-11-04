@@ -1,24 +1,23 @@
 import {
   AlertTriangle,
   Award,
-  Calendar,
+  ChefHat,
   CheckCircle,
-  ExternalLink,
   Flame,
   GitCommit,
   Plus,
+  RotateCw,
   Search,
   Shield,
+  Sparkles,
   Target,
   Terminal,
-  Timer,
   Trophy,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { streakMilestones } from "../../shared/data/sampleData.js";
-import ContributionSkyline from "@/components/ui/contribution-skyline";
 
 export function GrowthPage() {
   const {
@@ -27,14 +26,12 @@ export function GrowthPage() {
     logCodingActivity,
     setDailyGoal,
     useStreakFreeze,
-    calendarEvents,
-    toggleCalendarReminder,
+    rekindleStreak,
+    syncCodeChefData,
   } = useAppContext();
 
   // Tab navigation
-  const [activeTab, setActiveTab] = useState("all"); // 'all' | 'practice' | 'contests' | 'hackathons'
-  const [searchQuery, setSearchQuery] = useState("");
-  const [platformFilter, setPlatformFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("all"); // 'all' | 'builds'
 
   // Practice History Filter State
   const [logSearchQuery, setLogSearchQuery] = useState("");
@@ -61,41 +58,10 @@ export function GrowthPage() {
     setLogNotes("");
   };
 
-  // Filtered contests and hackathons
-  const events = useMemo(() => {
-    return calendarEvents.filter((item) => {
-      // Type matching based on tab
-      if (activeTab === "contests" && item.type !== "Contest") return false;
-      if (activeTab === "hackathons" && item.type !== "Hackathon") return false;
-
-      // Platform / Organizer filter
-      if (
-        platformFilter !== "all" &&
-        item.organizer.toLowerCase() !== platformFilter.toLowerCase()
-      ) {
-        return false;
-      }
-
-      // Search matching
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = item.title.toLowerCase().includes(query);
-        const matchesOrganizer = item.organizer.toLowerCase().includes(query);
-        const matchesTags = item.tags?.some((t) => t.toLowerCase().includes(query));
-        return matchesTitle || matchesOrganizer || matchesTags;
-      }
-
-      return true;
-    });
-  }, [calendarEvents, activeTab, platformFilter, searchQuery]);
-
   const totalLeetCode = growthStats.leetcode.solved;
   const easyPct = Math.round((growthStats.leetcode.easy / totalLeetCode) * 100);
   const medPct = Math.round((growthStats.leetcode.medium / totalLeetCode) * 100);
   const hardPct = Math.round((growthStats.leetcode.hard / totalLeetCode) * 100);
-
-  const upcomingContestsCount = calendarEvents.filter((e) => e.type === "Contest").length;
-  const upcomingHackathonsCount = calendarEvents.filter((e) => e.type === "Hackathon").length;
 
   const monthlyActivity = useMemo(
     () => growthStats.monthlyActivity || [],
@@ -135,9 +101,9 @@ export function GrowthPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Developer Growth</p>
-          <h1>Coding Practice & Daily Builds</h1>
+          <h1>Individual Analytics &amp; Practice</h1>
           <p className="muted">
-            Track your coding streak, review daily automated builds, and discover upcoming contests.
+            Detailed performance analytics across LeetCode, CodeChef, Codeforces, and GitHub with habit logs.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -158,7 +124,7 @@ export function GrowthPage() {
           onClick={() => setActiveTab("all")}
           type="button"
         >
-          Overview & Practice
+          Individual Analytics
         </button>
         <button
           className={`tab-btn ${activeTab === "builds" ? "active" : ""}`}
@@ -167,21 +133,38 @@ export function GrowthPage() {
         >
           Daily Builds ({growthStats.autonomousProjects?.length || 0})
         </button>
-        <button
-          className={`tab-btn ${activeTab === "contests" ? "active" : ""}`}
-          onClick={() => setActiveTab("contests")}
-          type="button"
-        >
-          Coding Contests ({upcomingContestsCount})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "hackathons" ? "active" : ""}`}
-          onClick={() => setActiveTab("hackathons")}
-          type="button"
-        >
-          Hackathons & Builders ({upcomingHackathonsCount})
-        </button>
       </div>
+
+      {/* Bare Body / Onboarding State */}
+      {growthStats.totalProblemsSolved === 0 && (
+        <section
+          style={{
+            background: "linear-gradient(135deg, rgba(35, 78, 64, 0.25), rgba(56, 189, 248, 0.08))",
+            border: "1px dashed var(--color-border-subtle, rgba(255, 255, 255, 0.15))",
+            borderRadius: "var(--radius-lg)",
+            padding: "24px 28px",
+            marginBottom: 24,
+            textAlign: "center",
+          }}
+        >
+          <Sparkles size={28} color="#38bdf8" style={{ margin: "0 auto 10px" }} />
+          <h2 style={{ fontSize: 18, margin: "0 0 6px", color: "var(--color-text-title)" }}>
+            Welcome to Your Coding Rhythm Hub
+          </h2>
+          <p className="muted" style={{ maxWidth: 560, margin: "0 auto 16px", fontSize: 13 }}>
+            Connect your platforms (CodeChef, LeetCode, Codeforces, GitHub) to aggregate all your problem solving, ratings, and daily contribution skyline in one dashboard.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+            <button
+              className="button button-primary button-sm"
+              onClick={() => setIsLogModalOpen(true)}
+              type="button"
+            >
+              <Plus size={14} /> Log Your First Practice
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Streak Alert / Active State Banner */}
       {growthStats.streakBroken ? (
@@ -203,22 +186,30 @@ export function GrowthPage() {
             <AlertTriangle size={26} color="#ef4444" />
             <div>
               <strong style={{ color: "#f87171", display: "block", fontSize: 15 }}>
-                Streak at risk of resetting!
+                Streak Broken: Prior Inactivity
               </strong>
               <span style={{ fontSize: 13, color: "var(--color-text-main)" }}>
-                You have been inactive for more than a day. Use a Streak Freeze to protect your{" "}
-                <strong>{growthStats.currentStreak}-day</strong> record!
+                You were inactive for more than 24 hours. Use a Streak Freeze to salvage your record, or rekindle a fresh streak today!
               </span>
             </div>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
+            {(growthStats.streakFreezesAvailable ?? 0) > 0 && (
+              <button
+                className="button button-accent button-sm"
+                onClick={useStreakFreeze}
+                type="button"
+              >
+                <Shield size={14} /> Use Streak Freeze ({growthStats.streakFreezesAvailable ?? 0} left)
+              </button>
+            )}
             <button
-              className="button button-accent button-sm"
-              onClick={useStreakFreeze}
-              disabled={(growthStats.streakFreezesAvailable ?? 0) <= 0}
+              className="button button-secondary button-sm"
+              onClick={rekindleStreak}
               type="button"
+              style={{ borderColor: "#ef4444", color: "#fca5a5" }}
             >
-              <Shield size={14} /> Use Streak Freeze ({growthStats.streakFreezesAvailable ?? 0} left)
+              <Flame size={14} /> Rekindle Streak (Day 1)
             </button>
             <button
               className="button button-primary button-sm"
@@ -503,20 +494,74 @@ export function GrowthPage() {
                 Active repositories include opportunity-os, algorithms-ts, and streak.
               </p>
             </div>
-          </section>
 
-          {/* 3D Isometric Skyline Visualizer */}
-          <section style={{ marginBottom: 24 }}>
-            <ContributionSkyline
-              title={
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Flame size={18} color="#ea580c" />
-                  <strong style={{ fontSize: 16 }}>3D Contribution Skyline & Consistency Engine</strong>
+            {/* CodeChef Card */}
+            <div className="platform-card">
+              <div className="platform-header">
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <ChefHat size={18} color="#d97706" />
+                    <h3 style={{ margin: 0 }}>CodeChef</h3>
+                  </div>
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    @{profile.platformHandles?.codechef || "Not configured"}
+                  </span>
                 </div>
-              }
-              palette="github"
-              defaultView="3d"
-            />
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="tag" style={{ background: "rgba(217, 119, 6, 0.15)", color: "#d97706" }}>
+                    {growthStats.codechef?.stars || "1★"}
+                  </span>
+                  <span className="tag tag-research">{growthStats.codechef?.division || "Div 2"}</span>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
+                <div style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid var(--color-border)", padding: 12, borderRadius: "var(--radius-md)" }}>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>CURRENT RATING</span>
+                  <strong style={{ display: "block", fontSize: 20, color: "#d97706" }}>
+                    {growthStats.codechef?.rating ?? 0}
+                  </strong>
+                  <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>
+                    Peak: {growthStats.codechef?.highestRating ?? growthStats.codechef?.rating ?? 0}
+                  </span>
+                </div>
+                <div style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid var(--color-border)", padding: 12, borderRadius: "var(--radius-md)" }}>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>SOLVED</span>
+                  <strong style={{ display: "block", fontSize: 20, color: "#d97706" }}>
+                    {growthStats.codechef?.solved ?? 0}
+                  </strong>
+                  <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>
+                    Rank: {growthStats.codechef?.globalRank && growthStats.codechef.globalRank !== "—" && growthStats.codechef.globalRank !== "Inactive"
+                      ? `#${growthStats.codechef.globalRank}`
+                      : (growthStats.codechef?.globalRank || "—")}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08))" }}>
+                <span className="muted" style={{ fontSize: 11 }}>
+                  {growthStats.codechef?.lastSynced
+                    ? `Synced at ${growthStats.codechef.lastSynced}`
+                    : "Real-time sync available"}
+                </span>
+                <button
+                  type="button"
+                  className="button button-secondary button-sm"
+                  style={{ fontSize: 11, padding: "3px 8px" }}
+                  onClick={() => syncCodeChefData(profile.platformHandles?.codechef, { force: true })}
+                  disabled={growthStats.codechef?.loading}
+                >
+                  <RotateCw size={11} className={growthStats.codechef?.loading ? "animate-spin" : ""} />
+                  {growthStats.codechef?.loading ? "Syncing..." : "Sync Live"}
+                </button>
+              </div>
+
+              {growthStats.codechef?.error && (
+                <div style={{ marginTop: 8, fontSize: 11, color: "#ef4444" }}>
+                  ⚠️ {growthStats.codechef.error}
+                </div>
+              )}
+            </div>
           </section>
 
           {/* Multi-Platform Streak & Contributions Aggregator */}
@@ -600,6 +645,30 @@ export function GrowthPage() {
                   </strong>
                   <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
                     {growthStats.github.streak} day build streak
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "rgba(0, 0, 0, 0.02)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <div style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: "#fef3c7", color: "#b45309", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14 }}>
+                  CC
+                </div>
+                <div>
+                  <strong style={{ display: "block", fontSize: 16, color: "var(--color-text-title)" }}>
+                    {growthStats.codechef?.rating ?? 0} ({growthStats.codechef?.stars || "1★"})
+                  </strong>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                    {growthStats.codechef?.solved ?? 0} Solved · {growthStats.codechef?.division || "Div 2"}
                   </span>
                 </div>
               </div>
@@ -895,245 +964,6 @@ export function GrowthPage() {
         </section>
       )}
 
-      {/* CONTESTS & HACKATHONS SECTION (shown on All, Contests, or Hackathons tab) */}
-      <section style={{ marginTop: activeTab === "all" ? 12 : 0 }}>
-        <div className="panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">
-                {activeTab === "hackathons"
-                  ? "Build & Collaborate"
-                  : activeTab === "contests"
-                  ? "Competitive Arenas"
-                  : "Contests & Hackathons"}
-              </p>
-              <h2>
-                {activeTab === "hackathons"
-                  ? "Upcoming Hackathons"
-                  : activeTab === "contests"
-                  ? "Upcoming Coding Contests"
-                  : "Curated Events & Challenges"}
-              </h2>
-            </div>
-          </div>
-
-          {/* Search & Platform Filter Bar */}
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              flexWrap: "wrap",
-              alignItems: "center",
-              marginBottom: 20,
-            }}
-          >
-            <div
-              className="search-bar"
-              style={{
-                flex: "1 1 280px",
-                margin: 0,
-                background: "rgba(255, 255, 255, 0.04)",
-              }}
-            >
-              <Search size={18} />
-              <input
-                placeholder="Search contests by name, platform, or topic (e.g. Div. 2, Web3, Algorithms)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "var(--color-text-muted)",
-                    cursor: "pointer",
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span className="muted" style={{ fontSize: 13 }}>Platform:</span>
-              <select
-                className="form-select"
-                style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
-                value={platformFilter}
-                onChange={(e) => setPlatformFilter(e.target.value)}
-              >
-                <option value="all">All Platforms</option>
-                <option value="Codeforces">Codeforces</option>
-                <option value="LeetCode">LeetCode</option>
-                <option value="AtCoder">AtCoder</option>
-                <option value="GitHub">GitHub</option>
-                <option value="ETHGlobal">ETHGlobal</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Event Cards Grid */}
-          {events.length === 0 ? (
-            <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <Trophy size={36} color="var(--color-text-muted)" style={{ marginBottom: 12 }} />
-              <h3>No matching events found</h3>
-              <p className="muted">
-                Try clearing your search query or switching your platform filter.
-              </p>
-              <button
-                type="button"
-                className="button button-secondary button-sm"
-                onClick={() => {
-                  setSearchQuery("");
-                  setPlatformFilter("all");
-                }}
-                style={{ marginTop: 12 }}
-              >
-                Reset Filters
-              </button>
-            </div>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                gap: 16,
-              }}
-            >
-              {events.map((evt) => (
-                <article
-                  key={evt.id}
-                  style={{
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--radius-lg)",
-                    padding: 18,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    gap: 14,
-                    transition: "transform 0.15s ease, border-color 0.15s ease",
-                  }}
-                >
-                  <div>
-                    {/* Header: Platform & Type Tag */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 10,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: "var(--color-primary-light, #818cf8)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        {evt.organizer}
-                      </span>
-                      <span
-                        className={`tag ${
-                          evt.type === "Contest"
-                            ? "tag-research"
-                            : evt.type === "Hackathon"
-                            ? "tag-hackathon"
-                            : ""
-                        }`}
-                      >
-                        {evt.type}
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: 16, margin: "0 0 8px 0", color: "var(--color-text-title)" }}>
-                      {evt.title}
-                    </h3>
-
-                    <p style={{ fontSize: 13, color: "var(--color-text-main)", margin: "0 0 14px 0", lineHeight: 1.5 }}>
-                      {evt.description}
-                    </p>
-
-                    {/* Tags */}
-                    {evt.tags && evt.tags.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-                        {evt.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            style={{
-                              fontSize: 11,
-                              background: "rgba(0, 0, 0, 0.04)",
-                              padding: "2px 8px",
-                              borderRadius: 4,
-                              color: "var(--color-text-main)",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer Details: Date, Time & Action Link */}
-                  <div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 4,
-                        fontSize: 12,
-                        color: "var(--color-text-muted)",
-                        paddingTop: 12,
-                        borderTop: "1px solid rgba(255, 255, 255, 0.06)",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Calendar size={14} />
-                        <span>{evt.date}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Timer size={14} />
-                        <span>{evt.time}</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={() => toggleCalendarReminder(evt.id)}
-                        style={{ fontSize: 12 }}
-                      >
-                        {evt.isReminderSet ? "✓ Reminder set" : "+ Add reminder"}
-                      </button>
-
-                      <a
-                        href={evt.link}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="button button-secondary button-sm"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-                      >
-                        Join / Register <ExternalLink size={13} />
-                      </a>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* Log Activity Modal */}
       {isLogModalOpen && (
         <div className="modal-overlay" onClick={() => setIsLogModalOpen(false)}>
@@ -1166,6 +996,7 @@ export function GrowthPage() {
                   >
                     <option value="LeetCode">LeetCode (Algorithm practice)</option>
                     <option value="Codeforces">Codeforces (Contest round)</option>
+                    <option value="CodeChef">CodeChef (Star practice / Contest)</option>
                     <option value="AtCoder">AtCoder (Contest practice)</option>
                     <option value="GitHub">GitHub (Build / Project commits)</option>
                     <option value="HackerRank">HackerRank</option>
