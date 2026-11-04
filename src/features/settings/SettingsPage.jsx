@@ -2,7 +2,6 @@ import {
   Check,
   Code2,
   Download,
-  LogIn,
   LogOut,
   Plus,
   RefreshCw,
@@ -12,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { FlowButton } from "../../components/ui/FlowButton.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 
 export function SettingsPage() {
@@ -34,9 +34,11 @@ export function SettingsPage() {
   const [gradYear, setGradYear] = useState(profile.gradYear);
   const [resumeSummary, setResumeSummary] = useState(profile.resumeSummary);
 
-  const [leetcode, setLeetcode] = useState(profile.platformHandles.leetcode);
-  const [codeforces, setCodeforces] = useState(profile.platformHandles.codeforces);
-  const [github, setGithub] = useState(profile.platformHandles.github);
+  const [leetcode, setLeetcode] = useState(profile.platformHandles?.leetcode ?? "");
+  const [codeforces, setCodeforces] = useState(profile.platformHandles?.codeforces ?? "");
+  const [codechef, setCodechef] = useState(profile.platformHandles?.codechef ?? "");
+  const [geeksforgeeks, setGeeksforgeeks] = useState(profile.platformHandles?.geeksforgeeks ?? "");
+  const [github, setGithub] = useState(profile.platformHandles?.github ?? "");
 
 
   const [newSkillInput, setNewSkillInput] = useState("");
@@ -54,6 +56,8 @@ export function SettingsPage() {
       platformHandles: {
         leetcode,
         codeforces,
+        codechef,
+        geeksforgeeks,
         github,
       },
     });
@@ -230,6 +234,26 @@ export function SettingsPage() {
               </div>
 
               <div className="form-group">
+                <label htmlFor="codechefHandle">CodeChef Username</label>
+                <input
+                  id="codechefHandle"
+                  className="form-input"
+                  value={codechef}
+                  onChange={(e) => setCodechef(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="gfgHandle">GeeksforGeeks Username</label>
+                <input
+                  id="gfgHandle"
+                  className="form-input"
+                  value={geeksforgeeks}
+                  onChange={(e) => setGeeksforgeeks(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
                 <label htmlFor="ghHandle">GitHub Username</label>
                 <input
                   id="ghHandle"
@@ -302,13 +326,7 @@ export function SettingsPage() {
                 <p className="muted" style={{ fontSize: 12.5 }}>
                   Sign in to keep your profile and applications with your account.
                 </p>
-                <button
-                  className="button button-accent button-sm"
-                  onClick={openAuthPage}
-                  type="button"
-                >
-                  <LogIn size={15} /> Sign In / Register Account
-                </button>
+                <FlowButton text="Sign In / Register Account" onClick={openAuthPage} className="settings-auth-flow" />
               </div>
             )}
           </div>

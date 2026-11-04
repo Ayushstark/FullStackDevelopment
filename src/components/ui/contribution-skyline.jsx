@@ -367,7 +367,6 @@ export default function ContributionSkyline({
   maxHeight = 620,
   zoom = 1,
   defaultYaw = 45,
-  statScale = 1,
   duration = 1300,
   weekStart = 0,
   orbit = true,
@@ -400,7 +399,6 @@ export default function ContributionSkyline({
     const p = resolvePalette(palette, false);
     return { dark: false, swatches: ["#ebedf0", ...p], accent: p[3] };
   });
-  const [width, setWidth] = React.useState(0);
   const [active, setActive] = React.useState(-1);
   const [legendLevel, setLegendLevel] = React.useState(-1);
   const [announce, setAnnounce] = React.useState("");
@@ -435,7 +433,6 @@ export default function ContributionSkyline({
     onCellClick,
     target: view === "3d" ? 1 : 0,
     setActive,
-    setWidth,
     setTheme,
     setAnnounce,
     describe,
@@ -454,7 +451,6 @@ export default function ContributionSkyline({
       onCellClick,
       target: view === "3d" ? 1 : 0,
       setActive,
-      setWidth,
       setTheme,
       setAnnounce,
       describe,
@@ -612,7 +608,7 @@ export default function ContributionSkyline({
       gutter = W < 520 ? 0 : labelW;
       dpr = Math.min(2, window.devicePixelRatio || 1);
       const b2 = extent(camera(0, 0, 0, cfg.current.defaultYaw), 0, true);
-      H2 = 20 + 4 + ((b2.maxy - b2.miny) / (b2.maxx - b2.minx)) * (W - gutter - 4);
+      H2 = Math.min(20 + 4 + ((b2.maxy - b2.miny) / (b2.maxx - b2.minx)) * (W - gutter - 4), maxHeight);
       const b3 = extent(camera(1, 0, 0, cfg.current.defaultYaw), 1, true);
       const natural = ((b3.maxy - b3.miny) / (b3.maxx - b3.minx)) * (W - 40) + 40;
       const viewportCap = Math.max(240, window.innerHeight - 440);
@@ -623,7 +619,6 @@ export default function ContributionSkyline({
       canvas.style.width = W + "px";
       canvas.style.height = Hmax + "px";
       lastH = -1;
-      cfg.current.setWidth(W);
       draw();
     };
 
@@ -1107,15 +1102,13 @@ export default function ContributionSkyline({
     return f.format(dayMs(a)) + " — " + f.format(dayMs(b));
   };
   const is3d = view === "3d";
-  const corners = showStats && width >= 560;
-  const bigSize = Math.round(Math.max(30, Math.min(56, width * 0.058)) * statScale);
   const statBlocks = [
     { label: "1 year total", value: nf.format(stats.total), unit: noun(stats.total), sub: range(stats.first, stats.last, true) },
     { label: "Busiest day", value: nf.format(stats.busiest.count), unit: noun(stats.busiest.count), sub: stats.busiest.date ? df.format(dayMs(stats.busiest.date)) : "—" },
     { label: "Longest streak", value: nf.format(stats.longest.days), unit: stats.longest.days === 1 ? "day" : "days", sub: range(stats.longest.start, stats.longest.end) },
     { label: "Current streak", value: nf.format(stats.current.days), unit: stats.current.days === 1 ? "day" : "days", sub: range(stats.current.start, stats.current.end) },
   ];
-  const showRow = showStats && !(is3d && corners);
+  const showRow = showStats;
   const ease = "cubic-bezier(0.65, 0, 0.35, 1)";
   const levelNames = ["No " + plural, "Light", "Moderate", "Heavy", "Heaviest"];
 
@@ -1196,38 +1189,6 @@ export default function ContributionSkyline({
               style={{ maxWidth: "none", touchAction: is3d && orbit ? "pan-y" : "auto" }}
             />
 
-            {showStats && corners && (
-              <>
-                <div
-                  aria-hidden={!is3d}
-                  className="pointer-events-none absolute top-1 right-1 flex flex-col items-end gap-5 transition-[opacity,transform] motion-reduce:transition-none"
-                  style={{
-                    opacity: is3d ? 1 : 0,
-                    transform: is3d ? "translateY(0)" : "translateY(-10px)",
-                    transitionDuration: is3d ? "600ms" : "300ms",
-                    transitionDelay: is3d ? Math.round(duration * 0.55) + "ms" : "0ms",
-                    transitionTimingFunction: ease,
-                  }}
-                >
-                  <Stat {...statBlocks[0]} accent={theme.accent} size={bigSize} align="end" />
-                  <Stat {...statBlocks[1]} accent={theme.accent} size={bigSize} align="end" />
-                </div>
-                <div
-                  aria-hidden={!is3d}
-                  className="pointer-events-none absolute bottom-1 left-1 flex flex-col items-start gap-5 transition-[opacity,transform] motion-reduce:transition-none"
-                  style={{
-                    opacity: is3d ? 1 : 0,
-                    transform: is3d ? "translateY(0)" : "translateY(10px)",
-                    transitionDuration: is3d ? "600ms" : "300ms",
-                    transitionDelay: is3d ? Math.round(duration * 0.65) + "ms" : "0ms",
-                    transitionTimingFunction: ease,
-                  }}
-                >
-                  <Stat {...statBlocks[2]} accent={theme.accent} size={bigSize} align="start" />
-                  <Stat {...statBlocks[3]} accent={theme.accent} size={bigSize} align="start" />
-                </div>
-              </>
-            )}
           </div>
 
           <div
@@ -1277,7 +1238,7 @@ export default function ContributionSkyline({
             }}
           >
             <div className="min-h-0 overflow-hidden">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-4 px-3 pt-4 pb-1 sm:px-4 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4 px-3 pt-2 pb-0 sm:px-4 md:grid-cols-4">
                 {statBlocks.map((b) => (
                   <Stat key={b.label} {...b} accent={theme.accent} size={28} align="stack" />
                 ))}
@@ -1286,7 +1247,7 @@ export default function ContributionSkyline({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 pt-3 pb-3 text-[12px] sm:px-4" style={{ color: MUTED }}>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 pt-1 pb-2 text-[12px] sm:px-4" style={{ color: MUTED }}>
           {footer === undefined ? (
             <span className="relative grid flex-1">
               {hints.map((h) => (

@@ -39,6 +39,8 @@ const defaultData = {
       platformHandles: {
         leetcode: "alex_shah",
         codeforces: "alex_coder",
+        codechef: "",
+        geeksforgeeks: "",
         github: "alexshah-dev",
       },
     },
@@ -89,7 +91,7 @@ export const fallbackStore = {
       targetRoles: ["Software Engineer", "Full Stack Developer"],
       skills: ["React", "JavaScript", "HTML", "CSS", "Node.js", "MongoDB"],
       resumeSummary: "Aspiring software engineer eager to build modern scalable applications.",
-      platformHandles: { leetcode: "", codeforces: "", github: "" },
+      platformHandles: { leetcode: "", codeforces: "", codechef: "", geeksforgeeks: "", github: "" },
       ...userData,
     };
     db.users.push(newUser);

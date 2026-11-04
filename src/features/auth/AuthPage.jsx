@@ -1,11 +1,9 @@
 import { useState } from "react";
 import {
   Activity,
-  ArrowRight,
   CheckCircle2,
   Eye,
   EyeOff,
-  LoaderCircle,
   LockKeyhole,
   Mail,
   UserRound,
@@ -195,12 +193,13 @@ export function AuthPage({ onClose }) {
               </button>
             </FormField>
 
-            <button className="auth-submit" type="submit" disabled={loading || success}>
-              {loading ? <LoaderCircle size={17} className="auth-spinner" /> : null}
-              <span>{loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}</span>
-              {!loading && <ArrowRight size={17} aria-hidden="true" />}
-              <span className="auth-submit-glow" aria-hidden="true" />
-            </button>
+            <FlowButton
+              text={loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+              className="auth-flow-submit"
+              type="submit"
+              disabled={loading || success}
+              aria-busy={loading}
+            />
           </form>
 
           <p className="auth-terms">
