@@ -5,11 +5,15 @@ import {
   BookOpen,
   ChefHat,
   Code2,
+  Download,
   ExternalLink,
+  FileSpreadsheet,
+  FileText,
   Flame,
   GitCommit,
   Plus,
   RotateCw,
+  Search,
   Shield,
   Terminal,
   TrendingUp,
@@ -18,6 +22,7 @@ import {
 import { useMemo, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { streakMilestones } from "../../shared/data/sampleData.js";
+import { exportLogsAsCsv, exportLogsAsJson } from "./utils/exportLogs.js";
 
 export function GrowthPage() {
   const {
@@ -35,6 +40,11 @@ export function GrowthPage() {
   const [timeRange, setTimeRange] = useState("Past 24 Hours");
   const [expandedPlatform, setExpandedPlatform] = useState("geeksforgeeks");
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+
+  // Practice History Filter & Search State
+  const [logSearchQuery, setLogSearchQuery] = useState("");
+  const [logPlatformFilter, setLogPlatformFilter] = useState("all");
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   // Form State for Log Activity
   const [logPlatform, setLogPlatform] = useState("LeetCode");
@@ -96,6 +106,23 @@ export function GrowthPage() {
     () => (monthlyActivity.length > 0 ? Math.round((activeDaysCount / monthlyActivity.length) * 100) : 86),
     [activeDaysCount, monthlyActivity]
   );
+
+  const filteredLogs = useMemo(() => {
+    return (growthStats.recentLogs || []).filter((log) => {
+      if (logPlatformFilter !== "all" && (log.platform || "").toLowerCase() !== logPlatformFilter.toLowerCase()) {
+        return false;
+      }
+      if (logSearchQuery.trim()) {
+        const q = logSearchQuery.toLowerCase();
+        const matchesNotes = log.notes && log.notes.toLowerCase().includes(q);
+        const matchesPlatform = log.platform && log.platform.toLowerCase().includes(q);
+        const matchesCategory = log.category && log.category.toLowerCase().includes(q);
+        const matchesDifficulty = log.difficulty && log.difficulty.toLowerCase().includes(q);
+        return matchesNotes || matchesPlatform || matchesCategory || matchesDifficulty;
+      }
+      return true;
+    });
+  }, [growthStats.recentLogs, logPlatformFilter, logSearchQuery]);
 
   const toggleExpand = (platformKey) => {
     setExpandedPlatform((prev) => (prev === platformKey ? null : platformKey));
@@ -1064,6 +1091,284 @@ export function GrowthPage() {
               </article>
             );
           })}
+        </div>
+      </section>
+
+      {/* PRACTICE HISTORY & EXPORT FEED */}
+      <section className="milestones-section" style={{ marginTop: 24, marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+          <div>
+            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: "#38bdf8", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Activity Feed
+            </p>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 750, color: "#f8fafc", letterSpacing: "-0.02em" }}>
+              Practice History Logs
+            </h2>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#8da0aa" }}>
+              Review recent problem sessions, filter by platform, or export your logs for portfolio and mentor reviews.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {/* Search Input */}
+            <div style={{ position: "relative" }}>
+              <Search
+                size={14}
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#64748b",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search notes, topics..."
+                value={logSearchQuery}
+                onChange={(e) => setLogSearchQuery(e.target.value)}
+                style={{
+                  background: "rgba(13, 17, 23, 0.75)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: 8,
+                  padding: "6px 12px 6px 30px",
+                  fontSize: 12,
+                  color: "#f8fafc",
+                  outline: "none",
+                  width: 180,
+                }}
+              />
+            </div>
+
+            {/* Platform Filter */}
+            <select
+              value={logPlatformFilter}
+              onChange={(e) => setLogPlatformFilter(e.target.value)}
+              style={{
+                background: "rgba(13, 17, 23, 0.75)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                borderRadius: 8,
+                padding: "6px 10px",
+                fontSize: 12,
+                color: "#f8fafc",
+                outline: "none",
+                cursor: "pointer",
+              }}
+              aria-label="Filter practice history by platform"
+            >
+              <option value="all">All Platforms</option>
+              <option value="LeetCode">LeetCode</option>
+              <option value="Codeforces">Codeforces</option>
+              <option value="CodeChef">CodeChef</option>
+              <option value="GeeksforGeeks">GeeksforGeeks</option>
+              <option value="GitHub">GitHub</option>
+              <option value="AtCoder">AtCoder</option>
+            </select>
+
+            {/* Export Dropdown */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => setIsExportMenuOpen((prev) => !prev)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 12px",
+                  background: "rgba(56, 189, 248, 0.15)",
+                  border: "1px solid rgba(56, 189, 248, 0.35)",
+                  borderRadius: 8,
+                  color: "#38bdf8",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <Download size={13} /> Export Report
+              </button>
+
+              {isExportMenuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    marginTop: 6,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    borderRadius: 8,
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+                    zIndex: 20,
+                    minWidth: 150,
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportLogsAsCsv(filteredLogs);
+                      setIsExportMenuOpen(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "100%",
+                      padding: "8px 12px",
+                      background: "none",
+                      border: "none",
+                      color: "#f8fafc",
+                      fontSize: 12,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                  >
+                    <FileSpreadsheet size={13} color="#22c55e" /> Export as CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportLogsAsJson(filteredLogs);
+                      setIsExportMenuOpen(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "100%",
+                      padding: "8px 12px",
+                      background: "none",
+                      border: "none",
+                      color: "#f8fafc",
+                      fontSize: 12,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                  >
+                    <FileText size={13} color="#38bdf8" /> Export as JSON
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Logs List Cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filteredLogs.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "32px 16px",
+                background: "rgba(13, 17, 23, 0.5)",
+                border: "1px dashed rgba(255, 255, 255, 0.15)",
+                borderRadius: 12,
+                color: "#8da0aa",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 13 }}>No practice logs match your search or filter criteria.</p>
+              {(logSearchQuery || logPlatformFilter !== "all") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogSearchQuery("");
+                    setLogPlatformFilter("all");
+                  }}
+                  style={{
+                    marginTop: 10,
+                    background: "rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    borderRadius: 6,
+                    padding: "4px 12px",
+                    color: "#f8fafc",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            filteredLogs.map((log, index) => (
+              <div
+                key={index}
+                style={{
+                  padding: "12px 16px",
+                  background: "rgba(13, 17, 23, 0.65)",
+                  backdropFilter: "blur(8px)",
+                  borderRadius: 10,
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <strong style={{ fontSize: 13, color: "#f8fafc" }}>
+                      {log.platform} · {log.problemsSolved} Solved
+                    </strong>
+                    {log.difficulty && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "2px 7px",
+                          borderRadius: 999,
+                          background:
+                            log.difficulty === "Easy"
+                              ? "rgba(34, 197, 94, 0.15)"
+                              : log.difficulty === "Hard"
+                              ? "rgba(239, 68, 68, 0.15)"
+                              : "rgba(245, 158, 11, 0.15)",
+                          color:
+                            log.difficulty === "Easy"
+                              ? "#4ade80"
+                              : log.difficulty === "Hard"
+                              ? "#f87171"
+                              : "#fbbf24",
+                          border: `1px solid ${
+                            log.difficulty === "Easy"
+                              ? "rgba(34, 197, 94, 0.3)"
+                              : log.difficulty === "Hard"
+                              ? "rgba(239, 68, 68, 0.3)"
+                              : "rgba(245, 158, 11, 0.3)"
+                          }`,
+                        }}
+                      >
+                        {log.difficulty}
+                      </span>
+                    )}
+                    {log.category && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          padding: "2px 7px",
+                          borderRadius: 999,
+                          background: "rgba(255, 255, 255, 0.06)",
+                          color: "#94a3b8",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                        }}
+                      >
+                        {log.category}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, color: "#8da0aa" }}>{log.date}</span>
+                </div>
+                {log.notes && (
+                  <p style={{ margin: 0, fontSize: 12, color: "#cbd5e1", lineHeight: 1.5 }}>
+                    {log.notes}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </section>
 
