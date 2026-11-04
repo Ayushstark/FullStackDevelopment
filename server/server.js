@@ -11,6 +11,8 @@ import { authMiddleware, JWT_SECRET } from "./middleware/auth.js";
 import { fallbackStore } from "./fallbackStore.js";
 import { getCodeChefProfile } from "./services/codechefService.js";
 import { getGfgProfile } from "./services/gfgService.js";
+import { getLeetCodeProfile } from "./services/leetcodeService.js";
+import { getGitHubProfile } from "./services/githubService.js";
 
 dotenv.config();
 
@@ -377,6 +379,44 @@ app.get("/api/platforms/gfg/:handle", apiLimiter, async (req, res) => {
   } catch (err) {
     console.error("GeeksforGeeks profile retrieval error:", err);
     res.status(500).json({ success: false, error: "Failed to fetch GeeksforGeeks statistics." });
+  }
+});
+
+// Real-time LeetCode profile retrieval endpoint
+app.get("/api/platforms/leetcode/:handle", apiLimiter, async (req, res) => {
+  try {
+    const { handle } = req.params;
+    const forceRefresh = req.query.force === "true";
+    const profileData = await getLeetCodeProfile(handle, { forceRefresh });
+
+    if (!profileData.success) {
+      const isNotFound = profileData.error && profileData.error.toLowerCase().includes("not found");
+      return res.status(isNotFound ? 404 : 400).json(profileData);
+    }
+
+    res.json(profileData);
+  } catch (err) {
+    console.error("LeetCode profile retrieval error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch LeetCode statistics." });
+  }
+});
+
+// Real-time GitHub profile retrieval endpoint
+app.get("/api/platforms/github/:handle", apiLimiter, async (req, res) => {
+  try {
+    const { handle } = req.params;
+    const forceRefresh = req.query.force === "true";
+    const profileData = await getGitHubProfile(handle, { forceRefresh });
+
+    if (!profileData.success) {
+      const isNotFound = profileData.error && profileData.error.toLowerCase().includes("not found");
+      return res.status(isNotFound ? 404 : 400).json(profileData);
+    }
+
+    res.json(profileData);
+  } catch (err) {
+    console.error("GitHub profile retrieval error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch GitHub statistics." });
   }
 });
 

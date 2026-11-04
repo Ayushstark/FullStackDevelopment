@@ -40,7 +40,7 @@ const defaultData = {
         leetcode: "alex_shah",
         codeforces: "alex_coder",
         codechef: "alex_chef",
-        geeksforgeeks: "",
+        geeksforgeeks: "alex_gfg",
         github: "alexshah-dev",
       },
     },

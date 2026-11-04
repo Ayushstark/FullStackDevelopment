@@ -219,6 +219,7 @@ export function CalendarPage() {
             <option value="Codeforces">Codeforces</option>
             <option value="LeetCode">LeetCode</option>
             <option value="CodeChef">CodeChef</option>
+            <option value="GeeksforGeeks">GeeksforGeeks</option>
             <option value="AtCoder">AtCoder</option>
             <option value="GitHub">GitHub</option>
             <option value="ETHGlobal">ETHGlobal</option>

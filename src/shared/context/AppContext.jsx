@@ -18,6 +18,8 @@ import {
 } from "../services/authService.js";
 import { fetchLiveCodeChefStats } from "../services/codechefService.js";
 import { fetchLiveGfgStats } from "../services/gfgService.js";
+import { fetchLiveLeetCodeStats } from "../services/leetcodeService.js";
+import { fetchLiveGitHubStats } from "../services/githubService.js";
 
 const STORAGE_KEYS = {
   PROFILE: "opportunity_os_profile_v1",
@@ -132,6 +134,7 @@ export function AppProvider({ children }) {
       return {
         ...loaded,
         codechef: loaded.codechef || initialGrowthStats.codechef,
+        gfg: loaded.gfg || initialGrowthStats.gfg,
         streakAtRisk: status.streakAtRisk,
         streakBroken: status.isBroken,
         streakFreezesAvailable: loaded.streakFreezesAvailable ?? 2,
@@ -426,6 +429,14 @@ export function AppProvider({ children }) {
             }
           : prev.codechef;
 
+      const updatedGfg =
+        platform === "GeeksforGeeks" || platform === "GFG"
+          ? {
+              ...prev.gfg,
+              solved: (prev.gfg?.solved || 0) + problemsSolved,
+            }
+          : prev.gfg;
+
       const updatedGithub =
         platform === "GitHub"
           ? {
@@ -484,6 +495,7 @@ export function AppProvider({ children }) {
         leetcode: updatedLeetCode,
         codeforces: updatedCodeforces,
         codechef: updatedCodechef,
+        gfg: updatedGfg,
         github: updatedGithub,
         difficultyTotals,
         weeklyActivity: updatedWeekly,
@@ -673,6 +685,125 @@ export function AppProvider({ children }) {
     }
   };
 
+  // Real-time LeetCode Data Synchronization
+  const syncLeetCodeData = async (handleToUse, options = { force: true }) => {
+    const handle = handleToUse || profile.platformHandles?.leetcode;
+    if (!handle) {
+      return { success: false, error: "No LeetCode handle configured." };
+    }
+
+    setGrowthStats((prev) => ({
+      ...prev,
+      leetcode: {
+        ...(prev.leetcode || initialGrowthStats.leetcode),
+        loading: true,
+        error: null,
+      },
+    }));
+
+    const result = await fetchLiveLeetCodeStats(handle, options);
+
+    if (result.success && result.data) {
+      const live = result.data;
+      setGrowthStats((prev) => {
+        const currentLC = prev.leetcode || initialGrowthStats.leetcode;
+        const prevSolved = currentLC.solved ?? 0;
+        const liveSolved = typeof live.solved === "number" ? live.solved : prevSolved;
+        const diffSolved = liveSolved - prevSolved;
+
+        const updatedLC = {
+          ...currentLC,
+          solved: liveSolved,
+          easy: typeof live.easy === "number" ? live.easy : (currentLC.easy ?? 0),
+          medium: typeof live.medium === "number" ? live.medium : (currentLC.medium ?? 0),
+          hard: typeof live.hard === "number" ? live.hard : (currentLC.hard ?? 0),
+          ranking: live.ranking ?? currentLC.ranking,
+          name: live.name || currentLC.name,
+          avatar: live.avatar || currentLC.avatar,
+          contestRating: live.contestRating ?? currentLC.contestRating,
+          contestRank: live.contestRank ?? currentLC.contestRank,
+          contestBadge: live.contestBadge ?? currentLC.contestBadge,
+          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          loading: false,
+          error: null,
+        };
+
+        return {
+          ...prev,
+          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          leetcode: updatedLC,
+        };
+      });
+      return { success: true, data: result.data };
+    } else {
+      setGrowthStats((prev) => ({
+        ...prev,
+        leetcode: {
+          ...(prev.leetcode || initialGrowthStats.leetcode),
+          loading: false,
+          error: result.error || "Failed to sync LeetCode statistics.",
+        },
+      }));
+      return { success: false, error: result.error };
+    }
+  };
+
+  // Real-time GitHub Data Synchronization
+  const syncGitHubData = async (handleToUse, options = { force: true }) => {
+    const handle = handleToUse || profile.platformHandles?.github;
+    if (!handle) {
+      return { success: false, error: "No GitHub handle configured." };
+    }
+
+    setGrowthStats((prev) => ({
+      ...prev,
+      github: {
+        ...(prev.github || initialGrowthStats.github),
+        loading: true,
+        error: null,
+      },
+    }));
+
+    const result = await fetchLiveGitHubStats(handle, options);
+
+    if (result.success && result.data) {
+      const live = result.data;
+      setGrowthStats((prev) => {
+        const currentGH = prev.github || initialGrowthStats.github;
+        const updatedGH = {
+          ...currentGH,
+          contributions: typeof live.contributions === "number" ? live.contributions : (currentGH.contributions ?? 0),
+          repos: typeof live.repos === "number" ? live.repos : (currentGH.repos ?? 0),
+          streak: typeof live.streak === "number" ? live.streak : (currentGH.streak ?? 0),
+          longestStreak: typeof live.longestStreak === "number" ? live.longestStreak : (currentGH.longestStreak ?? 0),
+          followers: live.followers ?? currentGH.followers,
+          name: live.name || currentGH.name,
+          avatar: live.avatar || currentGH.avatar,
+          bio: live.bio || currentGH.bio,
+          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          loading: false,
+          error: null,
+        };
+
+        return {
+          ...prev,
+          github: updatedGH,
+        };
+      });
+      return { success: true, data: result.data };
+    } else {
+      setGrowthStats((prev) => ({
+        ...prev,
+        github: {
+          ...(prev.github || initialGrowthStats.github),
+          loading: false,
+          error: result.error || "Failed to sync GitHub statistics.",
+        },
+      }));
+      return { success: false, error: result.error };
+    }
+  };
+
   // Calendar actions
   const toggleCalendarReminder = (id) => {
     setCalendarEvents((prev) =>
@@ -749,6 +880,8 @@ export function AppProvider({ children }) {
         rekindleStreak,
         syncCodeChefData,
         syncGfgData,
+        syncLeetCodeData,
+        syncGitHubData,
         dailyChallenge,
         completeDailyChallenge,
         calendarEvents,
