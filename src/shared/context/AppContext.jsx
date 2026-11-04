@@ -86,7 +86,12 @@ export function AppProvider({ children }) {
 
   // Authentication State
   const [user, setUser] = useState(() => getStoredUser());
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authReturnPage, setAuthReturnPage] = useState("overview");
+  const openAuthPage = () => {
+    setAuthReturnPage(activePage === "auth" ? "overview" : activePage);
+    setActivePage("auth");
+  };
+  const closeAuthPage = () => setActivePage(authReturnPage);
 
   const [profile, setProfile] = useState(() => {
     const stored = getStoredUser();
@@ -535,9 +540,8 @@ export function AppProvider({ children }) {
         activePage,
         setActivePage,
         user,
-        isAuthModalOpen,
-        openAuthModal: () => setIsAuthModalOpen(true),
-        closeAuthModal: () => setIsAuthModalOpen(false),
+        openAuthPage,
+        closeAuthPage,
         login,
         register,
         logout,
