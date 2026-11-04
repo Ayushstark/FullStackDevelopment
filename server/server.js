@@ -10,6 +10,7 @@ import { GrowthLog } from "./models/GrowthLog.js";
 import { authMiddleware, JWT_SECRET } from "./middleware/auth.js";
 import { fallbackStore } from "./fallbackStore.js";
 import { getCodeChefProfile } from "./services/codechefService.js";
+import { getGfgProfile } from "./services/gfgService.js";
 
 dotenv.config();
 
@@ -249,7 +250,7 @@ app.put("/api/user/profile", apiLimiter, authMiddleware, async (req, res) => {
 
     if (body.platformHandles && typeof body.platformHandles === "object" && !Array.isArray(body.platformHandles)) {
       const handles = {};
-      for (const field of ["leetcode", "codeforces", "codechef", "geeksforgeeks", "github"]) {
+      for (const field of ["leetcode", "codeforces", "codechef", "geeksforgeeks", "gfg", "github"]) {
         if (typeof body.platformHandles[field] === "string") {
           handles[field] = body.platformHandles[field].trim();
         }
@@ -357,6 +358,25 @@ app.get("/api/platforms/codechef/:handle", apiLimiter, async (req, res) => {
   } catch (err) {
     console.error("CodeChef profile retrieval error:", err);
     res.status(500).json({ success: false, error: "Failed to fetch CodeChef statistics." });
+  }
+});
+
+// Real-time GeeksforGeeks profile retrieval endpoint
+app.get("/api/platforms/gfg/:handle", apiLimiter, async (req, res) => {
+  try {
+    const { handle } = req.params;
+    const forceRefresh = req.query.force === "true";
+    const profileData = await getGfgProfile(handle, { forceRefresh });
+
+    if (!profileData.success) {
+      const isNotFound = profileData.error && profileData.error.toLowerCase().includes("not found");
+      return res.status(isNotFound ? 404 : 400).json(profileData);
+    }
+
+    res.json(profileData);
+  } catch (err) {
+    console.error("GeeksforGeeks profile retrieval error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch GeeksforGeeks statistics." });
   }
 });
 
