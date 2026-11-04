@@ -3,6 +3,7 @@ import "./FlowButton.css";
 
 export function FlowButton({
   text = "Modern Button",
+  icon: Icon = ArrowRight,
   onClick,
   type = "button",
   className = "",
@@ -15,10 +16,10 @@ export function FlowButton({
       onClick={onClick}
       type={type}
     >
-      <ArrowRight className="flow-button-arrow flow-button-arrow-left" aria-hidden="true" />
+      <Icon className="flow-button-arrow flow-button-arrow-left" aria-hidden="true" />
       <span className="flow-button-label">{text}</span>
       <span className="flow-button-circle" aria-hidden="true" />
-      <ArrowRight className="flow-button-arrow flow-button-arrow-right" aria-hidden="true" />
+      <Icon className="flow-button-arrow flow-button-arrow-right" aria-hidden="true" />
     </button>
   );
 }

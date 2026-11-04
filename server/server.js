@@ -248,7 +248,7 @@ app.put("/api/user/profile", apiLimiter, authMiddleware, async (req, res) => {
 
     if (body.platformHandles && typeof body.platformHandles === "object" && !Array.isArray(body.platformHandles)) {
       const handles = {};
-      for (const field of ["leetcode", "codeforces", "github"]) {
+      for (const field of ["leetcode", "codeforces", "codechef", "geeksforgeeks", "github"]) {
         if (typeof body.platformHandles[field] === "string") {
           handles[field] = body.platformHandles[field].trim();
         }

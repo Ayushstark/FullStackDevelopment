@@ -1,5 +1,6 @@
-import { Activity, LogIn, LogOut, User } from "lucide-react";
+import { Activity, LogOut, UserRound } from "lucide-react";
 import PillNav from "../../components/ui/PillNav.jsx";
+import { FlowButton } from "../../components/ui/FlowButton.jsx";
 import GridScan from "../../components/ui/GridScan.jsx";
 import { useAppContext } from "../context/AppContext.jsx";
 
@@ -110,9 +111,7 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
               </button>
             </div>
           ) : (
-            <button className="button button-accent button-sm" onClick={openAuthPage} type="button">
-              <LogIn size={15} /> Sign In / Register
-            </button>
+            <FlowButton text="Sign In / Register" icon={UserRound} onClick={openAuthPage} className="nav-auth-flow" />
           )}
         </div>
       </header>
