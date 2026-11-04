@@ -38,6 +38,14 @@ const dayMs = (v) => {
   return Date.UTC(v.getFullYear(), v.getMonth(), v.getDate());
 };
 
+const PLATFORM_LABELS = {
+  leetcode: "LeetCode problems",
+  codeforces: "Codeforces problems",
+  codechef: "CodeChef problems",
+  geeksforgeeks: "GeeksforGeeks problems",
+  github: "GitHub public events",
+};
+
 /** mulberry32 — small, fast, deterministic. */
 const rng = (seed) => {
   let a = seed >>> 0;
@@ -94,17 +102,28 @@ const levelOf = (count, busy) =>
 /**
  * The grid: columns are weeks, rows are weekdays (row 0 = `weekStart`).
  */
-const buildGrid = (data, endMs, weekStart = 0) => {
+const buildGrid = (data, endMs, weekStart = 0, rangeDays = 365) => {
   const counts = new Map();
+  const platformsByDate = new Map();
   for (const d of data) {
     if (!d || typeof d.date !== "string") continue;
     const ms = dayMs(d.date);
-    const c = Number(d.count);
+    const platformEntries = Object.entries(d.platforms ?? {})
+      .map(([platform, count]) => [platform, Number(count)])
+      .filter(([, count]) => Number.isFinite(count) && count > 0);
+    const c = Number(d.count ?? platformEntries.reduce((sum, [, count]) => sum + count, 0));
     if (!Number.isFinite(ms) || !(c > 0) || !Number.isFinite(c)) continue;
     const k = toKey(ms);
     counts.set(k, (counts.get(k) ?? 0) + c);
+    if (platformEntries.length) {
+      const platformCounts = platformsByDate.get(k) ?? {};
+      for (const [platform, count] of platformEntries) {
+        platformCounts[platform] = (platformCounts[platform] ?? 0) + count;
+      }
+      platformsByDate.set(k, platformCounts);
+    }
   }
-  let start = endMs - 364 * DAY_MS;
+  let start = endMs - (rangeDays - 1) * DAY_MS;
   start -= ((new Date(start).getUTCDay() - weekStart + 7) % 7) * DAY_MS;
   const cells = [];
   for (let ms = start, i = 0; ms <= endMs; ms += DAY_MS, i++) {
@@ -112,6 +131,7 @@ const buildGrid = (data, endMs, weekStart = 0) => {
     cells.push({
       date,
       count: counts.get(date) ?? 0,
+      platforms: platformsByDate.get(date) ?? {},
       level: 0,
       week: Math.floor(i / 7),
       day: i % 7,
@@ -355,6 +375,7 @@ function Stat({ label, value, unit, sub, accent, size, align }) {
 
 export default function ContributionSkyline({
   data,
+  platformColors = {},
   endDate,
   view: viewProp,
   defaultView = "3d",
@@ -373,20 +394,27 @@ export default function ContributionSkyline({
   showStats = true,
   showLegend = true,
   showToggle = true,
+  summaryLabel = "1 year total",
   footer,
   locale = "en-US",
   seed = 7,
   onCellClick,
   className = "",
+  rangeDays = 365,
+  summaryDescription,
 }) {
   const endKey = endDate == null ? null : dayMs(endDate);
   const model = React.useMemo(() => {
     const dates = (data ?? []).map((d) => dayMs(d.date)).filter(Number.isFinite);
     const end = endKey ?? (dates.length ? Math.max(...dates) : dayMs(new Date()));
-    const days = data ?? generateContributions(end, seed);
-    const grid = buildGrid(days, end, weekStart);
+    const days = data ?? generateContributions(end, seed, rangeDays);
+    const grid = buildGrid(days, end, weekStart, rangeDays);
     return { ...grid, stats: computeStats(grid.cells), months: monthLabels(grid.cells, grid.weeks, locale) };
-  }, [data, endKey, seed, weekStart, locale]);
+  }, [data, endKey, seed, weekStart, locale, rangeDays]);
+  const activePlatformKeys = React.useMemo(
+    () => [...new Set(model.cells.flatMap((cell) => Object.keys(cell.platforms ?? {})))],
+    [model.cells],
+  );
 
   const [innerView, setInnerView] = React.useState(defaultView);
   const view = viewProp ?? innerView;
@@ -418,7 +446,11 @@ export default function ContributionSkyline({
   const describe = React.useCallback((i) => {
     const c = model.cells[i];
     if (!c) return "";
-    return (c.count ? nf.format(c.count) + " " + noun(c.count) : "No " + plural) + " on " + dfl.format(dayMs(c.date));
+    const platforms = Object.entries(c.platforms ?? {})
+      .map(([platform, count]) => `${PLATFORM_LABELS[platform] ?? platform}: ${nf.format(count)}`)
+      .join(", ");
+    const activity = c.count ? nf.format(c.count) + " " + noun(c.count) : "No " + plural;
+    return `${activity} on ${dfl.format(dayMs(c.date))}${platforms ? `. ${platforms}` : ""}`;
   }, [model.cells, nf, noun, plural, dfl]);
 
   const cfg = React.useRef({
@@ -429,6 +461,7 @@ export default function ContributionSkyline({
     zoom,
     defaultYaw,
     palette,
+    platformColors,
     legendLevel,
     onCellClick,
     target: view === "3d" ? 1 : 0,
@@ -447,6 +480,7 @@ export default function ContributionSkyline({
       zoom,
       defaultYaw,
       palette,
+      platformColors,
       legendLevel,
       onCellClick,
       target: view === "3d" ? 1 : 0,
@@ -455,7 +489,7 @@ export default function ContributionSkyline({
       setAnnounce,
       describe,
     };
-  }, [model, duration, heightScale, orbit, zoom, defaultYaw, palette, legendLevel, onCellClick, view, describe]);
+  }, [model, duration, heightScale, orbit, zoom, defaultYaw, palette, platformColors, legendLevel, onCellClick, view, describe]);
 
   React.useEffect(() => {
     const root = rootRef.current;
@@ -492,6 +526,7 @@ export default function ContributionSkyline({
     let fg = FG_FALLBACK;
     let bg = BG_FALLBACK;
     let isDark = false;
+    let platformRgb = {};
     let n = 0;
     let weeks = 0;
     let wk = new Float32Array(0);
@@ -554,6 +589,8 @@ export default function ContributionSkyline({
       bg = b ?? (luminance(fg) > 0.5 ? [10, 10, 10] : BG_FALLBACK);
       isDark = luminance(bg) < 0.45;
       font = "400 10px " + (cs.fontFamily || "sans-serif");
+      platformRgb = Object.fromEntries(Object.entries(cfg.current.platformColors)
+        .map(([platform, color]) => [platform, toRGB(color, FG_FALLBACK) ?? FG_FALLBACK]));
       const pal = resolvePalette(cfg.current.palette, isDark);
       const empty = mixRGB(bg, fg, isDark ? 0.11 : 0.075);
       const all = [empty, ...pal.map((c) => toRGB(c, FG_FALLBACK) ?? FG_FALLBACK)];
@@ -695,6 +732,16 @@ export default function ContributionSkyline({
         let r = col[L];
         let g = col[L + 1];
         let bl = col[L + 2];
+        const dayPlatforms = Object.entries(cfg.current.model.cells[i].platforms ?? {})
+          .filter(([, count]) => count > 0);
+        if (dayPlatforms.length) {
+          const [dominantPlatform] = dayPlatforms.reduce((largest, current) => current[1] > largest[1] ? current : largest);
+          const dominantColor = platformRgb[dominantPlatform];
+          if (dominantColor) {
+            const intensity = 0.68 + (lv[i] / 4) * 0.32;
+            [r, g, bl] = dominantColor.map((channel) => channel * intensity);
+          }
+        }
         const d = dim[i];
         if (d > 0.002) {
           r += (ex - r) * 0.72 * d;
@@ -708,22 +755,116 @@ export default function ContributionSkyline({
           g += (fg[1] - g) * m;
           bl += (fg[2] - bl) * m;
         }
-        if (f & 1) {
+        const stackPlatforms = dayPlatforms.length > 0 && e >= 0.62;
+        if (!stackPlatforms && f & 1) {
           ctx.beginPath();
           quadPath(ctx, polys, o + 8, 0);
           ctx.fillStyle = rgbString(r * 0.84, g * 0.84, bl * 0.84);
           ctx.fill();
         }
-        if (f & 2) {
+        if (!stackPlatforms && f & 2) {
           ctx.beginPath();
           quadPath(ctx, polys, o + 16, 0);
           ctx.fillStyle = rgbString(r * 0.68, g * 0.68, bl * 0.68);
           ctx.fill();
         }
         ctx.beginPath();
-        quadPath(ctx, polys, o, radius);
-        ctx.fillStyle = rgbString(r, g, bl);
-        ctx.fill();
+        if (!dayPlatforms.length) {
+          quadPath(ctx, polys, o, radius);
+          ctx.fillStyle = rgbString(r, g, bl);
+          ctx.fill();
+        } else if (stackPlatforms) {
+          const platformTotal = dayPlatforms.reduce((sum, [, count]) => sum + count, 0);
+          let stackBase = hv * lift;
+          let accumulatedCount = 0;
+          for (let segmentIndex = 0; segmentIndex < dayPlatforms.length; segmentIndex++) {
+            const [platform, count] = dayPlatforms[segmentIndex];
+            accumulatedCount += count;
+            const segmentTop = segmentIndex === dayPlatforms.length - 1
+              ? zs[i] + hv * lift
+              : hv * lift + zs[i] * (accumulatedCount / platformTotal);
+            const color = platformRgb[platform] ?? [r, g, bl];
+            const intensity = (0.68 + (lv[i] / 4) * 0.32) * (1 - d * 0.32);
+            const hoverMix = 0.16 * hv;
+            const segmentColor = color.map((channel, channelIndex) => {
+              const shaded = channel * intensity;
+              return shaded + (fg[channelIndex] - shaded) * hoverMix;
+            });
+
+            if (f & 1) {
+              ctx.beginPath();
+              ctx.moveTo(px(x0, y1), py(x0, y1, stackBase));
+              ctx.lineTo(px(x1, y1), py(x1, y1, stackBase));
+              ctx.lineTo(px(x1, y1), py(x1, y1, segmentTop));
+              ctx.lineTo(px(x0, y1), py(x0, y1, segmentTop));
+              ctx.closePath();
+              ctx.fillStyle = rgbString(segmentColor[0] * 0.84, segmentColor[1] * 0.84, segmentColor[2] * 0.84);
+              ctx.fill();
+            }
+            if (f & 2) {
+              ctx.beginPath();
+              ctx.moveTo(px(x1, y0), py(x1, y0, stackBase));
+              ctx.lineTo(px(x1, y1), py(x1, y1, stackBase));
+              ctx.lineTo(px(x1, y1), py(x1, y1, segmentTop));
+              ctx.lineTo(px(x1, y0), py(x1, y0, segmentTop));
+              ctx.closePath();
+              ctx.fillStyle = rgbString(segmentColor[0] * 0.68, segmentColor[1] * 0.68, segmentColor[2] * 0.68);
+              ctx.fill();
+            }
+
+            if (segmentIndex > 0) {
+              ctx.strokeStyle = "rgba(" + fg[0] + "," + fg[1] + "," + fg[2] + ",0.32)";
+              ctx.lineWidth = 0.8;
+              for (const edge of [
+                [[x0, y1], [x1, y1]],
+                [[x1, y0], [x1, y1]],
+              ]) {
+                ctx.beginPath();
+                ctx.moveTo(px(edge[0][0], edge[0][1]), py(edge[0][0], edge[0][1], stackBase));
+                ctx.lineTo(px(edge[1][0], edge[1][1]), py(edge[1][0], edge[1][1], stackBase));
+                ctx.stroke();
+              }
+            }
+
+            stackBase = segmentTop;
+            if (segmentIndex === dayPlatforms.length - 1) {
+              ctx.beginPath();
+              quadPath(ctx, polys, o, radius);
+              ctx.fillStyle = rgbString(segmentColor[0], segmentColor[1], segmentColor[2]);
+              ctx.fill();
+            }
+          }
+        } else {
+          const platformTotal = dayPlatforms.reduce((sum, [, count]) => sum + count, 0);
+          let segmentStart = x0;
+          for (let segmentIndex = 0; segmentIndex < dayPlatforms.length; segmentIndex++) {
+            const [platform, count] = dayPlatforms[segmentIndex];
+            const segmentEnd = segmentIndex === dayPlatforms.length - 1
+              ? x1
+              : segmentStart + (x1 - x0) * (count / platformTotal);
+            const color = platformRgb[platform] ?? [r, g, bl];
+            const intensity = (0.68 + (lv[i] / 4) * 0.32) * (1 - d * 0.32);
+            const hoverMix = 0.16 * hv;
+            const segmentColor = color.map((channel, channelIndex) => {
+              const shaded = channel * intensity;
+              return shaded + (fg[channelIndex] - shaded) * hoverMix;
+            });
+            ctx.beginPath();
+            ctx.moveTo(px(segmentStart, y0), py(segmentStart, y0, z));
+            ctx.lineTo(px(segmentEnd, y0), py(segmentEnd, y0, z));
+            ctx.lineTo(px(segmentEnd, y1), py(segmentEnd, y1, z));
+            ctx.lineTo(px(segmentStart, y1), py(segmentStart, y1, z));
+            ctx.closePath();
+            ctx.fillStyle = rgbString(segmentColor[0], segmentColor[1], segmentColor[2]);
+            ctx.fill();
+            if (segmentIndex > 0) {
+              ctx.strokeStyle = "rgba(" + fg[0] + "," + fg[1] + "," + fg[2] + ",0.24)";
+              ctx.lineWidth = 0.6;
+              ctx.stroke();
+            }
+            segmentStart = segmentEnd;
+          }
+        }
         if (outline > 0.004) {
           ctx.strokeStyle = "rgba(" + fg[0] + "," + fg[1] + "," + fg[2] + "," + outline.toFixed(3) + ")";
           ctx.lineWidth = 1;
@@ -920,7 +1061,7 @@ export default function ContributionSkyline({
       refreshActive();
       if (i >= 0) {
         const c = cfg.current.model.cells[i];
-        cfg.current.onCellClick?.({ date: c.date, count: c.count });
+        cfg.current.onCellClick?.({ date: c.date, count: c.count, platforms: { ...c.platforms } });
       }
     };
 
@@ -1088,7 +1229,7 @@ export default function ContributionSkyline({
 
   React.useEffect(() => {
     engine.current?.retheme();
-  }, [palette]);
+  }, [palette, platformColors]);
 
   React.useLayoutEffect(() => {
     const tip = tipRef.current;
@@ -1102,8 +1243,12 @@ export default function ContributionSkyline({
     return f.format(dayMs(a)) + " — " + f.format(dayMs(b));
   };
   const is3d = view === "3d";
+  const volumeSwatches = theme.dark
+    ? ["#28313a", "#46535e", "#687783", "#a5b1bb", "#edf2f7"]
+    : ["#e5e7eb", "#cbd5e1", "#94a3b8", "#64748b", "#334155"];
+  const legendSwatches = activePlatformKeys.length ? volumeSwatches : theme.swatches;
   const statBlocks = [
-    { label: "1 year total", value: nf.format(stats.total), unit: noun(stats.total), sub: range(stats.first, stats.last, true) },
+    { label: summaryLabel, value: nf.format(stats.total), unit: noun(stats.total), sub: summaryDescription ?? range(stats.first, stats.last, true) },
     { label: "Busiest day", value: nf.format(stats.busiest.count), unit: noun(stats.busiest.count), sub: stats.busiest.date ? df.format(dayMs(stats.busiest.date)) : "—" },
     { label: "Longest streak", value: nf.format(stats.longest.days), unit: stats.longest.days === 1 ? "day" : "days", sub: range(stats.longest.start, stats.longest.end) },
     { label: "Current streak", value: nf.format(stats.current.days), unit: stats.current.days === 1 ? "day" : "days", sub: range(stats.current.start, stats.current.end) },
@@ -1195,20 +1340,30 @@ export default function ContributionSkyline({
             ref={tipRef}
             role="tooltip"
             aria-hidden={active < 0}
-            className="pointer-events-none absolute top-3 left-3 z-20 whitespace-nowrap rounded-md px-2.5 py-1.5 text-[12px] leading-none shadow-lg transition-opacity duration-150 sm:top-4 sm:left-4 motion-reduce:transition-none"
+            className="pointer-events-none absolute top-3 left-3 z-20 whitespace-normal rounded-md border px-2.5 py-2 text-[12px] leading-tight shadow-lg transition-opacity duration-150 sm:top-4 sm:left-4 motion-reduce:transition-none"
             style={{
               opacity: active >= 0 ? 1 : 0,
-              background: "var(--color-foreground, #171717)",
-              color: "var(--color-background, #ffffff)",
+              maxWidth: "min(360px, 86vw)",
+              background: "rgba(5, 12, 17, 0.98)",
+              borderColor: "rgba(203, 213, 225, 0.28)",
+              color: "#f8fafc",
             }}
           >
             {active >= 0 && model.cells[active] ? (
-              <>
-                <strong className="font-semibold">
-                  {model.cells[active].count ? nf.format(model.cells[active].count) + " " + noun(model.cells[active].count) : "No " + plural}
-                </strong>
-                <span className="opacity-75"> on {dfy.format(dayMs(model.cells[active].date))}</span>
-              </>
+              <div className="grid gap-1.5">
+                <div>
+                  <strong className="font-semibold">
+                    {model.cells[active].count ? nf.format(model.cells[active].count) + " " + noun(model.cells[active].count) : "No " + plural}
+                  </strong>
+                  <span style={{ color: "#cbd5e1" }}> on {dfy.format(dayMs(model.cells[active].date))}</span>
+                </div>
+                {Object.entries(model.cells[active].platforms ?? {}).map(([platform, count]) => (
+                  <div className="flex items-center gap-1.5" key={platform}>
+                    <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-sm" style={{ background: platformColors[platform] ?? "#94a3b8" }} />
+                    <span>{PLATFORM_LABELS[platform] ?? platform}: <strong>{nf.format(count)}</strong></span>
+                  </div>
+                ))}
+              </div>
             ) : (
               " "
             )}
@@ -1220,7 +1375,7 @@ export default function ContributionSkyline({
                 marginLeft: -5,
                 borderLeft: "5px solid transparent",
                 borderRight: "5px solid transparent",
-                borderTop: "5px solid var(--color-foreground, #171717)",
+                borderTop: "5px solid rgba(5, 12, 17, 0.98)",
               }}
             />
           </div>
@@ -1265,28 +1420,40 @@ export default function ContributionSkyline({
             <span className="flex-1">{footer}</span>
           )}
           {showLegend && (
-            <div className="flex items-center gap-1.5" onMouseLeave={() => setLegendLevel(-1)}>
-              <span className="mr-0.5">Less</span>
-              {theme.swatches.map((c, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  aria-label={"Highlight " + levelNames[i].toLowerCase() + " days"}
-                  aria-pressed={legendLevel === i}
-                  title={levelNames[i]}
-                  onMouseEnter={() => setLegendLevel(i)}
-                  onFocus={() => setLegendLevel(i)}
-                  onBlur={() => setLegendLevel(-1)}
-                  onClick={() => setLegendLevel((l) => (l === i ? -1 : i))}
-                  className="h-[11px] w-[11px] cursor-pointer rounded-[2px] border-0 p-0 transition-[background-color,transform] duration-500 hover:scale-125 focus-visible:outline-2 focus-visible:outline-offset-1 motion-reduce:transition-none"
-                  style={{
-                    background: c,
-                    outlineColor: "var(--color-foreground, #171717)",
-                    boxShadow: "inset 0 0 0 1px rgba(127,127,127,0.12)",
-                  }}
-                />
-              ))}
-              <span className="ml-0.5">More</span>
+            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5">
+              {activePlatformKeys.length > 0 && (
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1" aria-label="Platform color legend">
+                  {activePlatformKeys.map((platform) => (
+                    <span className="inline-flex items-center gap-1" key={platform} title={PLATFORM_LABELS[platform] ?? platform}>
+                      <i aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: platformColors[platform] ?? "#94a3b8" }} />
+                      {PLATFORM_LABELS[platform]?.replace(/ (problems|public events)$/, "") ?? platform}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-1.5" onMouseLeave={() => setLegendLevel(-1)}>
+                <span className="mr-0.5">{activePlatformKeys.length ? "Intensity" : "Less"}</span>
+                {legendSwatches.map((c, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-label={"Highlight " + levelNames[i].toLowerCase() + " days"}
+                    aria-pressed={legendLevel === i}
+                    title={levelNames[i]}
+                    onMouseEnter={() => setLegendLevel(i)}
+                    onFocus={() => setLegendLevel(i)}
+                    onBlur={() => setLegendLevel(-1)}
+                    onClick={() => setLegendLevel((l) => (l === i ? -1 : i))}
+                    className="h-[11px] w-[11px] cursor-pointer rounded-[2px] border-0 p-0 transition-[background-color,transform] duration-500 hover:scale-125 focus-visible:outline-2 focus-visible:outline-offset-1 motion-reduce:transition-none"
+                    style={{
+                      background: c,
+                      outlineColor: "var(--color-foreground, #171717)",
+                      boxShadow: "inset 0 0 0 1px rgba(127,127,127,0.12)",
+                    }}
+                  />
+                ))}
+                <span className="ml-0.5">{activePlatformKeys.length ? "Higher" : "More"}</span>
+              </div>
             </div>
           )}
         </div>

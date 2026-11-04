@@ -47,6 +47,8 @@
 .justify-between { justify-content: space-between; }
 .place-items-center { place-items: center; }
 .gap-x-4 { column-gap: 1rem; }
+.gap-x-2\.5 { column-gap: 0.625rem; }
+.gap-x-3 { column-gap: 0.75rem; }
 .gap-y-2 { row-gap: 0.5rem; }
 .gap-y-4 { row-gap: 1rem; }
 .gap-1\.5 { gap: 0.375rem; }
