@@ -35,6 +35,7 @@ export function GrowthPage() {
     syncGfgData,
     syncLeetCodeData,
     syncGitHubData,
+    syncCodeforcesData,
   } = useAppContext();
 
   const [timeRange, setTimeRange] = useState("Past 24 Hours");
@@ -677,24 +678,36 @@ export function GrowthPage() {
               )}
 
               {expandedPlatform === "codeforces" && (
-                <div className="visual-expand-grid">
-                  <div className="visual-expand-tile">
-                    <small>Rating</small>
-                    <strong>{codeforces.rating ?? 0}</strong>
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Rating</small>
+                      <strong>{codeforces.rating ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Rank Tier</small>
+                      <strong>{codeforces.rank || "Specialist"}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Max Rating</small>
+                      <strong>{codeforces.maxRating ?? codeforces.rating ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Solved Problems</small>
+                      <strong>{codeforces.solved ?? 0}</strong>
+                    </div>
                   </div>
-                  <div className="visual-expand-tile">
-                    <small>Rank Tier</small>
-                    <strong>{codeforces.rank || "Specialist"}</strong>
-                  </div>
-                  <div className="visual-expand-tile">
-                    <small>Contest Rounds</small>
-                    <strong>{codeforces.contests ?? 0}</strong>
-                  </div>
-                  <div className="visual-expand-tile">
-                    <small>Solved Problems</small>
-                    <strong>{codeforces.solved ?? 0}</strong>
-                  </div>
-                </div>
+                  {codeforces.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {codeforces.lastSynced}
+                    </span>
+                  )}
+                  {codeforces.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {codeforces.error}
+                    </span>
+                  )}
+                </>
               )}
 
               {expandedPlatform === "github" && (
@@ -989,6 +1002,33 @@ export function GrowthPage() {
 
               <div
                 className="visual-breakdown-pill-card"
+                onClick={() => toggleExpand("codeforces")}
+              >
+                <div className="visual-breakdown-pill-label">
+                  <span className="visual-breakdown-pill-dot" style={{ background: "#fbbf24" }} />
+                  Codeforces
+                </div>
+                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>{codeforces.solved ?? 0} Solved</span>
+                  {profile.platformHandles?.codeforces && (
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", color: "#fbbf24", cursor: "pointer", padding: 0 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        syncCodeforcesData(profile.platformHandles?.codeforces, { force: true });
+                      }}
+                      title="Sync Codeforces Live"
+                      disabled={codeforces.loading}
+                    >
+                      <RotateCw size={10} className={codeforces.loading ? "spin" : ""} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div
+                className="visual-breakdown-pill-card"
                 onClick={() => toggleExpand("github")}
               >
                 <div className="visual-breakdown-pill-label">
@@ -1162,7 +1202,6 @@ export function GrowthPage() {
               <option value="CodeChef">CodeChef</option>
               <option value="GeeksforGeeks">GeeksforGeeks</option>
               <option value="GitHub">GitHub</option>
-              <option value="AtCoder">AtCoder</option>
             </select>
 
             {/* Export Dropdown */}
@@ -1257,8 +1296,17 @@ export function GrowthPage() {
           </div>
         </div>
 
-        {/* Logs List Cards */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Logs List Cards - Displays scrollable feed when exceeding 3 entries */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            maxHeight: filteredLogs.length > 3 ? "280px" : "none",
+            overflowY: filteredLogs.length > 3 ? "auto" : "visible",
+            paddingRight: filteredLogs.length > 3 ? "6px" : "0px",
+          }}
+        >
           {filteredLogs.length === 0 ? (
             <div
               style={{
@@ -1406,7 +1454,6 @@ export function GrowthPage() {
                     <option value="Codeforces">Codeforces</option>
                     <option value="CodeChef">CodeChef</option>
                     <option value="GeeksforGeeks">GeeksforGeeks</option>
-                    <option value="AtCoder">AtCoder</option>
                     <option value="GitHub">GitHub</option>
                   </select>
                 </div>

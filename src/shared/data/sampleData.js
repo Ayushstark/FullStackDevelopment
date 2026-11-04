@@ -331,26 +331,7 @@ export const initialGrowthStats = {
     { date: "2026-10-27", day: "Tue", count: 3, level: 2 },
     { date: "2026-10-28", day: "Wed", count: 0, level: 0 },
   ],
-  recentLogs: [
-    {
-      date: "2026-10-27",
-      platform: "LeetCode",
-      problemsSolved: 3,
-      notes: "Solved Binary Tree Maximum Path Sum and 2 medium tree traversals.",
-    },
-    {
-      date: "2026-10-26",
-      platform: "Codeforces",
-      problemsSolved: 4,
-      notes: "Participated in Round 980 Div 3, upsolved problem D.",
-    },
-    {
-      date: "2026-10-25",
-      platform: "LeetCode",
-      problemsSolved: 5,
-      notes: "Dynamic Programming knapsack practice.",
-    },
-  ],
+  recentLogs: [],
   autonomousProjects: [
     {
       id: "proj-1",

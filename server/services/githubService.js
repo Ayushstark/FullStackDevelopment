@@ -148,6 +148,81 @@ export async function getGitHubProfile(handle, options = {}) {
       contributions = publicRepos * 5;
     }
 
+    // 3. Fetch recent public events to extract real-time push, PR, and issue activity logs
+    let recentEvents = [];
+    try {
+      const eventsRes = await fetch(
+        `https://api.github.com/users/${encodeURIComponent(normalizedHandle)}/events/public?per_page=15`,
+        {
+          headers: API_HEADERS,
+          signal: AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined,
+        }
+      );
+
+      if (eventsRes.ok) {
+        const eventsData = await eventsRes.json();
+        if (Array.isArray(eventsData)) {
+          recentEvents = eventsData
+            .filter((e) => ["PushEvent", "PullRequestEvent", "IssuesEvent", "CreateEvent"].includes(e.type))
+            .slice(0, 10)
+            .map((e) => {
+              const repoName = e.repo?.name || "repository";
+              const dateStr = e.created_at ? e.created_at.split("T")[0] : new Date().toISOString().split("T")[0];
+
+              if (e.type === "PushEvent") {
+                const commitCount = e.payload?.commits?.length || e.payload?.size || 1;
+                const firstMsg = e.payload?.commits?.[0]?.message?.split("\n")[0] || "Pushed updates";
+                return {
+                  date: dateStr,
+                  platform: "GitHub",
+                  problemsSolved: commitCount,
+                  difficulty: "Medium",
+                  category: "Open Source & Commits",
+                  notes: `Pushed ${commitCount} commit(s) to ${repoName}: ${firstMsg}`,
+                };
+              }
+
+              if (e.type === "PullRequestEvent") {
+                const action = e.payload?.action || "updated";
+                const prNum = e.payload?.pull_request?.number || e.payload?.number || "";
+                return {
+                  date: dateStr,
+                  platform: "GitHub",
+                  problemsSolved: 1,
+                  difficulty: "Hard",
+                  category: "Pull Request",
+                  notes: `${action.toUpperCase()} PR #${prNum} in ${repoName}`,
+                };
+              }
+
+              if (e.type === "IssuesEvent") {
+                const action = e.payload?.action || "updated";
+                const issueNum = e.payload?.issue?.number || "";
+                return {
+                  date: dateStr,
+                  platform: "GitHub",
+                  problemsSolved: 1,
+                  difficulty: "Easy",
+                  category: "Issue Tracking",
+                  notes: `${action.toUpperCase()} Issue #${issueNum} in ${repoName}`,
+                };
+              }
+
+              return {
+                date: dateStr,
+                platform: "GitHub",
+                problemsSolved: 1,
+                difficulty: "Medium",
+                category: "Project Activity",
+                notes: `Created ref in ${repoName}`,
+              };
+            });
+        }
+      }
+    } catch (eventErr) {
+      console.warn("Could not fetch recent GitHub events:", eventErr.message);
+    }
+
     const data = {
       success: true,
       handle: userData.login || normalizedHandle,
@@ -159,6 +234,7 @@ export async function getGitHubProfile(handle, options = {}) {
       contributions,
       streak: currentStreak,
       longestStreak,
+      recentEvents,
       syncedAt: new Date().toISOString(),
     };
 
