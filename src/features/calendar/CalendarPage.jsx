@@ -1,532 +1,734 @@
 import {
   Bell,
-  Calendar,
   CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   ExternalLink,
-  Flame,
   Globe,
+  MapPin,
   Plus,
   Search,
-  Timer,
+  Sparkles,
+  Tag,
   Trophy,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
+import { initialCalendarEvents } from "../../shared/data/sampleData.js";
+import {
+  formatMonthYear,
+  formatSelectedDateHeading,
+  generateMonthGrid,
+  getEventCategoryMeta,
+  normalizeDateKey,
+} from "./utils/calendarUtils.js";
+import "./calendar-page.css";
 
 export function CalendarPage() {
-  const { calendarEvents, toggleCalendarReminder, addCalendarEvent } = useAppContext();
+  const { calendarEvents: contextEvents, toggleCalendarReminder, addCalendarEvent } = useAppContext();
 
-  const [activeTab, setActiveTab] = useState("All");
+  // Ensure initial seed events (e.g. November 1 test events) are always included alongside user additions
+  const calendarEvents = useMemo(() => {
+    if (!contextEvents || contextEvents.length <= 1) {
+      return initialCalendarEvents;
+    }
+    // Merge initial sample events with context events to prevent stale cache lock
+    const map = new Map();
+    for (const evt of initialCalendarEvents) {
+      map.set(evt.id, evt);
+    }
+    for (const evt of contextEvents) {
+      map.set(evt.id, evt);
+    }
+    return Array.from(map.values());
+  }, [contextEvents]);
+
+  // Navigation state (defaults to Nov 2026 where events exist)
+  const [currentYear, setCurrentYear] = useState(2026);
+  const [currentMonth, setCurrentMonth] = useState(10); // 10 = November
+  const [selectedDate, setSelectedDate] = useState("2026-11-01");
+
+  // Filters
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [platformFilter, setPlatformFilter] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // New event modal local state
-  const [title, setTitle] = useState("");
-  const [organizer, setOrganizer] = useState("");
-  const [eventType, setEventType] = useState("Contest");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [link, setLink] = useState("");
-  const [description, setDescription] = useState("");
+  // Add event form state
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalOrganizer, setModalOrganizer] = useState("");
+  const [modalType, setModalType] = useState("Contest");
+  const [modalDate, setModalDate] = useState("");
+  const [modalTime, setModalTime] = useState("");
+  const [modalLink, setModalLink] = useState("");
+  const [modalDescription, setModalDescription] = useState("");
 
-  const contestsCount = useMemo(
-    () => calendarEvents.filter((e) => e.type === "Contest").length,
-    [calendarEvents],
-  );
-  const hackathonsCount = useMemo(
-    () => calendarEvents.filter((e) => e.type === "Hackathon").length,
-    [calendarEvents],
-  );
-  const deadlinesCount = useMemo(
-    () => calendarEvents.filter((e) => e.type === "Deadline").length,
-    [calendarEvents],
-  );
-  const remindersCount = useMemo(
-    () => calendarEvents.filter((e) => e.isReminderSet).length,
-    [calendarEvents],
-  );
+  const agendaRef = useRef(null);
 
-  const filteredEvents = useMemo(() => {
-    return calendarEvents.filter((item) => {
-      // Type matching based on tab
-      if (activeTab === "Contest" && item.type !== "Contest") return false;
-      if (activeTab === "Hackathon" && item.type !== "Hackathon") return false;
-      if (activeTab === "Deadline" && item.type !== "Deadline") return false;
-      if (activeTab === "Reminders" && !item.isReminderSet) return false;
+  // Map events to dateKey for O(1) day lookups
+  const eventsByDate = useMemo(() => {
+    const map = new Map();
+    for (const evt of calendarEvents) {
+      const dateKey = normalizeDateKey(evt.date);
+      if (!dateKey) continue;
 
-      // Platform / Organizer filter
-      if (
-        platformFilter !== "all" &&
-        item.organizer.toLowerCase() !== platformFilter.toLowerCase()
-      ) {
-        return false;
+      if (categoryFilter !== "All" && evt.type !== categoryFilter) {
+        continue;
       }
-
-      // Search matching
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = item.title.toLowerCase().includes(query);
-        const matchesOrganizer = item.organizer.toLowerCase().includes(query);
-        const matchesDesc = item.description?.toLowerCase().includes(query);
-        const matchesTags = item.tags?.some((t) => t.toLowerCase().includes(query));
-        return matchesTitle || matchesOrganizer || matchesDesc || matchesTags;
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = evt.title && evt.title.toLowerCase().includes(q);
+        const matchesOrg = evt.organizer && evt.organizer.toLowerCase().includes(q);
+        const matchesDesc = evt.description && evt.description.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesOrg && !matchesDesc) {
+          continue;
+        }
       }
 
-      return true;
-    });
-  }, [calendarEvents, activeTab, platformFilter, searchQuery]);
+      if (!map.has(dateKey)) {
+        map.set(dateKey, []);
+      }
+      map.get(dateKey).push(evt);
+    }
+    return map;
+  }, [calendarEvents, categoryFilter, searchQuery]);
 
-  const handleAddEvent = (e) => {
+  // Compute 7-column calendar cells for current view
+  const calendarCells = useMemo(() => {
+    return generateMonthGrid(currentYear, currentMonth);
+  }, [currentYear, currentMonth]);
+
+  // Selected date's events
+  const selectedDateEvents = useMemo(() => {
+    return eventsByDate.get(selectedDate) || [];
+  }, [eventsByDate, selectedDate]);
+
+  // Accordion expansion state
+  const [userExpandedId, setUserExpandedId] = useState(null);
+  const expandedEventId = userExpandedId !== null
+    ? userExpandedId
+    : (selectedDateEvents[0]?.id || null);
+
+  // Month navigation handlers
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear((y) => y - 1);
+    } else {
+      setCurrentMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear((y) => y + 1);
+    } else {
+      setCurrentMonth((m) => m + 1);
+    }
+  };
+
+  const handleTodayClick = () => {
+    const now = new Date();
+    setCurrentYear(now.getFullYear());
+    setCurrentMonth(now.getMonth());
+    const todayKey = normalizeDateKey(now);
+    setSelectedDate(todayKey);
+  };
+
+  const handleDateClick = (dateKey) => {
+    if (dateKey === selectedDate) return;
+    setSelectedDate(dateKey);
+    setUserExpandedId(null);
+    if (window.innerWidth < 768 && agendaRef.current) {
+      agendaRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleToggleExpand = (id) => {
+    setUserExpandedId((prev) => (prev === id ? "__NONE__" : id));
+  };
+
+  const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (!title.trim() || !date.trim()) return;
+    if (!modalTitle.trim() || !modalDate.trim()) return;
 
-    const newEvent = {
+    const newEvt = {
       id: `evt-${Date.now()}`,
-      title: title.trim(),
-      organizer: organizer.trim() || "Independent",
-      type: eventType,
-      date,
-      time: time.trim() || "All Day",
-      link: link.trim() || "#",
+      title: modalTitle.trim(),
+      organizer: modalOrganizer.trim() || "Independent",
+      type: modalType,
+      date: modalDate,
+      time: modalTime.trim() || "All Day",
+      link: modalLink.trim() || "#",
       status: "Upcoming",
-      description: description.trim() || "User-added event or deadline",
-      tags: [eventType],
+      description: modalDescription.trim() || "User-added developer activity",
+      tags: [modalType],
       isReminderSet: true,
     };
 
-    addCalendarEvent(newEvent);
+    addCalendarEvent(newEvt);
+    setSelectedDate(normalizeDateKey(modalDate));
     setIsAddModalOpen(false);
-    setTitle("");
-    setOrganizer("");
-    setDate("");
-    setTime("");
-    setLink("");
-    setDescription("");
+
+    setModalTitle("");
+    setModalOrganizer("");
+    setModalDate("");
+    setModalTime("");
+    setModalLink("");
+    setModalDescription("");
   };
 
   return (
-    <main className="page-content calendar-page">
-      {/* Page Heading */}
-      <div className="page-heading">
+    <main className="page-content calendar-page-container">
+      {/* SECTION A: PAGE HEADER & CONTROLS */}
+      <div className="calendar-header-toolbar">
         <div>
-          <p className="eyebrow">Contests &amp; Hackathons</p>
-          <h1>Curated Events &amp; Challenges</h1>
-          <p className="muted">
-            Discover upcoming coding rounds, competitive arenas, and global hackathons with live reminders.
+          <p className="eyebrow">Contests &amp; Events</p>
+          <h1 style={{ margin: "2px 0 6px 0", fontSize: 24, fontWeight: 800, color: "var(--color-text-title)" }}>
+            Contests &amp; Events
+          </h1>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+            Stay ahead of the competition. Discover coding contests, hackathons, workshops and developer events.
           </p>
         </div>
-        <button
-          className="button button-primary"
-          onClick={() => setIsAddModalOpen(true)}
-          type="button"
-        >
-          <Plus size={16} /> Add Custom Event
-        </button>
-      </div>
 
-      {/* Tabs */}
-      <div className="tab-bar">
-        <button
-          className={`tab-btn ${activeTab === "All" ? "active" : ""}`}
-          onClick={() => setActiveTab("All")}
-          type="button"
-        >
-          All Events ({calendarEvents.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "Contest" ? "active" : ""}`}
-          onClick={() => setActiveTab("Contest")}
-          type="button"
-        >
-          Coding Contests ({contestsCount})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "Hackathon" ? "active" : ""}`}
-          onClick={() => setActiveTab("Hackathon")}
-          type="button"
-        >
-          Hackathons &amp; Builders ({hackathonsCount})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "Deadline" ? "active" : ""}`}
-          onClick={() => setActiveTab("Deadline")}
-          type="button"
-        >
-          Application Deadlines ({deadlinesCount})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "Reminders" ? "active" : ""}`}
-          onClick={() => setActiveTab("Reminders")}
-          type="button"
-        >
-          My Alerts ({remindersCount})
-        </button>
-      </div>
-
-      {/* Search & Platform Filter Bar */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          flexWrap: "wrap",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-        <div
-          className="search-bar"
-          style={{
-            flex: "1 1 280px",
-            margin: 0,
-            background: "rgba(255, 255, 255, 0.04)",
-          }}
-        >
-          <Search size={18} />
-          <input
-            placeholder="Search events by name, platform, or topic (e.g. Div. 2, Web3, Algorithms)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
+        <div className="calendar-filters-row">
+          {/* Search Box */}
+          <div style={{ position: "relative" }}>
+            <Search
+              size={14}
               style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--color-text-muted)",
-                cursor: "pointer",
-                padding: "0 6px",
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#64748b",
               }}
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
+            />
+            <input
+              type="text"
+              placeholder="Search contests, events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                background: "rgba(13, 17, 23, 0.75)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                borderRadius: 8,
+                padding: "7px 12px 7px 30px",
+                fontSize: 12,
+                color: "#f8fafc",
+                outline: "none",
+                width: 200,
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span className="muted" style={{ fontSize: 13 }}>Platform:</span>
+          {/* Category Dropdown */}
           <select
-            className="form-select"
-            style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
-            value={platformFilter}
-            onChange={(e) => setPlatformFilter(e.target.value)}
-          >
-            <option value="all">All Platforms</option>
-            <option value="Codeforces">Codeforces</option>
-            <option value="LeetCode">LeetCode</option>
-            <option value="CodeChef">CodeChef</option>
-            <option value="GeeksforGeeks">GeeksforGeeks</option>
-            <option value="AtCoder">AtCoder</option>
-            <option value="GitHub">GitHub</option>
-            <option value="ETHGlobal">ETHGlobal</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Events Grid */}
-      {filteredEvents.length === 0 ? (
-        <div className="empty-state" style={{ padding: "48px 20px", textAlign: "center" }}>
-          <Trophy size={40} color="var(--color-text-muted)" style={{ margin: "0 auto 12px" }} />
-          <h3 style={{ margin: "0 0 6px", fontSize: 17, color: "var(--color-text-title)" }}>
-            No matching events found
-          </h3>
-          <p className="muted" style={{ maxWidth: 440, margin: "0 auto 14px", fontSize: 13 }}>
-            Try clearing your search query or switching your platform filter to see more events.
-          </p>
-          <button
-            type="button"
-            className="button button-secondary button-sm"
-            onClick={() => {
-              setSearchQuery("");
-              setPlatformFilter("all");
-              setActiveTab("All");
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            style={{
+              background: "rgba(13, 17, 23, 0.75)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: 8,
+              padding: "7px 10px",
+              fontSize: 12,
+              color: "#f8fafc",
+              outline: "none",
+              cursor: "pointer",
             }}
+            aria-label="Filter events by category"
           >
-            Reset Filters
+            <option value="All">All Categories</option>
+            <option value="Contest">Coding Contests</option>
+            <option value="Hackathon">Hackathons</option>
+            <option value="Deadline">Application Deadlines</option>
+          </select>
+
+          {/* Add Custom Event */}
+          <button
+            className="button button-primary"
+            onClick={() => setIsAddModalOpen(true)}
+            type="button"
+            style={{ padding: "6px 14px", fontSize: 12 }}
+          >
+            <Plus size={14} /> Add Event
           </button>
         </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {filteredEvents.map((evt) => (
-            <article
-              key={evt.id}
-              className="panel"
+      </div>
+
+      {/* SECTION B & C: 2-COLUMN SPLIT (CALENDAR ON LEFT, AGENDA ON RIGHT) */}
+      <div className="calendar-main-layout">
+        {/* LEFT COLUMN: COMPACT MONTHLY CALENDAR (HALF VERTICALLY / LEFT-ALIGNED) */}
+        <section className="calendar-glass-card" aria-label="Monthly Calendar Overview">
+          {/* Navigation Bar */}
+          <div className="calendar-nav-bar">
+            <div className="calendar-current-month">
+              <CalendarDays size={18} color="#38bdf8" />
+              <span>{formatMonthYear(currentYear, currentMonth)}</span>
+            </div>
+
+            <div className="calendar-nav-controls">
+              <button
+                type="button"
+                className="calendar-nav-btn"
+                onClick={handleTodayClick}
+                title="Navigate to Today"
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                className="calendar-nav-icon-btn"
+                onClick={handlePrevMonth}
+                aria-label="Previous Month"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                className="calendar-nav-icon-btn"
+                onClick={handleNextMonth}
+                aria-label="Next Month"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* 7-Column Weekday Header */}
+          <div className="calendar-grid-header">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+              <div key={dayName} className="calendar-weekday-label">
+                {dayName}
+              </div>
+            ))}
+          </div>
+
+          {/* 7-Column Dates Grid with In-Cell Pastel Event Chips */}
+          <div className="calendar-grid-days" role="grid">
+            {calendarCells.map((cell) => {
+              const dayEvents = eventsByDate.get(cell.dateKey) || [];
+              const isSelected = cell.dateKey === selectedDate;
+
+              return (
+                <div
+                  key={cell.dateKey}
+                  className={`calendar-date-cell ${cell.isCurrentMonth ? "" : "other-month"} ${
+                    cell.isToday ? "is-today" : ""
+                  } ${isSelected ? "is-selected" : ""}`}
+                  onClick={() => !isSelected && handleDateClick(cell.dateKey)}
+                  role="gridcell"
+                  tabIndex={isSelected ? -1 : 0}
+                  aria-selected={isSelected}
+                  onKeyDown={(e) => {
+                    if (!isSelected && (e.key === "Enter" || e.key === " ")) {
+                      handleDateClick(cell.dateKey);
+                    }
+                  }}
+                >
+                  <span className="calendar-date-num">{cell.dayNumber}</span>
+
+                  {/* Event Chips Rendered Inside the Cell (Image 3 Style) */}
+                  {dayEvents.length > 0 && (
+                    <div className="cell-event-chips">
+                      {dayEvents.slice(0, 2).map((evt) => {
+                        const chipClass =
+                          evt.type === "Contest"
+                            ? "chip-contest"
+                            : evt.type === "Hackathon"
+                            ? "chip-hackathon"
+                            : evt.type === "Deadline"
+                            ? "chip-deadline"
+                            : "chip-default";
+
+                        return (
+                          <div
+                            key={evt.id}
+                            className={`cell-event-chip ${chipClass}`}
+                            title={`${evt.title} - ${evt.time}`}
+                          >
+                            <span>{evt.title}</span>
+                            {evt.time && <span className="chip-time">{evt.time.split(" ")[0]}</span>}
+                          </div>
+                        );
+                      })}
+                      {dayEvents.length > 2 && (
+                        <span style={{ fontSize: "9px", color: "#64748b", fontWeight: 700 }}>
+                          +{dayEvents.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Category Legend */}
+          <div className="calendar-legend-bar">
+            <div className="calendar-legend-items">
+              <div className="calendar-legend-item">
+                <span className="legend-swatch" style={{ background: "rgba(56, 189, 248, 0.45)" }} />
+                <span>Coding Contests</span>
+              </div>
+              <div className="calendar-legend-item">
+                <span className="legend-swatch" style={{ background: "rgba(192, 132, 252, 0.45)" }} />
+                <span>Hackathons</span>
+              </div>
+              <div className="calendar-legend-item">
+                <span className="legend-swatch" style={{ background: "rgba(251, 191, 36, 0.45)" }} />
+                <span>Deadlines</span>
+              </div>
+              <div className="calendar-legend-item">
+                <span className="legend-swatch" style={{ background: "rgba(52, 211, 153, 0.45)" }} />
+                <span>Workshops</span>
+              </div>
+            </div>
+            <span>Click any cell to inspect</span>
+          </div>
+        </section>
+
+        {/* RIGHT COLUMN: SELECTED-DATE EVENT AGENDA (EXPANDABLE ACCORDION) */}
+        <section ref={agendaRef} className="agenda-section" aria-label="Selected Date Agenda">
+          <div className="agenda-header-banner">
+            <div>
+              <h2 className="agenda-date-title">{formatSelectedDateHeading(selectedDate)}</h2>
+              <p className="agenda-context-sub">
+                {selectedDateEvents.length > 0
+                  ? "Here's what's happening on this day."
+                  : "No activities scheduled for this date."}
+              </p>
+            </div>
+
+            <span className="agenda-count-badge">
+              {selectedDateEvents.length} {selectedDateEvents.length === 1 ? "Activity" : "Activities"}
+            </span>
+          </div>
+
+          {selectedDateEvents.length === 0 ? (
+            <div
               style={{
-                padding: 20,
+                textAlign: "center",
+                padding: "36px 20px",
+                background: "rgba(13, 17, 23, 0.55)",
+                border: "1px dashed rgba(255, 255, 255, 0.12)",
+                borderRadius: 14,
+                color: "#94a3b8",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between",
-                gap: 16,
-                transition: "border-color 0.15s ease",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 260,
               }}
             >
-              <div>
-                {/* Header: Platform pill & Type tag */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 10,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "var(--color-primary-light, #818cf8)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
+              <Trophy size={32} color="#64748b" style={{ margin: "0 auto 10px" }} />
+              <h3 style={{ margin: "0 0 6px", fontSize: 15, color: "#f8fafc", fontWeight: 700 }}>
+                No events scheduled for this day
+              </h3>
+              <p style={{ margin: "0 0 16px", fontSize: 13, color: "#94a3b8", maxWidth: 320 }}>
+                Looks like a quiet day. Explore highlighted dates on the calendar or jump to upcoming rounds.
+              </p>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => setSelectedDate("2026-11-01")}
+                style={{ fontSize: 12, padding: "6px 14px" }}
+              >
+                Browse November 1 Events
+              </button>
+            </div>
+          ) : (
+            <div className="agenda-events-list">
+              {selectedDateEvents.map((evt) => {
+                const isExpanded = expandedEventId === evt.id;
+                const meta = getEventCategoryMeta(evt.type);
+
+                return (
+                  <article
+                    key={evt.id}
+                    className={`event-accordion-card ${isExpanded ? "expanded" : ""}`}
                   >
-                    {evt.organizer}
-                  </span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {evt.status === "Live" && (
-                      <span
-                        style={{
-                          background: "var(--color-success-bg)",
-                          color: "#34d399",
-                          border: "1px solid var(--color-success-border)",
-                          fontSize: 10,
-                          padding: "2px 6px",
-                          borderRadius: 99,
-                          fontWeight: 700,
-                        }}
-                      >
-                        ● LIVE NOW
-                      </span>
-                    )}
-                    <span
-                      className={`tag ${
-                        evt.type === "Contest"
-                          ? "tag-research"
-                          : evt.type === "Hackathon"
-                            ? "tag-hackathon"
-                            : ""
-                      }`}
-                      style={{ fontSize: 11 }}
+                    <button
+                      type="button"
+                      className="event-accordion-trigger"
+                      onClick={() => handleToggleExpand(evt.id)}
+                      aria-expanded={isExpanded}
                     >
-                      {evt.type}
-                    </span>
-                  </div>
-                </div>
+                      <div className="event-trigger-left">
+                        <span className="event-time-pill">
+                          <Clock size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                          {evt.time || "All Day"}
+                        </span>
 
-                <h3
-                  style={{
-                    fontSize: 16,
-                    margin: "0 0 8px 0",
-                    color: "var(--color-text-title)",
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {evt.title}
-                </h3>
+                        <div className="event-title-meta">
+                          <h3 className="event-row-title">{evt.title}</h3>
+                          <div className="event-row-subtitle">
+                            <span style={{ fontWeight: 700, color: meta.dotColor }}>
+                              {evt.organizer}
+                            </span>
+                            <span>•</span>
+                            <span>{meta.label}</span>
+                            {evt.status === "Live" && (
+                              <>
+                                <span>•</span>
+                                <span style={{ color: "#34d399", fontWeight: 700 }}>● LIVE NOW</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-                <p
-                  className="muted"
-                  style={{
-                    fontSize: 13,
-                    margin: "0 0 14px 0",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {evt.description}
-                </p>
+                      <div className="event-trigger-right">
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCalendarReminder(evt.id);
+                          }}
+                          style={{
+                            cursor: "pointer",
+                            padding: "6px",
+                            borderRadius: 6,
+                            background: evt.isReminderSet ? "rgba(251, 191, 36, 0.2)" : "transparent",
+                            color: evt.isReminderSet ? "#fbbf24" : "#94a3b8",
+                            display: "inline-flex",
+                            alignItems: "center",
+                          }}
+                          title={evt.isReminderSet ? "Reminder Active" : "Set Alert"}
+                        >
+                          <Bell size={15} />
+                        </span>
 
-                {/* Topic Tags */}
-                {evt.tags && evt.tags.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-                    {evt.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          fontSize: 11,
-                          background: "rgba(255, 255, 255, 0.05)",
-                          border: "1px solid var(--color-border)",
-                          padding: "2px 8px",
-                          borderRadius: 4,
-                          color: "var(--color-text-main)",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+                        <div className="event-expand-icon">
+                          <ChevronDown size={15} />
+                        </div>
+                      </div>
+                    </button>
 
-              {/* Footer: Date, Time & Action Link */}
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 5,
-                    fontSize: 12,
-                    color: "var(--color-text-muted)",
-                    paddingTop: 12,
-                    borderTop: "1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06))",
-                    marginBottom: 12,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Calendar size={14} />
-                    <span>{evt.date}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Clock size={14} />
-                    <span>{evt.time}</span>
-                  </div>
-                </div>
+                    {isExpanded && (
+                      <div className="event-accordion-body">
+                        {evt.description && (
+                          <p className="event-description-text">{evt.description}</p>
+                        )}
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <button
-                    type="button"
-                    className={`button button-sm ${
-                      evt.isReminderSet ? "button-accent" : "button-secondary"
-                    }`}
-                    onClick={() => toggleCalendarReminder(evt.id)}
-                    style={{ fontSize: 12 }}
-                  >
-                    <Bell size={13} fill={evt.isReminderSet ? "currentColor" : "none"} />
-                    {evt.isReminderSet ? "Alert Set" : "Notify Me"}
-                  </button>
+                        <div className="event-details-grid">
+                          <div className="event-detail-item">
+                            <Globe size={14} color="#38bdf8" />
+                            <span>Platform: <strong>{evt.organizer}</strong></span>
+                          </div>
 
-                  <a
-                    href={evt.link}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="button button-primary button-sm"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
-                  >
-                    Register <ExternalLink size={12} />
-                  </a>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+                          <div className="event-detail-item">
+                            <Clock size={14} color="#c084fc" />
+                            <span>Timing: <strong>{evt.time}</strong></span>
+                          </div>
 
-      {/* Add Custom Event Modal */}
+                          <div className="event-detail-item">
+                            <MapPin size={14} color="#34d399" />
+                            <span>Location: <strong>Online / Arena</strong></span>
+                          </div>
+
+                          <div className="event-detail-item">
+                            <Sparkles size={14} color="#fbbf24" />
+                            <span>Status: <strong>{evt.status || "Upcoming"}</strong></span>
+                          </div>
+                        </div>
+
+                        {evt.tags && evt.tags.length > 0 && (
+                          <div className="event-tags-container">
+                            {evt.tags.map((tag, tIdx) => (
+                              <span
+                                key={tIdx}
+                                style={{
+                                  fontSize: 11,
+                                  padding: "2px 8px",
+                                  borderRadius: 4,
+                                  background: "rgba(255, 255, 255, 0.05)",
+                                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                                  color: "#cbd5e1",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <Tag size={10} /> {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="event-action-bar">
+                          <button
+                            type="button"
+                            className="button button-secondary"
+                            onClick={() => toggleCalendarReminder(evt.id)}
+                            style={{ fontSize: 12, padding: "5px 12px" }}
+                          >
+                            <Bell size={13} color={evt.isReminderSet ? "#fbbf24" : "currentColor"} />
+                            {evt.isReminderSet ? "Reminder Set" : "Notify Me"}
+                          </button>
+
+                          {evt.link && evt.link !== "#" && (
+                            <a
+                              href={evt.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="button button-primary"
+                              style={{
+                                fontSize: 12,
+                                padding: "5px 14px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                textDecoration: "none",
+                              }}
+                            >
+                              <span>Open Registration</span>
+                              <ExternalLink size={13} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ADD CUSTOM EVENT MODAL */}
       {isAddModalOpen && (
         <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: 18, color: "var(--color-primary)" }}>
-                  Add Custom Calendar Item
+                <h2 style={{ margin: 0, fontSize: 17, color: "var(--color-primary)" }}>
+                  Add Custom Event
                 </h2>
-                <p className="muted">Add a contest, college hackathon, or interview deadline.</p>
+                <span style={{ fontSize: 12, color: "#64748b" }}>
+                  Schedule a private challenge, team round, or hackathon
+                </span>
               </div>
               <button
                 className="close-btn"
                 onClick={() => setIsAddModalOpen(false)}
                 type="button"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleAddEvent}>
+            <form onSubmit={handleFormSubmit}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label htmlFor="evtTitle">Event or Deadline Title *</label>
+                  <label htmlFor="modalEvtTitle">Event Title *</label>
                   <input
-                    id="evtTitle"
+                    id="modalEvtTitle"
                     className="form-input"
-                    placeholder="e.g. AtCoder Beginner Contest 375"
+                    placeholder="e.g. Codeforces Round 995 (Div. 2)"
+                    value={modalTitle}
+                    onChange={(e) => setModalTitle(e.target.value)}
                     required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
                   />
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div className="form-group">
-                    <label htmlFor="evtOrg">Organizer / Platform</label>
+                    <label htmlFor="modalEvtOrg">Platform / Organizer</label>
                     <input
-                      id="evtOrg"
+                      id="modalEvtOrg"
                       className="form-input"
-                      placeholder="e.g. AtCoder, Major League Hacking"
-                      value={organizer}
-                      onChange={(e) => setOrganizer(e.target.value)}
+                      placeholder="e.g. Codeforces / LeetCode"
+                      value={modalOrganizer}
+                      onChange={(e) => setModalOrganizer(e.target.value)}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="evtTypeSelect">Type</label>
+                    <label htmlFor="modalEvtType">Category</label>
                     <select
-                      id="evtTypeSelect"
+                      id="modalEvtType"
                       className="form-select"
-                      value={eventType}
-                      onChange={(e) => setEventType(e.target.value)}
+                      value={modalType}
+                      onChange={(e) => setModalType(e.target.value)}
                     >
-                      <option value="Contest">Contest</option>
+                      <option value="Contest">Coding Contest</option>
                       <option value="Hackathon">Hackathon</option>
                       <option value="Deadline">Application Deadline</option>
+                      <option value="Workshop">Workshop</option>
                     </select>
                   </div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div className="form-group">
-                    <label htmlFor="evtDate">Date *</label>
+                    <label htmlFor="modalEvtDate">Event Date *</label>
                     <input
-                      id="evtDate"
+                      id="modalEvtDate"
                       type="date"
                       className="form-input"
+                      value={modalDate}
+                      onChange={(e) => setModalDate(e.target.value)}
                       required
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="evtTime">Time / Window</label>
+                    <label htmlFor="modalEvtTime">Time / Duration</label>
                     <input
-                      id="evtTime"
+                      id="modalEvtTime"
                       className="form-input"
-                      placeholder="e.g. 17:30 UTC"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
+                      placeholder="e.g. 20:00 IST (2 hrs)"
+                      value={modalTime}
+                      onChange={(e) => setModalTime(e.target.value)}
                     />
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="evtLink">Link / Registration URL</label>
+                  <label htmlFor="modalEvtLink">Registration / Arena URL</label>
                   <input
-                    id="evtLink"
+                    id="modalEvtLink"
                     type="url"
                     className="form-input"
-                    placeholder="https://codeforces.com/contest/..."
-                    value={link}
-                    onChange={(e) => setLink(e.target.value)}
+                    placeholder="https://..."
+                    value={modalLink}
+                    onChange={(e) => setModalLink(e.target.value)}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="evtDesc">Short Description</label>
+                  <label htmlFor="modalEvtDesc">Description</label>
                   <textarea
-                    id="evtDesc"
+                    id="modalEvtDesc"
                     className="form-textarea"
-                    placeholder="Div. 2 rated round; 2 hours duration."
+                    placeholder="Brief overview or syllabus..."
+                    value={modalDescription}
+                    onChange={(e) => setModalDescription(e.target.value)}
                     rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
               </div>
@@ -540,7 +742,7 @@ export function CalendarPage() {
                   Cancel
                 </button>
                 <button type="submit" className="button button-primary">
-                  Save Event
+                  <Plus size={14} /> Save Event
                 </button>
               </div>
             </form>

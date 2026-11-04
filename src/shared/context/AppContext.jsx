@@ -27,7 +27,7 @@ const STORAGE_KEYS = {
   SAVED_IDS: "opportunity_os_saved_ids_v1",
   APPLICATIONS: "opportunity_os_applications_v1",
   GROWTH: "opportunity_os_growth_v1",
-  CALENDAR: "opportunity_os_calendar_v1",
+  CALENDAR: "opportunity_os_calendar_nov_test_v3",
   DAILY_CHALLENGE: "opportunity_os_daily_challenge_v1",
 };
 
