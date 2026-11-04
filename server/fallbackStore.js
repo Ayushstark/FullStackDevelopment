@@ -39,7 +39,7 @@ const defaultData = {
       platformHandles: {
         leetcode: "alex_shah",
         codeforces: "alex_coder",
-        codechef: "",
+        codechef: "alex_chef",
         geeksforgeeks: "",
         github: "alexshah-dev",
       },

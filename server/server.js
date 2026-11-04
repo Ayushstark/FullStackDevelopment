@@ -9,6 +9,7 @@ import { User } from "./models/User.js";
 import { GrowthLog } from "./models/GrowthLog.js";
 import { authMiddleware, JWT_SECRET } from "./middleware/auth.js";
 import { fallbackStore } from "./fallbackStore.js";
+import { getCodeChefProfile } from "./services/codechefService.js";
 
 dotenv.config();
 
@@ -287,7 +288,7 @@ app.post("/api/growth/log", apiLimiter, authMiddleware, async (req, res) => {
   try {
     const { platform, problemsSolved, notes } = req.body || {};
 
-    const validPlatforms = ["LeetCode", "Codeforces", "GitHub", "AtCoder", "HackerRank"];
+    const validPlatforms = ["LeetCode", "Codeforces", "CodeChef", "GitHub", "AtCoder", "HackerRank"];
     if (!platform || !validPlatforms.includes(platform)) {
       return res.status(400).json({ error: "Invalid or unsupported platform." });
     }
@@ -337,6 +338,25 @@ app.get("/api/growth/logs", apiLimiter, authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Fetch growth logs error:", err);
     res.status(500).json({ error: "Failed to fetch activity logs." });
+  }
+});
+
+// Real-time CodeChef profile retrieval endpoint
+app.get("/api/platforms/codechef/:handle", apiLimiter, async (req, res) => {
+  try {
+    const { handle } = req.params;
+    const forceRefresh = req.query.force === "true";
+    const profileData = await getCodeChefProfile(handle, { forceRefresh });
+
+    if (!profileData.success) {
+      const isNotFound = profileData.error && profileData.error.toLowerCase().includes("not found");
+      return res.status(isNotFound ? 404 : 400).json(profileData);
+    }
+
+    res.json(profileData);
+  } catch (err) {
+    console.error("CodeChef profile retrieval error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch CodeChef statistics." });
   }
 });
 
