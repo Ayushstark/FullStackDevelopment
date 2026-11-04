@@ -29,6 +29,7 @@ describe("sample opportunity and domain data", () => {
     expect(initialProfile.name).toBe("Alex Shah");
     expect(initialProfile.skills.length).toBeGreaterThan(3);
     expect(initialProfile.platformHandles.leetcode).toBeTruthy();
+    expect(initialProfile.platformHandles.gfg).toBeTruthy();
     expect(initialProfile.platformHandles.github).toBeTruthy();
   });
 
@@ -45,6 +46,7 @@ describe("sample opportunity and domain data", () => {
     expect(initialGrowthStats.totalProblemsSolved).toBeGreaterThan(0);
     expect(initialGrowthStats.leetcode.solved).toBeGreaterThan(0);
     expect(initialGrowthStats.codeforces.solved).toBeGreaterThan(0);
+    expect(initialGrowthStats.gfg.solved).toBeGreaterThan(0);
     expect(initialGrowthStats.github.contributions).toBeGreaterThan(0);
     expect(initialGrowthStats.weeklyActivity.length).toBe(7);
     expect(initialGrowthStats.monthlyActivity.length).toBe(28);

@@ -28,6 +28,8 @@ export function GrowthPage() {
     rekindleStreak,
     syncCodeChefData,
     syncGfgData,
+    syncLeetCodeData,
+    syncGitHubData,
   } = useAppContext();
 
   const [timeRange, setTimeRange] = useState("Past 24 Hours");
@@ -490,6 +492,32 @@ export function GrowthPage() {
                     </button>
                   )}
 
+                  {expandedPlatform === "leetcode" && profile.platformHandles?.leetcode && (
+                    <button
+                      type="button"
+                      className="button button-secondary button-sm"
+                      style={{ fontSize: 11, padding: "3px 10px", height: "auto" }}
+                      onClick={() => syncLeetCodeData(profile.platformHandles?.leetcode, { force: true })}
+                      disabled={leetcode.loading}
+                    >
+                      <RotateCw size={11} className={leetcode.loading ? "spin" : ""} />
+                      {leetcode.loading ? "Syncing..." : "Sync Live"}
+                    </button>
+                  )}
+
+                  {expandedPlatform === "github" && profile.platformHandles?.github && (
+                    <button
+                      type="button"
+                      className="button button-secondary button-sm"
+                      style={{ fontSize: 11, padding: "3px 10px", height: "auto" }}
+                      onClick={() => syncGitHubData(profile.platformHandles?.github, { force: true })}
+                      disabled={github.loading}
+                    >
+                      <RotateCw size={11} className={github.loading ? "spin" : ""} />
+                      {github.loading ? "Syncing..." : "Sync Live"}
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", padding: 2 }}
@@ -579,28 +607,46 @@ export function GrowthPage() {
               )}
 
               {expandedPlatform === "leetcode" && (
-                <div className="visual-expand-grid">
-                  <div className="visual-expand-tile">
-                    <small>Total Solved</small>
-                    <strong>{leetcode.solved ?? 0}</strong>
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Total Solved</small>
+                      <strong>{leetcode.solved ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small style={{ color: "#4ade80" }}>Easy</small>
+                      <strong style={{ color: "#4ade80" }}>{leetcode.easy ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small style={{ color: "#fbbf24" }}>Medium</small>
+                      <strong style={{ color: "#fbbf24" }}>{leetcode.medium ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small style={{ color: "#f87171" }}>Hard</small>
+                      <strong style={{ color: "#f87171" }}>{leetcode.hard ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Global Rank</small>
+                      <strong>{leetcode.ranking ? `#${leetcode.ranking.toLocaleString()}` : "—"}</strong>
+                    </div>
+                    {leetcode.contestRating && (
+                      <div className="visual-expand-tile">
+                        <small>Contest Rating</small>
+                        <strong>{leetcode.contestRating} {leetcode.contestBadge ? `(${leetcode.contestBadge})` : ""}</strong>
+                      </div>
+                    )}
                   </div>
-                  <div className="visual-expand-tile">
-                    <small style={{ color: "#4ade80" }}>Easy</small>
-                    <strong style={{ color: "#4ade80" }}>{leetcode.easy ?? 0}</strong>
-                  </div>
-                  <div className="visual-expand-tile">
-                    <small style={{ color: "#fbbf24" }}>Medium</small>
-                    <strong style={{ color: "#fbbf24" }}>{leetcode.medium ?? 0}</strong>
-                  </div>
-                  <div className="visual-expand-tile">
-                    <small style={{ color: "#f87171" }}>Hard</small>
-                    <strong style={{ color: "#f87171" }}>{leetcode.hard ?? 0}</strong>
-                  </div>
-                  <div className="visual-expand-tile">
-                    <small>Global Rank</small>
-                    <strong>{leetcode.ranking ? `Top ${Math.round(leetcode.ranking / 1000)}k` : "—"}</strong>
-                  </div>
-                </div>
+                  {leetcode.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {leetcode.lastSynced}
+                    </span>
+                  )}
+                  {leetcode.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {leetcode.error}
+                    </span>
+                  )}
+                </>
               )}
 
               {expandedPlatform === "codeforces" && (
@@ -625,20 +671,40 @@ export function GrowthPage() {
               )}
 
               {expandedPlatform === "github" && (
-                <div className="visual-expand-grid">
-                  <div className="visual-expand-tile">
-                    <small>Contributions</small>
-                    <strong>{github.contributions ?? 0}</strong>
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Contributions</small>
+                      <strong>{github.contributions ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Repositories</small>
+                      <strong>{github.repos ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Commit Streak</small>
+                      <strong>{github.streak ?? 0} Days</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Longest Streak</small>
+                      <strong>{github.longestStreak ? `${github.longestStreak} Days` : "—"}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Followers</small>
+                      <strong>{github.followers ?? "—"}</strong>
+                    </div>
                   </div>
-                  <div className="visual-expand-tile">
-                    <small>Repositories</small>
-                    <strong>{github.repos ?? 0}</strong>
-                  </div>
-                  <div className="visual-expand-tile">
-                    <small>Commit Streak</small>
-                    <strong>{github.streak ?? 0} Days</strong>
-                  </div>
-                </div>
+                  {github.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {github.lastSynced}
+                    </span>
+                  )}
+                  {github.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {github.error}
+                    </span>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -821,7 +887,23 @@ export function GrowthPage() {
                   <span className="visual-breakdown-pill-dot" style={{ background: "#38bdf8" }} />
                   LeetCode
                 </div>
-                <div className="visual-breakdown-pill-val">{lcSolved} Solved</div>
+                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>{lcSolved} Solved</span>
+                  {profile.platformHandles?.leetcode && (
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", color: "#38bdf8", cursor: "pointer", padding: 0 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        syncLeetCodeData(profile.platformHandles?.leetcode, { force: true });
+                      }}
+                      title="Sync LeetCode Live"
+                      disabled={leetcode.loading}
+                    >
+                      <RotateCw size={10} className={leetcode.loading ? "spin" : ""} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div
@@ -886,7 +968,23 @@ export function GrowthPage() {
                   <span className="visual-breakdown-pill-dot" style={{ background: "#f43f5e" }} />
                   GitHub
                 </div>
-                <div className="visual-breakdown-pill-val">{ghCommits} Commits</div>
+                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>{ghCommits} Commits</span>
+                  {profile.platformHandles?.github && (
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", color: "#f43f5e", cursor: "pointer", padding: 0 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        syncGitHubData(profile.platformHandles?.github, { force: true });
+                      }}
+                      title="Sync GitHub Live"
+                      disabled={github.loading}
+                    >
+                      <RotateCw size={10} className={github.loading ? "spin" : ""} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
