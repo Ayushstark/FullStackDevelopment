@@ -17,6 +17,7 @@ import {
   submitGrowthLog,
 } from "../services/authService.js";
 import { fetchLiveCodeChefStats } from "../services/codechefService.js";
+import { fetchLiveGfgStats } from "../services/gfgService.js";
 
 const STORAGE_KEYS = {
   PROFILE: "opportunity_os_profile_v1",
@@ -598,6 +599,80 @@ export function AppProvider({ children }) {
     }
   };
 
+  // Real-time GeeksforGeeks Data Synchronization
+  const syncGfgData = async (handleToUse, options = { force: true }) => {
+    const handle = handleToUse || profile.platformHandles?.gfg || profile.platformHandles?.geeksforgeeks;
+    if (!handle) {
+      return { success: false, error: "No GeeksforGeeks handle configured." };
+    }
+
+    setGrowthStats((prev) => {
+      const currentGfg = prev.geeksforgeeks || prev.gfg || initialGrowthStats.gfg;
+      const loadingState = {
+        ...currentGfg,
+        loading: true,
+        error: null,
+      };
+      return {
+        ...prev,
+        gfg: loadingState,
+        geeksforgeeks: loadingState,
+      };
+    });
+
+    const result = await fetchLiveGfgStats(handle, options);
+
+    if (result.success && result.data) {
+      const live = result.data;
+      setGrowthStats((prev) => {
+        const currentGfg = prev.geeksforgeeks || prev.gfg || initialGrowthStats.gfg;
+        const prevSolved = currentGfg.solved ?? 0;
+        const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : prevSolved;
+        const diffSolved = liveSolved - prevSolved;
+        const updatedGfg = {
+          ...currentGfg,
+          score: typeof live.score === "number" ? live.score : (currentGfg.score ?? 0),
+          monthlyScore: typeof live.monthlyScore === "number" ? live.monthlyScore : (currentGfg.monthlyScore ?? 0),
+          solved: liveSolved,
+          instituteRank: live.instituteRank ?? currentGfg.instituteRank,
+          instituteName: live.instituteName || currentGfg.instituteName,
+          currentStreak: typeof live.currentStreak === "number" ? live.currentStreak : (currentGfg.currentStreak ?? 0),
+          longestStreak: typeof live.longestStreak === "number" ? live.longestStreak : (currentGfg.longestStreak ?? 0),
+          easy: live.difficultyBreakdown?.easy ?? currentGfg.easy,
+          medium: live.difficultyBreakdown?.medium ?? currentGfg.medium,
+          hard: live.difficultyBreakdown?.hard ?? currentGfg.hard,
+          recentSubmissions: live.recentSubmissions || currentGfg.recentSubmissions,
+          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          loading: false,
+          error: null,
+        };
+
+        return {
+          ...prev,
+          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          gfg: updatedGfg,
+          geeksforgeeks: updatedGfg,
+        };
+      });
+      return { success: true, data: result.data };
+    } else {
+      setGrowthStats((prev) => {
+        const currentGfg = prev.geeksforgeeks || prev.gfg || initialGrowthStats.gfg;
+        const errorState = {
+          ...currentGfg,
+          loading: false,
+          error: result.error || "Failed to sync GeeksforGeeks statistics.",
+        };
+        return {
+          ...prev,
+          gfg: errorState,
+          geeksforgeeks: errorState,
+        };
+      });
+      return { success: false, error: result.error };
+    }
+  };
+
   // Calendar actions
   const toggleCalendarReminder = (id) => {
     setCalendarEvents((prev) =>
@@ -673,6 +748,7 @@ export function AppProvider({ children }) {
         useStreakFreeze,
         rekindleStreak,
         syncCodeChefData,
+        syncGfgData,
         dailyChallenge,
         completeDailyChallenge,
         calendarEvents,

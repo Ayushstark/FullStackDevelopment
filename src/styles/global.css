@@ -1883,18 +1883,97 @@ body {
   .section-title-row h2 { font-size: 20px; }
 }
 
-/* Streak Milestones */
-.milestones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
-.milestone-card { background: var(--bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: var(--transition); }
-.milestone-card.unlocked { border-color: #c9ec6c; background: #f7f9f0; }
-.milestone-card-top { display: flex; align-items: center; justify-content: space-between; }
-.milestone-title { font-size: 13.5px; font-weight: 700; color: var(--color-text-title); }
-.milestone-badge-pill { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-full); }
-.milestone-badge-pill.unlocked { background: #d8e8b7; color: #3b5327; }
-.milestone-badge-pill.in-progress { background: #fef3c7; color: #b45309; }
-.milestone-badge-pill.locked { background: #ebe7dc; color: #9c9a8e; }
-.milestone-progress-bar { height: 5px; background: #e6e2d7; border-radius: 99px; overflow: hidden; margin-top: 4px; }
-.milestone-progress-fill { height: 100%; background: #234e40; border-radius: 99px; transition: width 0.3s ease; }
+/* Streak Milestones - Dark Translucent High-Contrast Aesthetic */
+.milestones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.milestone-card {
+  background: rgba(13, 17, 23, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: var(--transition);
+}
+.milestone-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+}
+.milestone-card.unlocked {
+  background: rgba(13, 27, 21, 0.75) !important;
+  border: 1px solid rgba(74, 222, 128, 0.45) !important;
+  box-shadow: 0 4px 24px rgba(34, 197, 94, 0.12);
+}
+.milestone-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.milestone-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9 !important;
+  letter-spacing: -0.01em;
+}
+.milestone-card.unlocked .milestone-title {
+  color: #4ade80 !important;
+}
+.milestone-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: #94a3b8 !important;
+  line-height: 1.45;
+}
+.milestone-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: #8da0aa !important;
+  margin-top: 2px;
+}
+.milestone-badge-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+}
+.milestone-badge-pill.unlocked {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(74, 222, 128, 0.35) !important;
+}
+.milestone-badge-pill.in-progress {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+.milestone-badge-pill.locked {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #64748b !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.milestone-progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.milestone-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
 
 /* Spin animation */
 @keyframes spin {
@@ -2412,4 +2491,704 @@ button, input, select, textarea { font: inherit; }
   .home-streak-stat { padding: 6px 12px; }
   .home-streak-stat > span { font-size: 10px; letter-spacing: 0.06em; }
   .home-streak-stat strong { font-size: 38px; }
+}
+
+/* ==========================================================================
+   CYBER TELEMETRY & PLATFORM CONSTELLATION CONSOLE (Image 2 Inspiration)
+   ========================================================================== */
+
+.cyber-console {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.cyber-console-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .cyber-console-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Radar Constellation Canvas Card */
+.cyber-radar-card {
+  background: #090d11;
+  background-image: radial-gradient(circle, rgba(56, 189, 248, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 1px solid #1a2530;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-radar-card::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.06) 0%, rgba(34, 197, 94, 0.03) 50%, transparent 75%);
+  pointer-events: none;
+}
+
+.cyber-radar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.cyber-radar-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #38bdf8;
+}
+
+.cyber-radar-kicker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.cyber-constellation-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+}
+
+.cyber-constellation-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cyber-radar-ring {
+  fill: none;
+  stroke: rgba(56, 189, 248, 0.12);
+  stroke-width: 1;
+}
+
+.cyber-radar-ring-dashed {
+  fill: none;
+  stroke: rgba(56, 189, 248, 0.18);
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
+}
+
+.cyber-radar-ring-sweep {
+  animation: radar-rotate 25s linear infinite;
+  transform-origin: 250px 250px;
+}
+
+@keyframes radar-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cyber-node-btn {
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.cyber-node-btn:hover {
+  filter: brightness(1.2);
+  transform: scale(1.06);
+}
+
+.cyber-node-btn.is-active {
+  filter: brightness(1.25);
+  transform: scale(1.08);
+}
+
+/* Platform Inspector Under Radar */
+.cyber-inspector {
+  margin-top: 18px;
+  background: rgba(13, 17, 20, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid #222d36;
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  position: relative;
+  z-index: 2;
+  transition: border-color 0.2s ease;
+}
+
+.cyber-inspector-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cyber-inspector-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cyber-inspector-pills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cyber-inspector-stat {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.cyber-inspector-stat span {
+  display: block;
+  font-size: 10px;
+  color: #8da0aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cyber-inspector-stat strong {
+  display: block;
+  font-size: 15px;
+  color: #f1f5f9;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* Telemetry Sidebar (Right Column) */
+.cyber-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cyber-panel {
+  background: #090d11;
+  border: 1px solid #1a2530;
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cyber-panel-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.cyber-telemetry-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.cyber-tile {
+  background: #0d1217;
+  border: 1px solid #1c2630;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.cyber-tile:hover {
+  border-color: #2a3b4c;
+  background: #11171e;
+}
+
+.cyber-tile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cyber-tile-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8fa0ac;
+  letter-spacing: 0.02em;
+}
+
+.cyber-tile-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.cyber-tile-meta {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Multi-Segment Horizontal Progress Bars */
+.cyber-segmented-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: #172129;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+
+.cyber-segmented-bar > div {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.cyber-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  gap: 8px;
+}
+
+.cyber-pill-card {
+  background: #0c1116;
+  border: 1px solid #1c2630;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.cyber-pill-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #8da0aa;
+  font-weight: 600;
+}
+
+.cyber-pill-card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cyber-pill-card-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cyber-platform-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0d1217;
+  border: 1px solid #1c2630;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.cyber-platform-chip:hover {
+  border-color: #2b3d4f;
+}
+
+.cyber-platform-chip-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cyber-platform-chip-val {
+  font-weight: 700;
+  font-size: 13px;
+  color: #f1f5f9;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   IMAGE 2 CYBER VISUAL REPRODUCTION - CONSTELLATION & TELEMETRY
+   ========================================================================== */
+
+.visual-root {
+  background: transparent !important;
+  display: flex;
+  gap: 20px;
+  min-height: calc(100vh - 100px);
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+@media (max-width: 1080px) {
+  .visual-root {
+    flex-direction: column;
+  }
+}
+
+.visual-constellation-container {
+  flex: 1 1 62%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 600px;
+  background: rgba(12, 16, 22, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.visual-constellation-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 540px;
+  overflow: visible;
+}
+
+.visual-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #8da0aa;
+}
+
+.visual-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.visual-sidebar {
+  flex: 0 0 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 1080px) {
+  .visual-sidebar {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+.visual-sidebar-card {
+  background: rgba(13, 17, 23, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.visual-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.visual-icon-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #e2e8f0;
+  padding: 5px 8px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.visual-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.visual-dropdown-select {
+  background: rgba(13, 17, 23, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-size: 11px;
+  padding: 4px 8px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Image 2 Top Telemetry Card */
+.visual-header-card {
+  background: rgba(13, 17, 23, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.visual-header-progress {
+  display: flex;
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: #1c232a;
+  margin-bottom: 10px;
+}
+
+.visual-header-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.visual-header-col-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.visual-header-col-item strong {
+  display: block;
+  font-size: 16px;
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* 6-Tile Telemetry Grid */
+.visual-grid-6 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.visual-grid-tile {
+  background: rgba(13, 17, 23, 0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.visual-grid-tile-label {
+  font-size: 10.5px;
+  color: #8da0aa;
+  margin-bottom: 4px;
+  letter-spacing: 0.01em;
+}
+
+.visual-grid-tile-val {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.visual-grid-tile-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  font-variant-numeric: tabular-nums;
+}
+
+.visual-grid-tile-trend {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.visual-grid-tile-trend.up {
+  color: #4ade80;
+}
+
+.visual-grid-tile-trend.down {
+  color: #f87171;
+}
+
+.visual-grid-tile-trend.neutral {
+  color: #94a3b8;
+}
+
+/* Severity & Category Breakdown Cards */
+.visual-breakdown-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.visual-breakdown-bar {
+  display: flex;
+  height: 7px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: #171d23;
+  margin-bottom: 10px;
+  gap: 2px;
+}
+
+.visual-breakdown-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.visual-breakdown-pill-card {
+  background: rgba(13, 17, 23, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.visual-breakdown-pill-card:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.visual-breakdown-pill-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #8da0aa;
+}
+
+.visual-breakdown-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.visual-breakdown-pill-val {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Expanded Platform Details Panel (Inline Expansion) */
+.visual-expand-panel {
+  margin-top: 14px;
+  background: rgba(13, 17, 23, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 16px 20px;
+  animation: fadeIn 0.25s ease-out;
+  position: relative;
+  z-index: 5;
+}
+
+.visual-expand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.visual-expand-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.visual-expand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.visual-expand-tile {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.visual-expand-tile small {
+  display: block;
+  font-size: 10px;
+  color: #8da0aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+}
+
+.visual-expand-tile strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
