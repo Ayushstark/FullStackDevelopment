@@ -1,5 +1,4 @@
-import { LogOut, UserRound } from "lucide-react";
-import { Activity, UserRound } from "lucide-react";
+import { Activity, LogOut, UserRound } from "lucide-react";
 import { FlowButton } from "../../components/ui/FlowButton.jsx";
 import { useAppContext } from "../context/AppContext.jsx";
 

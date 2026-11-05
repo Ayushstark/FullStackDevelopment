@@ -9,6 +9,7 @@ import {
   Globe,
   MapPin,
   Plus,
+  RotateCw,
   Search,
   Sparkles,
   Tag,
@@ -28,28 +29,39 @@ import {
 import "./calendar-page.css";
 
 export function CalendarPage() {
-  const { calendarEvents: contextEvents, toggleCalendarReminder, addCalendarEvent } = useAppContext();
+  const {
+    calendarEvents: contextEvents,
+    toggleCalendarReminder,
+    addCalendarEvent,
+    refreshLiveContests,
+    isContestsLoading,
+  } = useAppContext();
 
-  // Ensure initial seed events (e.g. November 1 test events) are always included alongside user additions
+  // Prefer live context events (from /api/contests). If empty, use initial seed events
   const calendarEvents = useMemo(() => {
-    if (!contextEvents || contextEvents.length <= 1) {
-      return initialCalendarEvents;
+    if (contextEvents && contextEvents.length > 0) {
+      return contextEvents;
     }
-    // Merge initial sample events with context events to prevent stale cache lock
-    const map = new Map();
-    for (const evt of initialCalendarEvents) {
-      map.set(evt.id, evt);
-    }
-    for (const evt of contextEvents) {
-      map.set(evt.id, evt);
-    }
-    return Array.from(map.values());
+    return initialCalendarEvents;
   }, [contextEvents]);
 
-  // Navigation state (defaults to Nov 2026 where events exist)
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(10); // 10 = November
-  const [selectedDate, setSelectedDate] = useState("2026-11-01");
+  const today = useMemo(() => new Date(), []);
+  const todayDateKey = useMemo(() => normalizeDateKey(today), [today]);
+
+  // Navigation state defaults to current real date
+  const [currentYear, setCurrentYear] = useState(() => today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => today.getMonth());
+  const [selectedDate, setSelectedDate] = useState(() => todayDateKey);
+
+  // Next upcoming event finder for fast navigation
+  const nextUpcomingEvent = useMemo(() => {
+    const todayStr = normalizeDateKey(new Date());
+    return (
+      calendarEvents
+        .filter((e) => e.date >= todayStr)
+        .sort((a, b) => a.date.localeCompare(b.date))[0] || calendarEvents[0]
+    );
+  }, [calendarEvents]);
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -267,6 +279,19 @@ export function CalendarPage() {
             <option value="Deadline">Application Deadlines</option>
           </select>
 
+          {/* Refresh Live Contests */}
+          <button
+            className="button button-secondary"
+            onClick={() => refreshLiveContests(true)}
+            type="button"
+            disabled={isContestsLoading}
+            style={{ padding: "6px 12px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+            title="Fetch real-time contests from Codeforces, LeetCode, CodeChef, Devpost & GFG"
+          >
+            <RotateCw size={13} className={isContestsLoading ? "spin-icon" : ""} />
+            {isContestsLoading ? "Syncing..." : "Sync Live Contests"}
+          </button>
+
           {/* Add Custom Event */}
           <button
             className="button button-primary"
@@ -451,14 +476,23 @@ export function CalendarPage() {
               <p style={{ margin: "0 0 16px", fontSize: 13, color: "#5D5D5D", maxWidth: 320 }}>
                 Looks like a quiet day. Explore highlighted dates on the calendar or jump to upcoming rounds.
               </p>
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() => setSelectedDate("2026-11-01")}
-                style={{ fontSize: 12, padding: "6px 14px" }}
-              >
-                Browse November 1 Events
-              </button>
+              {nextUpcomingEvent && (
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => {
+                    setSelectedDate(nextUpcomingEvent.date);
+                    const parts = nextUpcomingEvent.date.split("-").map(Number);
+                    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                      setCurrentYear(parts[0]);
+                      setCurrentMonth(parts[1] - 1);
+                    }
+                  }}
+                  style={{ fontSize: 12, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <Sparkles size={13} /> Next Live Event ({nextUpcomingEvent.date}): {nextUpcomingEvent.title.slice(0, 24)}...
+                </button>
+              )}
             </div>
           ) : (
             <div className="agenda-events-list">

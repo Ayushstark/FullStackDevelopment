@@ -8,6 +8,7 @@
     "backend"
   ],
   "scripts": {
+    "start": "node backend/src/server.js",
     "dev": "concurrently -k -p \"[{name}]\" -n \"CLIENT,SERVER\" -c \"cyan.bold,magenta.bold\" \"npm --prefix frontend run dev\" \"node backend/src/server.js\"",
     "dev:client": "npm --prefix frontend run dev",
     "dev:frontend": "npm --prefix frontend run dev",

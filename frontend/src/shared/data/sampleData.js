@@ -171,12 +171,12 @@ export const initialProfile = {
   resumeSummary:
     "Second-year Computer Science undergraduate with hands-on experience building reactive web apps using React, JavaScript, and modern CSS. Active competitive programmer with 300+ problems solved across LeetCode and Codeforces.",
   platformHandles: {
-    leetcode: "alex_shah",
-    codeforces: "alex_coder",
-    codechef: "alex_chef",
-    geeksforgeeks: "alex_gfg",
-    gfg: "alex_gfg",
-    github: "alexshah-dev",
+    leetcode: "tourist",
+    codeforces: "tourist",
+    codechef: "gennady.korotkevich",
+    geeksforgeeks: "tourist",
+    gfg: "tourist",
+    github: "torvalds",
   },
 };
 
