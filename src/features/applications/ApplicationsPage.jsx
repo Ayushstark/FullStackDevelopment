@@ -1,21 +1,22 @@
 import {
   Calendar,
   ExternalLink,
+  GripVertical,
   MapPin,
   Plus,
-  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
+import "./applications-scratch-board.css";
 
 const STATUS_COLUMNS = [
-  { key: "Saved", label: "Saved Roles", color: "#777777" },
-  { key: "Applied", label: "Applied", color: "#111111" },
-  { key: "Interviewing", label: "Interviewing", color: "#4B4B4B" },
-  { key: "Offer", label: "Offers Received", color: "#262626" },
-  { key: "Rejected", label: "Archived", color: "#B7B7B7" },
+  { key: "Saved", label: "Saved Roles", color: "#64748b", colClass: "col-saved" },
+  { key: "Applied", label: "Applied", color: "#0284c7", colClass: "col-applied" },
+  { key: "Interviewing", label: "Interviewing", color: "#d97706", colClass: "col-interviewing" },
+  { key: "Offer", label: "Offer Received", color: "#10b981", colClass: "col-offer" },
+  { key: "Rejected", label: "Archived", color: "#94a3b8", colClass: "col-rejected" },
 ];
 
 export function ApplicationsPage() {
@@ -25,13 +26,15 @@ export function ApplicationsPage() {
     updateApplicationNotes,
     deleteApplication,
     createManualApplication,
-    setActivePage,
   } = useAppContext();
+
+  // Drag and Drop state (Scratch-inspired tactile block snapping)
+  const [draggedAppId, setDraggedAppId] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingNotesId, setEditingNotesId] = useState(null);
   const [tempNotes, setTempNotes] = useState("");
-  const [draggedApplicationId, setDraggedApplicationId] = useState(null);
 
   // New application form state
   const [newCompany, setNewCompany] = useState("");
@@ -68,12 +71,79 @@ export function ApplicationsPage() {
     setEditingNotesId(null);
   };
 
-  const handleDropOnStage = (event, status) => {
-    event.preventDefault();
-    const id = draggedApplicationId || event.dataTransfer.getData("text/application-id");
-    const application = applications.find((item) => String(item.id) === String(id));
-    if (application && application.status !== status) updateApplicationStatus(application.id, status);
-    setDraggedApplicationId(null);
+  // Drag and drop event handlers
+  const dragLeaveTimeoutRef = useRef(null);
+
+  const handleDragStart = (e, appId) => {
+    setDraggedAppId(appId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", appId);
+
+    // Set custom clean drag image preview so the browser doesn't snapshot a glitchy rotated card
+    const target = e.currentTarget;
+    if (e.dataTransfer.setDragImage) {
+      const rect = target.getBoundingClientRect();
+      const clone = target.cloneNode(true);
+      clone.style.width = `${rect.width}px`;
+      clone.style.position = "absolute";
+      clone.style.top = "-9999px";
+      clone.style.left = "-9999px";
+      clone.style.pointerEvents = "none";
+      clone.style.opacity = "0.95";
+      clone.style.transform = "rotate(2deg) scale(1.02)";
+      clone.style.boxShadow = "0 14px 28px rgba(0, 0, 0, 0.22), 0 0 16px rgba(2, 132, 199, 0.25)";
+      document.body.appendChild(clone);
+      e.dataTransfer.setDragImage(clone, rect.width / 2, 24);
+      setTimeout(() => {
+        if (document.body.contains(clone)) {
+          document.body.removeChild(clone);
+        }
+      }, 0);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (dragLeaveTimeoutRef.current) {
+      clearTimeout(dragLeaveTimeoutRef.current);
+    }
+    setDraggedAppId(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragOver = (e, columnKey) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragLeaveTimeoutRef.current) {
+      clearTimeout(dragLeaveTimeoutRef.current);
+      dragLeaveTimeoutRef.current = null;
+    }
+    if (dragOverColumn !== columnKey) {
+      setDragOverColumn(columnKey);
+    }
+  };
+
+  const handleDragLeave = (e, columnKey) => {
+    // Only clear if actually leaving the column container to prevent jitter from child elements
+    const related = e.relatedTarget;
+    if (e.currentTarget && e.currentTarget.contains(related)) {
+      return;
+    }
+    dragLeaveTimeoutRef.current = setTimeout(() => {
+      setDragOverColumn((current) => (current === columnKey ? null : current));
+    }, 40);
+  };
+
+  const handleDrop = (e, targetStatus) => {
+    e.preventDefault();
+    if (dragLeaveTimeoutRef.current) {
+      clearTimeout(dragLeaveTimeoutRef.current);
+    }
+    const appId = e.dataTransfer.getData("text/plain") || draggedAppId;
+    if (appId) {
+      updateApplicationStatus(appId, targetStatus);
+    }
+    setDraggedAppId(null);
+    setDragOverColumn(null);
   };
 
   return (
@@ -89,13 +159,6 @@ export function ApplicationsPage() {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button
-            className="button button-secondary"
-            onClick={() => setActivePage("opportunities")}
-            type="button"
-          >
-            Browse Opportunities
-          </button>
-          <button
             className="button button-primary"
             onClick={() => setIsAddModalOpen(true)}
             type="button"
@@ -105,27 +168,30 @@ export function ApplicationsPage() {
         </div>
       </div>
 
-      {/* Kanban Board */}
+      {/* Scratch-Inspired Kanban Board */}
       <div className="tracker-board applications-board" aria-label="Application stages kanban board">
         {STATUS_COLUMNS.map((column) => {
           const colApps = applications.filter((app) => app.status === column.key);
+          const isDragOver = dragOverColumn === column.key;
 
           return (
             <div
-              className={`tracker-column application-column ${draggedApplicationId ? "is-drop-ready" : ""}`}
+              className={`tracker-column application-column ${column.colClass} ${isDragOver ? "is-drag-over" : ""}`}
               key={column.key}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => handleDropOnStage(event, column.key)}
+              onDragOver={(e) => handleDragOver(e, column.key)}
+              onDragLeave={(e) => handleDragLeave(e, column.key)}
+              onDrop={(e) => handleDrop(e, column.key)}
               style={{ "--column-accent": column.color }}
             >
               <div className="column-header">
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span className="column-header-pill">
                   <span
                     style={{
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
                       backgroundColor: column.color,
+                      boxShadow: `0 0 6px ${column.color}`,
                     }}
                   />
                   {column.label}
@@ -133,132 +199,142 @@ export function ApplicationsPage() {
                 <span className="column-badge">{colApps.length}</span>
               </div>
 
+              {/* Slot placeholder during drag over */}
+              {isDragOver && draggedAppId && (
+                <div className="drag-placeholder-slot">
+                  <span>✨ Snap block to {column.label}</span>
+                </div>
+              )}
+
               {colApps.length === 0 ? (
-                <div className="tracker-empty-state"
-                  style={{
-                    textAlign: "center",
-                    padding: "24px 10px",
-                    color: "var(--color-text-subtle)",
-                    fontSize: 12,
-                    background: "rgba(255,255,255,0.02)",
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px dashed var(--color-border)",
-                  }}
-                >
-                  No applications here
+                <div className="empty-column-zone">
+                  <span>Drop block here</span>
                 </div>
               ) : (
-                colApps.map((app) => (
-                  <article
-                    className={`tracker-card application-card ${draggedApplicationId === app.id ? "is-dragging" : ""}`}
-                    key={app.id}
-                    draggable={editingNotesId !== app.id}
-                    onDragStart={(event) => {
-                      setDraggedApplicationId(app.id);
-                      event.dataTransfer.effectAllowed = "move";
-                      event.dataTransfer.setData("text/application-id", String(app.id));
-                    }}
-                    onDragEnd={() => setDraggedApplicationId(null)}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <strong>{app.role}</strong>
-                      <button
-                        className="text-button"
-                        onClick={() => deleteApplication(app.id)}
-                        title="Remove application"
-                        style={{ color: "#94a3b8" }}
-                        type="button"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                colApps.map((app) => {
+                  const isDraggingThis = draggedAppId === app.id;
+                  const cardClass =
+                    app.status === "Saved"
+                      ? "card-saved"
+                      : app.status === "Applied"
+                      ? "card-applied"
+                      : app.status === "Interviewing"
+                      ? "card-interviewing"
+                      : app.status === "Offer"
+                      ? "card-offer"
+                      : "card-rejected";
 
-                    <span>{app.company}</span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5 }}>
-                      <MapPin size={11} /> {app.location}
-                    </span>
-
-                    {app.matchScore && (
-                      <div className="application-match-score" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}>
-                        <Sparkles size={11} /> Match score: {app.matchScore}%
-                      </div>
-                    )}
-
-                    <div className="application-deadline" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}>
-                      <Calendar size={11} /> Due: {app.deadline}
-                    </div>
-
-                    {/* Notes preview or edit */}
-                    {editingNotesId === app.id ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-                        <textarea
-                          className="form-textarea"
-                          style={{ minHeight: 60, fontSize: 12 }}
-                          value={tempNotes}
-                          onChange={(e) => setTempNotes(e.target.value)}
-                        />
-                        <div style={{ display: "flex", gap: 6 }}>
+                  return (
+                    <article
+                      className={`scratch-block-card tracker-card application-card ${cardClass} ${isDraggingThis ? "is-dragging" : ""}`}
+                      key={app.id}
+                      draggable={editingNotesId !== app.id}
+                      onDragStart={(e) => handleDragStart(e, app.id)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <div className="scratch-block-top">
+                        <strong className="scratch-role-title">{app.role}</strong>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span className="scratch-grip-handle" title="Drag to reorder/move block">
+                            <GripVertical size={13} />
+                          </span>
                           <button
-                            className="button button-primary button-sm"
-                            onClick={() => handleSaveNotes(app.id)}
+                            className="text-button"
+                            onClick={() => deleteApplication(app.id)}
+                            title="Remove application"
+                            style={{ color: "#94a3b8", padding: 2 }}
                             type="button"
                           >
-                            Save
-                          </button>
-                          <button
-                            className="button button-secondary button-sm"
-                            onClick={() => setEditingNotesId(null)}
-                            type="button"
-                          >
-                            Cancel
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </div>
-                    ) : (
-                      <div
-                        className="card-notes"
-                        onClick={() => {
-                          setEditingNotesId(app.id);
-                          setTempNotes(app.notes);
-                        }}
-                        title="Click to edit notes"
-                        style={{ cursor: "pointer" }}
-                      >
-                        {app.notes || "+ Add interview or follow-up notes..."}
+
+                      <div className="scratch-company-row">
+                        <span>{app.company}</span>
                       </div>
-                    )}
 
-                    {/* Stage selector dropdown */}
-                    <div style={{ marginTop: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <select
-                        className="filter-select"
-                        style={{ fontSize: 11, padding: "4px 6px" }}
-                        value={app.status}
-                        onChange={(e) =>
-                          updateApplicationStatus(app.id, e.target.value)
-                        }
-                      >
-                        {STATUS_COLUMNS.map((col) => (
-                          <option key={col.key} value={col.key}>
-                            Move to: {col.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="scratch-location-tag">
+                        <MapPin size={12} /> {app.location}
+                      </div>
 
-                      {app.sourceUrl && (
-                        <a
-                          href={app.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-button"
-                          title="Open job source"
+                      <div className="scratch-badge-deadline">
+                        <Calendar size={12} /> Due: {app.deadline}
+                      </div>
+
+                      {/* Notes preview or edit */}
+                      {editingNotesId === app.id ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                          <textarea
+                            className="form-textarea"
+                            style={{ minHeight: 60, fontSize: 12 }}
+                            value={tempNotes}
+                            onChange={(e) => setTempNotes(e.target.value)}
+                          />
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              className="button button-primary button-sm"
+                              onClick={() => handleSaveNotes(app.id)}
+                              type="button"
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="button button-secondary button-sm"
+                              onClick={() => setEditingNotesId(null)}
+                              type="button"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="scratch-notes-box"
+                          onClick={() => {
+                            setEditingNotesId(app.id);
+                            setTempNotes(app.notes);
+                          }}
+                          title="Click to edit notes"
                         >
-                          <ExternalLink size={12} />
-                        </a>
+                          {app.notes || "+ Add interview or follow-up notes..."}
+                        </div>
                       )}
-                    </div>
-                  </article>
-                ))
+
+                      {/* Move stage selector dropdown & link */}
+                      <div className="scratch-card-footer">
+                        <select
+                          className="scratch-stage-select"
+                          value={app.status}
+                          onChange={(e) =>
+                            updateApplicationStatus(app.id, e.target.value)
+                          }
+                          aria-label="Move application stage"
+                        >
+                          {STATUS_COLUMNS.map((col) => (
+                            <option key={col.key} value={col.key}>
+                              Move: {col.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        {app.sourceUrl && (
+                          <a
+                            href={app.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-button"
+                            title="Open job source"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 }}
+                          >
+                            <span>Link</span>
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })
               )}
             </div>
           );
@@ -314,20 +390,23 @@ export function ApplicationsPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div className="form-group">
                     <label htmlFor="locInput">Location / Work Type</label>
-                    <input
+                    <select
                       id="locInput"
-                      className="form-input"
-                      placeholder="e.g. Bengaluru, Remote, Hybrid"
+                      className="form-select custom-modal-select"
                       value={newLocation}
                       onChange={(e) => setNewLocation(e.target.value)}
-                    />
+                    >
+                      <option value="Remote">Remote</option>
+                      <option value="Onsite">Onsite</option>
+                      <option value="Hybrid">Hybrid</option>
+                    </select>
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="stageSelect">Current Stage</label>
                     <select
                       id="stageSelect"
-                      className="form-select"
+                      className="form-select custom-modal-select"
                       value={newStatus}
                       onChange={(e) => setNewStatus(e.target.value)}
                     >
@@ -382,4 +461,3 @@ export function ApplicationsPage() {
     </main>
   );
 }
-
