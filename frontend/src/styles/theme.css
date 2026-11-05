@@ -56,7 +56,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 .button-secondary, .visual-icon-btn { color: #343434; background: #fff; border-color: #d8d8d5; }
 .button-secondary:hover:not(:disabled), .visual-icon-btn:hover { color: #111; background: #f4f4f2; border-color: #bdbdb8; }
 .stat-card, .panel, .opportunity-card, .platform-card, .calendar-card,
-.tracker-card, .milestone-card, .settings-card, .visual-sidebar-card,
+.tracker-card, .milestone-card, .visual-sidebar-card,
 .visual-header-card, .visual-grid-tile, .visual-breakdown-pill-card,
 .visual-expand-panel, .visual-expand-tile, .practice-log-card {
   color: #343434;
@@ -116,10 +116,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 .role-index { background: #ecece8; color: #333; }
 .role-index-2, .role-index-3 { background: #f0f0ed; color: #444; }
 .dashboard-lower-grid, .dashboard-section, .calendar-page-container,
-.career-page-wrapper, .settings-page, .growth-page { color: #343434; }
+.career-page-wrapper, .growth-page { color: #343434; }
 .career-page-wrapper h1, .career-page-wrapper h2, .career-page-wrapper h3,
-.calendar-page-container h1, .calendar-page-container h2,
-.settings-page h1, .settings-page h2 { color: #171717; }
+.calendar-page-container h1, .calendar-page-container h2 { color: #171717; }
 .tracker-column { background: #f0f0ed; }
 .tracker-card { color: #343434; background: #fff; border-color: #dededb; }
 .tracker-card strong, .tracker-card h3 { color: #171717; }
@@ -174,12 +173,6 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 .applications-board .application-card { color: #343434; background: #fff; border-color: #dededb; }
 .applications-board .application-card h3, .applications-board .application-card strong { color: #171717; }
 .applications-board .application-card p, .applications-board .application-card small { color: #70706d; }
-.settings-page .panel, .settings-page .panel * { border-color: #dededb; }
-.settings-page .panel { background: #fff; }
-.settings-page .panel-heading h2, .settings-page .panel strong { color: #171717; }
-.settings-page input, .settings-page textarea, .settings-page select { background: #f7f7f5; color: #222; }
-.settings-card, .settings-section, .profile-card { color: #343434; background: #fff; border-color: #dededb; }
-.settings-card h2, .settings-section h2, .profile-card h2 { color: #171717; }
 .milestone-card, .milestone-badge-card { color: #343434; background: #fff; border-color: #dededb; }
 .milestone-card h3, .milestone-badge-card strong { color: #171717; }
 .heatmap-cell.has-platform-data, .heatmap-cell.has-platform-data small { color: #171717; text-shadow: none; }

@@ -3,14 +3,13 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   LayoutDashboard,
-  Settings,
 } from "lucide-react";
 import { CareerPage } from "../features/career";
 import { CalendarPage } from "../features/calendar";
 import { DashboardPage } from "../features/dashboard";
 import { GrowthPage } from "../features/growth";
 import { AuthPage } from "../features/auth";
-import { SettingsPage } from "../features/settings";
+import { ProfilePage } from "../features/profile";
 import { NotFoundPage } from "../features/notfound";
 import { AppShell } from "../shared/components/AppShell.jsx";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
@@ -43,7 +42,6 @@ function AppContent() {
       icon: BriefcaseBusiness,
       badge: applications.length > 0 ? applications.length : undefined,
     },
-    { id: "settings", label: "Settings", icon: Settings },
   ];
 
   if (activePage === "auth") {
@@ -51,7 +49,7 @@ function AppContent() {
   }
 
   // Standalone 404 Page (no header or shell navigation)
-  const knownPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "settings"];
+  const knownPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "profile"];
   if (!knownPages.includes(activePage)) {
     return <NotFoundPage />;
   }
@@ -68,8 +66,8 @@ function AppContent() {
         return <GrowthPage />;
       case "calendar":
         return <CalendarPage />;
-      case "settings":
-        return <SettingsPage />;
+      case "profile":
+        return <ProfilePage />;
       case "overview":
       default:
         return <DashboardPage />;
@@ -94,4 +92,3 @@ export function App() {
     </AppProvider>
   );
 }
-

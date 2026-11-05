@@ -1,4 +1,5 @@
 import { LogOut, UserRound } from "lucide-react";
+import { Activity, UserRound } from "lucide-react";
 import { FlowButton } from "../../components/ui/FlowButton.jsx";
 import { useAppContext } from "../context/AppContext.jsx";
 
@@ -8,7 +9,6 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
   const {
     profile,
     user,
-    logout,
     openAuthPage,
   } = useAppContext();
 
@@ -20,6 +20,7 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
         .slice(0, 2)
         .toUpperCase()
     : "OP";
+  const profileImage = profile.profileImage || user?.profileImage;
 
   return (
     <div className="app-shell">
@@ -50,23 +51,18 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
 
         <div className="site-nav-auth">
           {user ? (
-            <div className="user-profile-badge">
-              <button
-                className="user-profile-info"
-                onClick={() => onNavigate("settings")}
-                title="Go to settings"
-                type="button"
-              >
-                <span className="avatar">{initials}</span>
-                <span className="avatar-meta">
-                  <strong>{user.name || profile.name}</strong>
-                  <span>{user.email || profile.email}</span>
-                </span>
-              </button>
-              <button className="icon-btn-ghost" onClick={logout} title="Log out" type="button">
-                <LogOut size={16} />
-              </button>
-            </div>
+            <button
+              className="button button-secondary nav-profile-button"
+              onClick={() => onNavigate("profile")}
+              title="Go to profile"
+              type="button"
+              aria-current={activePage === "profile" ? "page" : undefined}
+            >
+              <span className="avatar">
+                {profileImage ? <img src={profileImage} alt="" /> : initials}
+              </span>
+              <span>Profile</span>
+            </button>
           ) : (
             <FlowButton text="Sign In / Register" icon={UserRound} onClick={openAuthPage} className="nav-auth-flow" />
           )}
