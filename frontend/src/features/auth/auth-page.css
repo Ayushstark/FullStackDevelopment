@@ -3,6 +3,7 @@
 .auth-page-header { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:22px clamp(20px,5vw,72px); }
 .auth-brand { display:inline-flex; align-items:center; gap:10px; padding:0; border:0; background:transparent; color:#e1e9ec; font-size:16px; font-weight:750; letter-spacing:-.035em; cursor:pointer; }
 .auth-brand-mark { display:grid; width:37px; height:37px; place-items:center; border:1px solid rgba(113,183,190,.25); border-radius:11px; background:#101a1e; color:#7dbcc1; }
+.auth-brand-mark img, .auth-card-mark img { display:block; width:100%; height:100%; max-width:100%; max-height:100%; border-radius:inherit; object-fit:contain; }
 .auth-brand:hover { color:#fff; }
 .auth-back-button { display:inline-flex; align-items:center; gap:9px; min-height:38px; padding:0 13px; border:1px solid rgba(179,199,207,.13); border-radius:8px; background:rgba(17,24,29,.56); color:#b3c0c6; font:inherit; font-size:11px; cursor:pointer; transition:border-color 160ms ease,color 160ms ease,background 160ms ease; }
 .auth-back-button:hover { border-color:rgba(125,188,193,.38); background:#121b20; color:#f0f5f6; }

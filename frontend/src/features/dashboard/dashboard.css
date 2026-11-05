@@ -9,16 +9,33 @@
 
 /* Masthead / Hero Command Deck */
 .dashboard-masthead {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(380px, 0.8fr);
   gap: clamp(24px, 4vw, 48px);
   align-items: center;
-  padding: 12px 0 28px;
-  border-bottom: 1px solid var(--color-border, #dededb);
+  padding: 22px;
+  border: 1px solid #e9e9e6;
+  border-radius: 18px;
+  background: #fafaf9;
   margin-bottom: 24px;
 }
 
+.dashboard-masthead-gridscan {
+  position: absolute !important;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.52;
+  pointer-events: none;
+}
+
 .dashboard-intro {
+  position: relative;
+  z-index: 1;
   min-width: 0;
 }
 
@@ -158,6 +175,8 @@
 
 /* Masthead Hero Metrics Grid */
 .dashboard-hero-metrics {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -171,7 +190,9 @@
   padding: 16px 18px;
   border: 1px solid #dededb;
   border-radius: 14px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.035);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -182,7 +203,7 @@
 }
 
 .dashboard-metric-card--highlight {
-  background: linear-gradient(145deg, #18181b, #09090b);
+  background: linear-gradient(145deg, rgba(35, 35, 35, 0.94), rgba(12, 12, 12, 0.94));
   border-color: #27272a;
   color: #ffffff;
 }
@@ -253,67 +274,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* CP Standing & Contest Strip */
-.dashboard-standings-bar {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.standing-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 11px;
-  background: #ffffff;
-  border: 1px solid #e2e2df;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
-}
-
-.standing-card:hover {
-  border-color: #c7c7c2;
-  transform: translateY(-1px);
-}
-
-.standing-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.standing-info {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.standing-title {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: #171717;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.standing-val {
-  display: block;
-  font-size: 11px;
-  color: #686864;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
 }
 
 /* Practice Rhythm & Velocity Hub */
@@ -669,17 +629,15 @@
   background: #e5e5e0;
 }
 
-/* Skyline Workspace & Live Telemetry */
+/* Full-width Contribution Skyline */
 .dashboard-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   margin-bottom: 32px;
 }
 
-.dashboard-skyline-panel,
-.dashboard-telemetry-panel {
+.dashboard-skyline-panel {
   min-width: 0;
   padding: 20px;
   border-radius: 16px;
@@ -747,201 +705,6 @@
 
 .dashboard-skyline-footer strong {
   color: #171717;
-}
-
-/* Practice Telemetry Sidecar */
-.dashboard-telemetry-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.telemetry-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ebebe8;
-}
-
-.telemetry-head h3 {
-  margin: 3px 0 0;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  color: #171717;
-}
-
-.telemetry-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  font-family: var(--font-mono, monospace);
-  font-size: 9px;
-  font-weight: 600;
-  color: #065f46;
-}
-
-.telemetry-live-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #10b981;
-}
-
-/* Difficulty Spectrum Bar */
-.difficulty-spectrum {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.difficulty-spectrum-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #70706a;
-  letter-spacing: 0.04em;
-}
-
-.difficulty-multi-bar {
-  display: flex;
-  height: 10px;
-  border-radius: 999px;
-  background: #ecece9;
-  overflow: hidden;
-  gap: 2px;
-}
-
-.difficulty-multi-bar span {
-  height: 100%;
-  transition: width 0.3s ease;
-}
-
-.bar-easy {
-  background: #10b981;
-}
-
-.bar-medium {
-  background: #f59e0b;
-}
-
-.bar-hard {
-  background: #f43f5e;
-}
-
-.bar-contest {
-  background: #6366f1;
-}
-
-.difficulty-legend-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 11px;
-  color: #555550;
-  margin-top: 4px;
-}
-
-.difficulty-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.difficulty-legend-item i {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-}
-
-.difficulty-legend-item strong {
-  color: #171717;
-  font-weight: 650;
-}
-
-/* Recent Sessions Stream */
-.telemetry-recent-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.recent-stream-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #70706a;
-  letter-spacing: 0.04em;
-  margin-bottom: 2px;
-}
-
-.recent-stream-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.recent-stream-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #f8f8f6;
-  border: 1px solid #ebebe8;
-  font-size: 11px;
-}
-
-.stream-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.stream-platform-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.stream-platform-name {
-  font-weight: 650;
-  color: #171717;
-}
-
-.stream-desc {
-  color: #666662;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stream-badge {
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  font-weight: 650;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #ffffff;
-  border: 1px solid #dededb;
-  color: #171717;
-  flex-shrink: 0;
 }
 
 /* Connected Platforms Section */
@@ -1290,9 +1053,6 @@
 @media (max-width: 980px) {
   .dashboard-masthead {
     grid-template-columns: 1fr;
-  }
-  .dashboard-standings-bar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dashboard-trend-grid {
     grid-template-columns: 1fr;
