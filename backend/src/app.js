@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { NODE_ENV, CLIENT_ORIGINS } from "./config/env.js";
+import { connectDB } from "./config/db.js";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 
@@ -28,6 +29,18 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: "256kb" }));
+
+// Ensure DB connection is initialized on API requests
+app.use(async (req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    try {
+      await connectDB();
+    } catch (_err) {
+      // Proceed gracefully to fallback store
+    }
+  }
+  next();
+});
 
 // Mount all routes
 app.use(routes);

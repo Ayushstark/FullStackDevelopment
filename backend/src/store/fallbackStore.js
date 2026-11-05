@@ -83,31 +83,41 @@ const defaultData = {
   growthLogs: [],
 };
 
+let inMemoryDb = null;
+
 function readDb() {
+  if (inMemoryDb) return inMemoryDb;
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify(defaultData, null, 2));
-      return defaultData;
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, "utf-8");
+      inMemoryDb = JSON.parse(raw);
+    } else {
+      inMemoryDb = JSON.parse(JSON.stringify(defaultData));
+      try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(defaultData, null, 2));
+      } catch (_e) {
+        // Read-only filesystem in serverless environments
+      }
     }
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (!parsed.opportunities || parsed.opportunities.length === 0) {
-      parsed.opportunities = seedOpportunities;
+    if (!inMemoryDb.opportunities || inMemoryDb.opportunities.length === 0) {
+      inMemoryDb.opportunities = seedOpportunities;
     }
-    if (!parsed.applications) {
-      parsed.applications = defaultApplications;
+    if (!inMemoryDb.applications) {
+      inMemoryDb.applications = defaultApplications;
     }
-    return parsed;
+    return inMemoryDb;
   } catch (_e) {
-    return defaultData;
+    inMemoryDb = JSON.parse(JSON.stringify(defaultData));
+    return inMemoryDb;
   }
 }
 
 function writeDb(data) {
+  inMemoryDb = data;
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.warn("Failed to write to fallback store:", err);
+  } catch (_err) {
+    // Read-only filesystem on serverless; inMemoryDb persists across warm requests
   }
 }
 
