@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { EmptyState } from "../../shared/components/EmptyState.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { streakMilestones } from "../../shared/data/sampleData.js";
 import { exportLogsAsCsv, exportLogsAsJson } from "./utils/exportLogs.js";
@@ -1096,39 +1097,28 @@ export function GrowthPage() {
           }}
         >
           {filteredLogs.length === 0 ? (
-            <div className="practice-logs-empty"
-              style={{
-                textAlign: "center",
-                padding: "32px 16px",
-                background: "rgba(13, 17, 23, 0.5)",
-                border: "1px dashed rgba(255, 255, 255, 0.15)",
-                borderRadius: 12,
-                color: "#8da0aa",
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 13 }}>No practice logs match your search or filter criteria.</p>
-              {(logSearchQuery || logPlatformFilter !== "all") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLogSearchQuery("");
-                    setLogPlatformFilter("all");
-                  }}
-                  style={{
-                    marginTop: 10,
-                    background: "rgba(255, 255, 255, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    borderRadius: 6,
-                    padding: "4px 12px",
-                    color: "#f8fafc",
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  Reset Filters
-                </button>
-              )}
-            </div>
+            <EmptyState
+              compact
+              title="No practice logs found"
+              message={
+                logSearchQuery || logPlatformFilter !== "all"
+                  ? "No logs match your filter criteria. Reset filters or record a new session."
+                  : "No practice logs recorded yet. Start logging your coding sessions!"
+              }
+              actionLabel={
+                logSearchQuery || logPlatformFilter !== "all"
+                  ? "Reset Filters"
+                  : null
+              }
+              onAction={
+                logSearchQuery || logPlatformFilter !== "all"
+                  ? () => {
+                      setLogSearchQuery("");
+                      setLogPlatformFilter("all");
+                    }
+                  : null
+              }
+            />
           ) : (
             filteredLogs.map((log, index) => (
               <div

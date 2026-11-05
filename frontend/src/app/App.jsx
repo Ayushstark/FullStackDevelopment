@@ -12,7 +12,10 @@ import { AuthPage } from "../features/auth";
 import { ProfilePage } from "../features/profile";
 import { NotFoundPage } from "../features/notfound";
 import { AppShell } from "../shared/components/AppShell.jsx";
+import { useState } from "react";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
+import { PageSkeleton } from "../shared/components/PageSkeleton.jsx";
+import { ErrorBoundary } from "../shared/components/ErrorBoundary.jsx";
 
 function AppContent() {
   const {
@@ -22,6 +25,17 @@ function AppContent() {
     growthStats,
     closeAuthPage,
   } = useAppContext();
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleNavigate = (page) => {
+    if (page === activePage) return;
+    setIsTransitioning(true);
+    setActivePage(page);
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 280);
+  };
 
   const navigation = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -55,6 +69,14 @@ function AppContent() {
   }
 
   const renderActivePage = () => {
+    if (isTransitioning) {
+      return (
+        <main className="page-content">
+          <PageSkeleton type={activePage} />
+        </main>
+      );
+    }
+
     switch (activePage) {
       case "career":
         return <CareerPage />;
@@ -78,9 +100,11 @@ function AppContent() {
     <AppShell
       navigation={navigation}
       activePage={activePage}
-      onNavigate={setActivePage}
+      onNavigate={handleNavigate}
     >
-      {renderActivePage()}
+      <ErrorBoundary onGoHome={() => handleNavigate("overview")}>
+        {renderActivePage()}
+      </ErrorBoundary>
     </AppShell>
   );
 }

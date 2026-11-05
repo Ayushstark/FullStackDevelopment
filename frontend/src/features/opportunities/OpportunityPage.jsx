@@ -10,6 +10,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { EmptyState } from "../../shared/components/EmptyState.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { parseNaturalLanguageQuery } from "../assistant/services/aiAssistantService.js";
 import { OpportunityDetailModal } from "./OpportunityDetailModal.jsx";
@@ -220,21 +221,17 @@ export function OpportunityPage() {
 
       {/* Opportunity Cards Grid */}
       {filteredOpportunities.length === 0 ? (
-        <div
-          className="panel"
-          style={{ textAlign: "center", padding: "48px 20px", color: "var(--color-text-muted)" }}
-        >
-          <XCircle size={40} style={{ margin: "0 auto 12px", opacity: 0.5 }} />
-          <h3 style={{ margin: "0 0 6px", color: "var(--color-primary)" }}>No matching opportunities</h3>
-          <p style={{ margin: "0 0 16px", fontSize: 13.5 }}>
-            {viewTab === "saved"
+        <EmptyState
+          icon={XCircle}
+          title="No matching opportunities"
+          message={
+            viewTab === "saved"
               ? "You haven't saved any opportunities matching this filter yet."
-              : "Try relaxing your search terms or clearing active filters."}
-          </p>
-          <button className="button button-secondary button-sm" onClick={clearFilters} type="button">
-            Clear all filters
-          </button>
-        </div>
+              : "Try relaxing your search terms or clearing active filters."
+          }
+          actionLabel="Clear all filters"
+          onAction={clearFilters}
+        />
       ) : (
         <div className="opportunity-cards">
           {filteredOpportunities.map((opportunity) => {
