@@ -1,6 +1,9 @@
+import { LogOut, UserRound } from "lucide-react";
 import { Activity, UserRound } from "lucide-react";
 import { FlowButton } from "../../components/ui/FlowButton.jsx";
 import { useAppContext } from "../context/AppContext.jsx";
+
+const brandLogo = `${import.meta.env.BASE_URL}devrhythm-growth-logo.png`;
 
 export function AppShell({ navigation, activePage, onNavigate, children }) {
   const {
@@ -23,7 +26,7 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
     <div className="app-shell">
       <header className="site-nav-shell">
         <button className="site-brand" onClick={() => onNavigate("overview")} type="button" aria-label="DevRhythm home">
-          <span className="brand-mark"><Activity size={18} aria-hidden="true" /></span>
+          <span className="brand-mark"><img src={brandLogo} width="32" height="32" alt="" /></span>
           <span>DevRhythm</span>
         </button>
 
@@ -67,12 +70,6 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
       </header>
 
       <div className="main-area">
-        <div className="runtime-strip" aria-label="Platform connection status">
-          <span className="runtime-node">DEVRHYTHM // LIVE</span>
-          <span className="runtime-status"><i aria-hidden="true" />{["leetcode", "codeforces", "codechef", "geeksforgeeks", "github"].filter((platform) => profile.platformHandles?.[platform]).length} PLATFORMS CONNECTED</span>
-          <span className="runtime-detail">LOCAL SYNC · READY</span>
-          <span className="runtime-detail runtime-user">{user?.name ? `SESSION: ${user.name.toUpperCase()}` : "SESSION: GUEST"}</span>
-        </div>
         {children}
       </div>
     </div>
