@@ -932,8 +932,8 @@ export const GridScan = ({
       [sceneBuffer, bloomBufferA, bloomBufferB].forEach(buffer => gl.deleteFramebuffer(buffer));
       gl.deleteVertexArray(vao);
       [room, down, blur, composite].forEach(item => gl.deleteProgram(item.program));
-      // Let React/browser release the canvas context. Forcing context loss here
-      // breaks React StrictMode's development effect remount on the same canvas.
+
+
     };
   }, []);
 

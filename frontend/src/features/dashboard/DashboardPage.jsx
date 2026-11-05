@@ -77,8 +77,8 @@ export function DashboardPage() {
     updateProfile,
   } = useAppContext();
 
-  // State
-  const [timeRange, setTimeRange] = useState(14); // 7, 14, 30 days
+
+  const [timeRange, setTimeRange] = useState(14);
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [syncingPlatform, setSyncingPlatform] = useState(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
@@ -116,7 +116,7 @@ export function DashboardPage() {
   const geeksforgeeks = syncedForHandle(growthStats.geeksforgeeks ?? growthStats.gfg, platformHandles.geeksforgeeks);
   const github = syncedForHandle(growthStats.github, platformHandles.github);
 
-  // 1. Mathematically Sound Sum of Problems Solved Across Connected Platforms
+
   const platformProblemsSolved =
     (Number(leetcode.solved) || 0) +
     (Number(codeforces.solved) || 0) +
@@ -180,7 +180,7 @@ export function DashboardPage() {
     ).padStart(2, "0")}`;
   };
 
-  // Build rolling range array of days based on timeRange
+
   const trendDays = useMemo(() => {
     const list = [];
     for (let i = timeRange - 1; i >= 0; i -= 1) {
@@ -203,7 +203,7 @@ export function DashboardPage() {
     return list;
   }, [timeRange, today, activityMap, growthStats.todayCompletedCount]);
 
-  // Aggregate Metrics for Selected Range
+
   const rangeTotalProblems = useMemo(() => {
     return trendDays.reduce((sum, day) => sum + day.problems, 0);
   }, [trendDays]);
@@ -429,7 +429,7 @@ export function DashboardPage() {
 
   return (
     <main className="page-content dashboard-page">
-      {/* 1. Header & Hero Command Deck */}
+
       <section className="dashboard-masthead" aria-labelledby="dashboard-title">
         <GridScan
           className="dashboard-masthead-gridscan"
@@ -463,9 +463,9 @@ export function DashboardPage() {
 
         </div>
 
-        {/* Hero High-Impact Metric Cards */}
+
         <div className="dashboard-hero-metrics" aria-label="Key Developer Metrics">
-          {/* Metric 1: Total Problems Solved */}
+
           <article className="dashboard-metric-card">
             <div className="dashboard-metric-head">
               <span className="dashboard-metric-label">TOTAL SOLVED</span>
@@ -481,7 +481,7 @@ export function DashboardPage() {
             </div>
           </article>
 
-          {/* Metric 2: Weekly Velocity */}
+
           <article className="dashboard-metric-card">
             <div className="dashboard-metric-head">
               <span className="dashboard-metric-label">PRACTICE VELOCITY</span>
@@ -498,7 +498,7 @@ export function DashboardPage() {
             </div>
           </article>
 
-          {/* Metric 3: Consistency Cadence */}
+
           <article className="dashboard-metric-card">
             <div className="dashboard-metric-head">
               <span className="dashboard-metric-label">CONSISTENCY</span>
@@ -515,7 +515,7 @@ export function DashboardPage() {
             </div>
           </article>
 
-          {/* Metric 4: Competitive Standing / Open Source */}
+
           <article className="dashboard-metric-card dashboard-metric-card--highlight">
             <div className="dashboard-metric-head">
               <span className="dashboard-metric-label">COMPETITIVE STANDING</span>
@@ -534,7 +534,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* 2. Practice Rhythm & Velocity Hub */}
+
       <section className="dashboard-trend-section" aria-labelledby="rhythm-heading">
         <header className="dashboard-trend-header">
           <div className="dashboard-trend-title-block">
@@ -558,7 +558,7 @@ export function DashboardPage() {
         </header>
 
         <div className="dashboard-trend-grid">
-          {/* Interactive Line & Area Chart */}
+
           <div className="dashboard-chart-box">
             <div className="dashboard-chart-summary">
               <div className="chart-stat-item">
@@ -596,7 +596,7 @@ export function DashboardPage() {
                   </linearGradient>
                 </defs>
 
-                {/* Gridlines */}
+
                 {[0.25, 0.5, 0.75, 1].map((ratio) => {
                   const y = paddingY + innerHeight * (1 - ratio);
                   return (
@@ -611,11 +611,11 @@ export function DashboardPage() {
                   );
                 })}
 
-                {/* Area & Stroke */}
+
                 <path d={chartAreaPath} fill="url(#velocity-gradient)" />
                 <path d={chartLinePath} className="chart-path-line" />
 
-                {/* Points */}
+
                 {chartPoints.map((point, index) => {
                   const showLabel =
                     timeRange <= 14 ? true : index % 3 === 0 || index === chartPoints.length - 1;
@@ -722,9 +722,9 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* 3. Contribution Skyline */}
+
       <section className="dashboard-workspace" aria-label="Practice Activity">
-        {/* 3D Skyline Canvas Panel */}
+
         <div className="dashboard-skyline-panel">
           <div className="dashboard-panel-bar">
             <span className="dashboard-panel-title">
@@ -758,7 +758,7 @@ export function DashboardPage() {
 
       </section>
 
-      {/* 4. Connected Platforms Pro Cards */}
+
       <section ref={horizontalSectionRef} className="dashboard-platforms-section dashboard-platforms-horizontal" aria-labelledby="platforms-heading">
         <div ref={horizontalStickyRef} className="dashboard-platforms-sticky">
         <header className="dashboard-platforms-head">
@@ -779,7 +779,7 @@ export function DashboardPage() {
 
         <div ref={horizontalViewportRef} className="dashboard-platforms-viewport">
         <div ref={horizontalTrackRef} className="dashboard-platforms-grid">
-          {/* Card 1: LeetCode */}
+
           <article tabIndex={0} className="platform-pro-card" aria-label="LeetCode statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.leetcode.color, "--platform-light-bg": PLATFORM_META.leetcode.lightBg }}>
             <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.leetcode.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
@@ -889,7 +889,7 @@ export function DashboardPage() {
             </div>
           </article>
 
-          {/* Card 2: Codeforces */}
+
           <article tabIndex={0} className="platform-pro-card" aria-label="Codeforces statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.codeforces.color, "--platform-light-bg": PLATFORM_META.codeforces.lightBg }}>
             <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.codeforces.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
@@ -999,7 +999,7 @@ export function DashboardPage() {
             </div>
           </article>
 
-          {/* Card 3: CodeChef */}
+
           <article tabIndex={0} className="platform-pro-card" aria-label="CodeChef statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.codechef.color, "--platform-light-bg": PLATFORM_META.codechef.lightBg }}>
             <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.codechef.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
@@ -1109,7 +1109,7 @@ export function DashboardPage() {
             </div>
           </article>
 
-          {/* Card 4: GeeksforGeeks */}
+
           <article tabIndex={0} className="platform-pro-card" aria-label="GeeksforGeeks statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.geeksforgeeks.color, "--platform-light-bg": PLATFORM_META.geeksforgeeks.lightBg }}>
             <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.geeksforgeeks.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
@@ -1219,7 +1219,7 @@ export function DashboardPage() {
             </div>
           </article>
 
-          {/* Card 5: GitHub */}
+
           <article tabIndex={0} className="platform-pro-card" aria-label="GitHub statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.github.color, "--platform-light-bg": PLATFORM_META.github.lightBg }}>
             <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.github.logo} alt="" /></div>
             <div className="platform-accent-stripe" />

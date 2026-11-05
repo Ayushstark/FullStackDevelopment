@@ -64,7 +64,7 @@ function saveToStorage(key, value) {
 
 const AppContext = createContext(undefined);
 
-// Helper to compute streak health, risk, and days since last active
+
 function calculateStreakStatus(lastActiveDate, currentStreak) {
   try {
     if (!lastActiveDate) {
@@ -81,13 +81,13 @@ function calculateStreakStatus(lastActiveDate, currentStreak) {
     const daysInactive = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (daysInactive === 0) {
-      // Solved something today!
+
       return { streakAtRisk: false, daysInactive: 0, isBroken: false };
     } else if (daysInactive === 1) {
-      // Solved yesterday, needs activity today to keep going
+
       return { streakAtRisk: true, daysInactive: 1, isBroken: false };
     } else {
-      // Inactive 2+ days, streak is broken or needs freeze/recovery
+
       return { streakAtRisk: true, daysInactive, isBroken: currentStreak > 0 };
     }
   } catch (err) {
@@ -140,7 +140,7 @@ export function AppProvider({ children }) {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Authentication State
+
   const [user, setUser] = useState(() => getStoredUser());
   const syncAllPlatformsRef = useRef(null);
   const [authReturnPage, setAuthReturnPage] = useState("overview");
@@ -192,7 +192,7 @@ export function AppProvider({ children }) {
     try {
       const loaded = loadFromStorage(STORAGE_KEYS.GROWTH, initialGrowthStats);
 
-      // Clean out any legacy static mock entries saved in browser localStorage
+
       const legacyStaticNotes = [
         "Solved Binary Tree Maximum Path Sum and 2 medium tree traversals.",
         "Participated in Round 980 Div 3, upsolved problem D.",
@@ -202,7 +202,7 @@ export function AppProvider({ children }) {
         (log) => !legacyStaticNotes.includes(log.notes)
       );
 
-      // Reconcile stale cached dates so rolling analytics stay fresh and accurate
+
       const latestActivityDate = loaded.monthlyActivity?.length
         ? loaded.monthlyActivity[loaded.monthlyActivity.length - 1]?.date
         : null;
@@ -242,7 +242,7 @@ export function AppProvider({ children }) {
     useState(null);
 
 
-  // Live Data Refresh Handlers
+
   const refreshLiveContests = async (force = false) => {
     setIsContestsLoading(true);
     try {
@@ -290,14 +290,14 @@ export function AppProvider({ children }) {
     }
   };
 
-  // Check auth session & fetch initial live data on mount
+
   useEffect(() => {
-    // Remove keys saved by earlier browser-side AI configuration.
+
     try {
       localStorage.removeItem("opportunity_os_llm_api_key");
       localStorage.removeItem("opportunity_os_llm_provider");
-    } catch {
-      // Storage may be unavailable in a restricted browser session.
+    } catch (error) {
+      console.warn("Could not clear legacy browser settings:", error);
     }
 
     checkSession().then((verifiedUser) => {
@@ -317,7 +317,7 @@ export function AppProvider({ children }) {
       }
     });
 
-    // Wire real live data on startup asynchronously to prevent cascading renders
+
     let cancelled = false;
     const loadInitialData = async () => {
       await Promise.resolve();
@@ -392,7 +392,7 @@ export function AppProvider({ children }) {
   };
 
 
-  // Sync state changes with localStorage
+
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.PROFILE, profile);
   }, [profile]);
@@ -417,7 +417,7 @@ export function AppProvider({ children }) {
     saveToStorage(STORAGE_KEYS.DAILY_CHALLENGE, dailyChallenge);
   }, [dailyChallenge]);
 
-  // Profile actions
+
   const updateProfile = async (updated) => {
     const next = { ...profile, ...updated };
     const token = getStoredToken();
@@ -469,14 +469,14 @@ export function AppProvider({ children }) {
     }));
   };
 
-  // Opportunity actions
+
   const toggleSaveOpportunity = (id) => {
     setSavedOpportunityIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
-  // Application tracker actions
+
   const addApplicationFromOpportunity = (opp) => {
     const oppId = opp.id || opp._id;
     setApplications((prev) => {
@@ -546,7 +546,7 @@ export function AppProvider({ children }) {
     });
   };
 
-  // Developer Growth & Streak actions (Streak Module)
+
   const logCodingActivity = (activityOrPlatform = {}, optionalCount = 1) => {
     let platform = "LeetCode";
     let problemsSolved = 1;
@@ -565,7 +565,7 @@ export function AppProvider({ children }) {
       problemsSolved = Number(optionalCount) || 1;
     }
 
-    // Attempt asynchronous sync with backend if user has an active session
+
     submitGrowthLog({ platform, problemsSolved, notes: activityNotes }).catch((err) => {
       console.warn("Offline or unauthenticated; saving activity locally:", err);
     });
@@ -586,7 +586,7 @@ export function AppProvider({ children }) {
         };
       }
 
-      // Keep a rolling, date-keyed 28-day activity history for the dashboard metrics.
+
       const activityByDate = new Map(
         (prev.monthlyActivity || initialGrowthStats.monthlyActivity).map((day) => [day.date, {
           count: Number(day.count) || 0,
@@ -611,7 +611,7 @@ export function AppProvider({ children }) {
         };
       });
 
-      // Accurately update platform specific counters
+
       let updatedLeetCode = prev.leetcode;
       if (platform === "LeetCode") {
         const diffLower = (problemDifficulty || "medium").toLowerCase();
@@ -716,7 +716,7 @@ export function AppProvider({ children }) {
     });
   };
 
-  // Update Daily Target Goal
+
   const setDailyGoal = (goal) => {
     try {
       const target = Math.max(1, parseInt(goal, 10) || 1);
@@ -726,7 +726,7 @@ export function AppProvider({ children }) {
     }
   };
 
-  // Streak Recovery / Freeze action
+
   const useStreakFreeze = () => {
     try {
       setGrowthStats((prev) => {
@@ -836,7 +836,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     }
   };
 
-  // Real-time CodeChef Data Synchronization
+
   const syncCodeChefData = async (handleToUse, options = { force: true }) => {
     const handle = handleToUse || profile.platformHandles?.codechef;
     if (!handle) {
@@ -864,7 +864,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
         const isFirstSync = !currentCodeChef.solved;
         const incrementalDaily = isFirstSync ? 1 : Math.min(Math.max(0, diffSolved), 5);
 
-        // Record live CodeChef sync activity entry
+
         const currentLogs = prev.recentLogs || [];
         const ccLog = {
           date: new Date().toISOString().split("T")[0],
@@ -925,7 +925,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     }
   };
 
-  // Real-time GeeksforGeeks Data Synchronization
+
   const syncGfgData = async (handleToUse, options = { force: true }) => {
     const handle = handleToUse || profile.platformHandles?.gfg || profile.platformHandles?.geeksforgeeks;
     if (!handle) {
@@ -974,7 +974,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
           error: null,
         };
 
-        // Merge live GeeksforGeeks problems into recentLogs
+
         const currentLogs = prev.recentLogs || [];
         const incomingLogs = (live.recentSubmissions || []).slice(0, 5).map((pTitle) => ({
           date: new Date().toISOString().split("T")[0],
@@ -1026,7 +1026,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     }
   };
 
-  // Real-time LeetCode Data Synchronization
+
   const syncLeetCodeData = async (handleToUse, options = { force: true }) => {
     const handle = handleToUse || profile.platformHandles?.leetcode;
     if (!handle) {
@@ -1068,7 +1068,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
           error: null,
         };
 
-        // Merge live LeetCode submissions into recentLogs avoiding duplicates
+
         const currentLogs = prev.recentLogs || [];
         const incomingLogs = (live.recentSubmissions || []).filter((inc) => {
           return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
@@ -1105,7 +1105,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     }
   };
 
-  // Real-time GitHub Data Synchronization
+
   const syncGitHubData = async (handleToUse, options = { force: true }) => {
     const handle = handleToUse || profile.platformHandles?.github;
     if (!handle) {
@@ -1143,7 +1143,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
           error: null,
         };
 
-        // Merge live GitHub commit events into recentLogs avoiding duplicates
+
         const currentLogs = prev.recentLogs || [];
         const incomingLogs = (live.recentEvents || []).filter((inc) => {
           return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
@@ -1174,7 +1174,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     }
   };
 
-  // Real-time Codeforces Data Synchronization
+
   const syncCodeforcesData = async (handleToUse, options = { force: true }) => {
     const handle = handleToUse || profile.platformHandles?.codeforces;
     if (!handle) {
@@ -1276,7 +1276,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     syncAllPlatformsRef.current = syncAllPlatforms;
   });
 
-  // Calendar actions
+
   const toggleCalendarReminder = (id) => {
     setCalendarEvents((prev) =>
       prev.map((event) =>
@@ -1289,7 +1289,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     setCalendarEvents((prev) => [newEvent, ...prev]);
   };
 
-  // Daily Challenge actions
+
   const completeDailyChallenge = () => {
     if (dailyChallenge?.completed) return;
     setDailyChallenge((prev) => ({ ...prev, completed: true }));
@@ -1302,7 +1302,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     });
   };
 
-  // Reset to original seed data
+
   const resetAllData = () => {
     localStorage.removeItem(STORAGE_KEYS.PROFILE);
     localStorage.removeItem(STORAGE_KEYS.OPPORTUNITIES);

@@ -29,13 +29,13 @@ export function ApplicationsPage() {
     createManualApplication,
   } = useAppContext();
 
-  // Drag and Drop state (Scratch-inspired tactile block snapping)
+
   const [draggedAppId, setDraggedAppId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Close add modal on Escape key for keyboard/screen reader users
+
   useEffect(() => {
     if (!isAddModalOpen) return;
     const handleKeyDown = (e) => {
@@ -47,7 +47,7 @@ export function ApplicationsPage() {
   const [editingNotesId, setEditingNotesId] = useState(null);
   const [tempNotes, setTempNotes] = useState("");
 
-  // New application form state
+
   const [newCompany, setNewCompany] = useState("");
   const [newRole, setNewRole] = useState("");
   const [newLocation, setNewLocation] = useState("Remote");
@@ -69,7 +69,7 @@ export function ApplicationsPage() {
       notes: newNotes.trim() || "Tracked manually",
     });
 
-    // Reset and close
+
     setNewCompany("");
     setNewRole("");
     setNewNotes("");
@@ -148,10 +148,9 @@ export function ApplicationsPage() {
 
   return (
     <main className="page-content">
-      {/* Page Heading */}
+
       <div className="page-heading applications-heading">
         <div>
-          <p className="eyebrow">Your search</p>
           <h1>Applications</h1>
           <p className="muted">
             Organize your internship and job applications across every recruitment stage.
@@ -168,7 +167,7 @@ export function ApplicationsPage() {
         </div>
       </div>
 
-      {/* Scratch-Inspired Kanban Board */}
+
       <div className="tracker-board applications-board" aria-label="Application stages kanban board">
         {STATUS_COLUMNS.map((column) => {
           const colApps = applications.filter((app) => app.status === column.key);
@@ -200,7 +199,7 @@ export function ApplicationsPage() {
                 <span className="column-badge">{colApps.length}</span>
               </div>
 
-              {/* Slot placeholder during drag over */}
+
               {isDragOver && draggedAppId && (
                 <div className="drag-placeholder-slot">
                   <span>✨ Snap block to {column.label}</span>
@@ -330,7 +329,7 @@ export function ApplicationsPage() {
                         </div>
                       )}
 
-                      {/* Move stage selector dropdown & link */}
+
                       <div className="scratch-card-footer">
                         <select
                           className="scratch-stage-select"
@@ -370,7 +369,7 @@ export function ApplicationsPage() {
         })}
       </div>
 
-      {/* Add Application Modal */}
+
       {isAddModalOpen && createPortal(
         <div
           className="modal-overlay applications-modal-overlay"
