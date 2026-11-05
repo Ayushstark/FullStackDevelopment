@@ -30,6 +30,74 @@ const PLATFORM_COLORS = {
   codeforces: "#D8D8D8",
 };
 
+export const MINDMAP_CONFIG = {
+  view: { width: 1000, height: 760 },
+  hubRadius: 70,
+  platformRadius: 50,
+  portRadius: 24,
+  slotRadius: 210,
+  branchGrowMs: 520,
+  branchWidths: { start: 14, end: 4 },
+  branchSamples: 28,
+  platforms: [
+    { id: "leetcode", color: "#38bdf8", label: "LEETCODE", short: "LC" },
+    { id: "geeksforgeeks", color: "#ec4899", label: "GEEKSFORGEEKS", short: "GFG" },
+    { id: "codechef", color: "#06b6d4", label: "CODECHEF", short: "CC" },
+    { id: "github", color: "#f43f5e", label: "GITHUB", short: "GH" },
+    { id: "codeforces", color: "#3b82f6", label: "CODEFORCES", short: "CF" },
+  ],
+};
+
+function cubicPoint(points, t) {
+  const inverse = 1 - t;
+  return {
+    x: inverse ** 3 * points.p0.x + 3 * inverse ** 2 * t * points.p1.x + 3 * inverse * t ** 2 * points.p2.x + t ** 3 * points.p3.x,
+    y: inverse ** 3 * points.p0.y + 3 * inverse ** 2 * t * points.p1.y + 3 * inverse * t ** 2 * points.p2.y + t ** 3 * points.p3.y,
+  };
+}
+
+export function computeLayout(config = MINDMAP_CONFIG, activePlatform = null) {
+  const hub = { cx: config.view.width / 2, cy: config.view.height / 2, r: config.hubRadius, angle: -90, depth: 0 };
+  const slotCount = config.platforms.length;
+  const nodes = new Map([["hub", hub]]);
+  const edges = new Map();
+  const ports = config.platforms.map((platform, index) => {
+    const angle = -90 + (index * 360) / slotCount;
+    const radians = (angle * Math.PI) / 180;
+    const direction = { x: Math.cos(radians), y: Math.sin(radians) };
+    const cx = hub.cx + direction.x * config.slotRadius;
+    const cy = hub.cy + direction.y * config.slotRadius;
+    const node = { ...platform, cx, cy, r: config.platformRadius, angle, depth: 1, direction };
+    nodes.set(platform.id, node);
+    const dx = cx - hub.cx;
+    const dy = cy - hub.cy;
+    const distance = Math.hypot(dx, dy) || 1;
+    const dir = { x: dx / distance, y: dy / distance };
+    const start = { x: hub.cx + dir.x * hub.r, y: hub.cy + dir.y * hub.r };
+    const end = { x: cx - dir.x * node.r, y: cy - dir.y * node.r };
+    const edgeDistance = Math.hypot(end.x - start.x, end.y - start.y);
+    edges.set(platform.id, {
+      p0: start,
+      p1: { x: start.x + dir.x * edgeDistance * 0.45, y: start.y + dir.y * edgeDistance * 0.45 },
+      p2: { x: end.x - dir.x * edgeDistance * 0.45, y: end.y - dir.y * edgeDistance * 0.45 },
+      p3: end,
+      midpoint: null,
+      color: platform.color,
+      depth: 1,
+    });
+    return {
+      ...platform,
+      angle,
+      cx,
+      cy,
+      r: config.portRadius,
+      depth: 1,
+    };
+  });
+  for (const edge of edges.values()) edge.midpoint = cubicPoint(edge, 0.5);
+  return { nodes, edges, ports, hub: nodes.get("hub"), active: activePlatform ? nodes.get(activePlatform) : null };
+}
+
 export function GrowthPage() {
   const {
     growthStats,
