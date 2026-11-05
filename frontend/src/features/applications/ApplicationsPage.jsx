@@ -8,7 +8,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import "./applications-scratch-board.css";
 
@@ -36,6 +36,16 @@ export function ApplicationsPage() {
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Close add modal on Escape key for keyboard/screen reader users
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setIsAddModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAddModalOpen]);
   const [editingNotesId, setEditingNotesId] = useState(null);
   const [tempNotes, setTempNotes] = useState("");
 
@@ -255,10 +265,11 @@ export function ApplicationsPage() {
                             className="text-button"
                             onClick={() => deleteApplication(app.id)}
                             title="Remove application"
+                            aria-label={`Delete application for ${app.role} at ${app.company}`}
                             style={{ color: "#94a3b8", padding: 2 }}
                             type="button"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={13} aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -356,11 +367,17 @@ export function ApplicationsPage() {
 
       {/* Add Application Modal */}
       {isAddModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsAddModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-app-dialog-title"
+        >
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: 18, color: "var(--color-primary)" }}>
+                <h2 id="add-app-dialog-title" style={{ margin: 0, fontSize: 18, color: "var(--color-primary)" }}>
                   Track New Application
                 </h2>
                 <p className="muted">Add a job, internship, or research opening to your board.</p>
@@ -369,8 +386,9 @@ export function ApplicationsPage() {
                 className="close-btn"
                 onClick={() => setIsAddModalOpen(false)}
                 type="button"
+                aria-label="Close track application dialog"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 

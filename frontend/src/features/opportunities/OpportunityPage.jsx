@@ -114,9 +114,10 @@ export function OpportunityPage() {
         }}
       >
         <div className="search-bar">
-          <Search size={19} />
+          <Search size={19} aria-hidden="true" />
           <input
             placeholder="Search keywords or try “paid ML internships for sophomore”..."
+            aria-label="Search opportunities by keyword or natural language"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -126,6 +127,7 @@ export function OpportunityPage() {
               onClick={() => setSearchQuery("")}
               className="text-button"
               style={{ color: "var(--color-text-muted)" }}
+              aria-label="Clear search input"
             >
               Clear
             </button>
@@ -181,6 +183,7 @@ export function OpportunityPage() {
             className="filter-select"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
+            aria-label="Filter opportunities by role type"
           >
             <option value="All">All Types</option>
             <option value="Internship">Internship</option>
@@ -194,6 +197,7 @@ export function OpportunityPage() {
             className="filter-select"
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
+            aria-label="Filter opportunities by location"
           >
             <option value="All">All Locations</option>
             <option value="Remote">Remote</option>
@@ -206,6 +210,7 @@ export function OpportunityPage() {
             className="filter-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
+            aria-label="Sort opportunities by"
           >
             <option value="deadline">Deadline (Earliest)</option>
             <option value="title">Role Title (A-Z)</option>
@@ -253,9 +258,10 @@ export function OpportunityPage() {
                     onClick={() => toggleSaveOpportunity(opportunity.id)}
                     title={isSaved ? "Remove from saved" : "Save opportunity"}
                     type="button"
-                    aria-label="Save opportunity"
+                    aria-label={isSaved ? `Remove ${opportunity.title} at ${opportunity.company} from saved` : `Save ${opportunity.title} at ${opportunity.company}`}
+                    aria-pressed={isSaved}
                   >
-                    <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
+                    <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} aria-hidden="true" />
                   </button>
                 </div>
 
