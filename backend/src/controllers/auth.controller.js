@@ -52,6 +52,9 @@ export async function register(req, res) {
           user: sanitizeUser(newUser),
         });
       } catch (dbErr) {
+        if (dbErr.code === 11000) {
+          return res.status(409).json({ error: "An account with this email already exists." });
+        }
         console.warn("MongoDB registration failed, falling back to local store:", dbErr.message);
       }
     }
@@ -84,7 +87,7 @@ export async function register(req, res) {
     });
   } catch (err) {
     console.error("Register error:", err);
-    res.status(500).json({ error: "Internal server error during registration." });
+    return res.status(500).json({ error: err.message || "Internal server error during registration." });
   }
 }
 
@@ -139,7 +142,7 @@ export async function login(req, res) {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ error: "Internal server error during login." });
+    return res.status(500).json({ error: err.message || "Internal server error during login." });
   }
 }
 
