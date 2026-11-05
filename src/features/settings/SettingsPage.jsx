@@ -24,6 +24,7 @@ export function SettingsPage() {
     user,
     logout,
     openAuthPage,
+    setActivePage,
   } = useAppContext();
 
   // Local form state
@@ -448,6 +449,15 @@ export function SettingsPage() {
                 type="button"
               >
                 <Download size={15} /> Export Profile JSON Backup
+              </button>
+
+              <button
+                className="button button-secondary"
+                onClick={() => setActivePage("404")}
+                type="button"
+                style={{ justifyContent: "center" }}
+              >
+                Preview 404 Error Page
               </button>
 
               <button

@@ -11,6 +11,7 @@ import { DashboardPage } from "../features/dashboard";
 import { GrowthPage } from "../features/growth";
 import { AuthPage } from "../features/auth";
 import { SettingsPage } from "../features/settings";
+import { NotFoundPage } from "../features/notfound";
 import { AppShell } from "../shared/components/AppShell.jsx";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
 
@@ -47,6 +48,12 @@ function AppContent() {
 
   if (activePage === "auth") {
     return <AuthPage onClose={closeAuthPage} />;
+  }
+
+  // Standalone 404 Page (no header or shell navigation)
+  const knownPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "settings"];
+  if (!knownPages.includes(activePage)) {
+    return <NotFoundPage />;
   }
 
   const renderActivePage = () => {
