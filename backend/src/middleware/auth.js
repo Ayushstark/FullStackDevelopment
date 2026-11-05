@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
-
-export const JWT_SECRET = process.env.JWT_SECRET || "opportunity_os_jwt_secret_dev_key_2026";
+import { JWT_SECRET } from "../config/env.js";
 
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -17,4 +16,3 @@ export function authMiddleware(req, res, next) {
     return res.status(401).json({ error: "Invalid or expired token. Please log in again." });
   }
 }
-

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { isValidHandle, getCodeforcesProfile } from "./services/codeforcesService.js";
+import { isValidHandle, getCodeforcesProfile } from "../src/services/codeforcesService.js";
 
 describe("Codeforces Service", () => {
   it("validates handle patterns properly", () => {
@@ -72,4 +72,3 @@ describe("Codeforces Service", () => {
     expect(result.recentSubmissions[0].notes).toContain('Watermelon');
   });
 });
-

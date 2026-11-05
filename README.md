@@ -41,9 +41,9 @@ npm run dev
 
 The development command starts the frontend at `http://localhost:5173` and the API at `http://localhost:5000`. The API health endpoint is `http://localhost:5000/api/health`. Vite proxies `/api` requests to the local API.
 
-MongoDB is optional for local startup. When it is unavailable, account routes use the development fallback store, which writes ignored local state to `server/local_db.json`. Do not use production credentials or data for local development.
+MongoDB is optional for local startup. When it is unavailable, account routes use the development fallback store, which writes ignored local state to `backend/local_db.json`. Do not use production credentials or data for local development.
 
-Run only one process with `npm run dev:client` or `npm run server` in a separate terminal.
+Run only one process with `npm run dev:client` (or `npm run dev:frontend`) and `npm run server` (or `npm run dev:backend`) in separate terminals.
 
 ## Quality checks
 
@@ -59,18 +59,36 @@ ESLint checks JavaScript and JSX. This project does not use TypeScript.
 ## Repository map
 
 ```text
-src/
-  app/                 application composition and navigation
-  features/            dashboard, growth, calendar, settings, and inherited modules
-  shared/
-    components/        reusable UI and application shell
-    context/           shared application state
-    data/              sample data
-    services/           shared API services
-  styles/              global CSS
-server/                 Express API, models, middleware, fallback store
-docs/                    project and engineering documentation
-.github/workflows/       CI, CodeQL, and frontend deployment
+frontend/
+  src/
+    app/               application composition and navigation
+    features/          dashboard, growth, calendar, settings, and inherited modules
+    shared/
+      components/      reusable UI and application shell
+      context/         shared application state
+      data/            sample data
+      services/        shared API services
+    styles/            global CSS
+  vite.config.js       Vite configuration with API proxy and dist output
+  package.json         frontend scripts and dependencies
+
+backend/
+  src/
+    config/            environment and resilient MongoDB connection
+    controllers/       route handlers (auth, user, growth, platform, contest, health)
+    middleware/        auth, rate limiter, and error handling middleware
+    models/            Mongoose schemas (User, GrowthLog, Opportunity, Application)
+    routes/            modular Express routers and route registry
+    services/          external platform sync services (CodeChef, LeetCode, GitHub, etc.)
+    store/             fallback local resilient JSON store
+    utils/             standard API errors, responses, and sanitization
+    app.js             Express application setup
+    server.js          entry point
+  __tests__/           backend Vitest test suite
+  package.json         backend scripts and dependencies
+
+docs/                  project and engineering documentation
+.github/workflows/     CI, CodeQL, and frontend deployment
 ```
 
 Before contributing, read [docs/ENGINEERING_STANDARDS.md](docs/ENGINEERING_STANDARDS.md). See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the product plan, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the repository boundaries, [docs/ROADMAP.md](docs/ROADMAP.md) for delivery stages, and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.
