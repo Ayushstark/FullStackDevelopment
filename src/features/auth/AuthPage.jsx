@@ -8,16 +8,15 @@ import {
   Mail,
   UserRound,
 } from "lucide-react";
-import DotGrid from "../../components/ui/DotGrid.jsx";
-import { FlowButton } from "../../components/ui/FlowButton.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
+import developerWorkspacePhoto from "./assets/devrhythm-workspace.webp";
 import "./auth-page.css";
 
-function FormField({ id, label, icon: Icon, children, onPointerMove }) {
+function FormField({ id, label, icon: Icon, children }) {
   return (
     <div className="auth-field">
       <label htmlFor={id}>{label}</label>
-      <div className="auth-input-wrap" onPointerMove={onPointerMove}>
+      <div className="auth-input-wrap">
         <Icon size={17} aria-hidden="true" />
         {children}
       </div>
@@ -36,12 +35,6 @@ export function AuthPage({ onClose }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-
-  const moveSpotlight = (event) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.style.setProperty("--spot-x", `${event.clientX - bounds.left}px`);
-    event.currentTarget.style.setProperty("--spot-y", `${event.clientY - bounds.top}px`);
-  };
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
@@ -69,73 +62,40 @@ export function AuthPage({ onClose }) {
 
   return (
     <main className="auth-page">
-      <div className="auth-page-grid" aria-hidden="true">
-        <DotGrid
-          baseColor="#365e6e"
-          activeColor="#a8e7ff"
-          shape="circle"
-          dotSize={3.5}
-          gap={22}
-          proximity={135}
-          strength={0.9}
-          bounce={0.55}
-          tension={0.35}
-          returnDuration={0.85}
-          shockRadius={300}
-          shockStrength={4}
-          swell={0.7}
-          stretch={0.45}
-          glow={0.55}
-          fade={0}
-          opacity={0.82}
-          ignoreSelector=".auth-card"
-          intro
-        />
-      </div>
-      <div className="auth-page-vignette" aria-hidden="true" />
+      <div className="auth-page-atmosphere" aria-hidden="true" />
 
       <header className="auth-page-header">
         <button className="auth-brand" onClick={onClose} type="button" aria-label="Return to DevRhythm">
           <span className="auth-brand-mark"><Activity size={19} aria-hidden="true" /></span>
           <span>DevRhythm</span>
         </button>
-        <FlowButton text="Back to dashboard" onClick={onClose} className="auth-back-flow" />
+        <button className="auth-back-button" onClick={onClose} type="button">Back to dashboard <span aria-hidden="true">↗</span></button>
       </header>
 
       <section className="auth-content" aria-labelledby="auth-title">
+        <div className="auth-hero-column">
+          <div className="auth-hero-copy">
+            <span className="auth-form-eyebrow">{mode === "login" ? "YOUR DEVELOPER RHYTHM" : "A CLEARER VIEW OF YOUR PROGRESS"}</span>
+            <h1>{mode === "login" ? "Welcome Back, Dev." : "Build Your Rhythm."}</h1>
+            <p>Track your rhythm, analyze your workflow, and ship with confidence.</p>
+          </div>
+          <div className="auth-workspace-frame"><img src={developerWorkspacePhoto} alt="Developer working at a laptop" /></div>
+          <p className="auth-hero-footer">Your developer journey, thoughtfully tracked.</p>
+        </div>
+
         <div className="auth-card">
-          <div className="auth-card-heading">
-            <div className="auth-card-mark"><Activity size={19} aria-hidden="true" /></div>
-            <div>
-              <h2 id="auth-title">{mode === "login" ? "Welcome back" : "Create your account"}</h2>
-              <p>{mode === "login" ? "Sign in to pick up where you left off." : "One account for your developer journey."}</p>
+          <div className="auth-form-panel">
+            <div className="auth-mode-switch" role="tablist" aria-label="Account access">
+              <button type="button" role="tab" aria-selected={mode === "login"} className={mode === "login" ? "is-active" : ""} onClick={() => switchMode("login")}>Sign in</button>
+              <button type="button" role="tab" aria-selected={mode === "register"} className={mode === "register" ? "is-active" : ""} onClick={() => switchMode("register")}>Create account</button>
             </div>
-          </div>
+            <div className="auth-form-heading">
+              <span className="auth-form-eyebrow">{mode === "login" ? "WELCOME BACK" : "GET STARTED"}</span>
+              <h2 id="auth-title">{mode === "login" ? "Sign in" : "Create your account"}</h2>
+              <p>{mode === "login" ? "Enter your details to continue." : "Create an account to start tracking your progress."}</p>
+            </div>
 
-          <div className="auth-mode-switch" role="tablist" aria-label="Account access">
-            <button
-              className={mode === "login" ? "is-active" : ""}
-              id="auth-login-tab"
-              onClick={() => switchMode("login")}
-              role="tab"
-              aria-selected={mode === "login"}
-              type="button"
-            >
-              Sign in
-            </button>
-            <button
-              className={mode === "register" ? "is-active" : ""}
-              id="auth-register-tab"
-              onClick={() => switchMode("register")}
-              role="tab"
-              aria-selected={mode === "register"}
-              type="button"
-            >
-              Create account
-            </button>
-          </div>
-
-          <form className="auth-form" onSubmit={handleSubmit}>
+            <form className="auth-form" onSubmit={handleSubmit}>
             {error && <div className="auth-feedback is-error" role="alert">{error}</div>}
             {success && (
               <div className="auth-feedback is-success" role="status">
@@ -144,7 +104,7 @@ export function AuthPage({ onClose }) {
             )}
 
             {mode === "register" && (
-              <FormField id="auth-name" label="Full name" icon={UserRound} onPointerMove={moveSpotlight}>
+              <FormField id="auth-name" label="Full name" icon={UserRound}>
                 <input
                   id="auth-name"
                   name="name"
@@ -158,7 +118,7 @@ export function AuthPage({ onClose }) {
               </FormField>
             )}
 
-            <FormField id="auth-email" label="Email address" icon={Mail} onPointerMove={moveSpotlight}>
+            <FormField id="auth-email" label="Email address" icon={Mail}>
               <input
                 id="auth-email"
                 name="email"
@@ -171,7 +131,7 @@ export function AuthPage({ onClose }) {
               />
             </FormField>
 
-            <FormField id="auth-password" label="Password" icon={LockKeyhole} onPointerMove={moveSpotlight}>
+            <FormField id="auth-password" label="Password" icon={LockKeyhole}>
               <input
                 id="auth-password"
                 name="password"
@@ -193,13 +153,10 @@ export function AuthPage({ onClose }) {
               </button>
             </FormField>
 
-            <FlowButton
-              text={loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
-              className="auth-flow-submit"
-              type="submit"
-              disabled={loading || success}
-              aria-busy={loading}
-            />
+            <button className="auth-submit" type="submit" disabled={loading || success} aria-busy={loading}>
+              {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+              <span aria-hidden="true">→</span>
+            </button>
           </form>
 
           <p className="auth-terms">
@@ -208,9 +165,9 @@ export function AuthPage({ onClose }) {
               {mode === "login" ? "Create an account" : "Sign in"}
             </button>
           </p>
+          </div>
         </div>
       </section>
-      <footer className="auth-page-footer">Built for the work you put in every day.</footer>
     </main>
   );
 }
