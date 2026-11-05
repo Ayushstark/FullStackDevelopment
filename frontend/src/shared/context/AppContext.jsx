@@ -11,9 +11,11 @@ import {
 import {
   checkSession,
   getStoredUser,
+  getStoredToken,
   loginUser,
   logoutUser,
   registerUser,
+  saveSession,
   submitGrowthLog,
 } from "../services/authService.js";
 import { fetchLiveCodeChefStats } from "../services/codechefService.js";
@@ -98,7 +100,11 @@ function getPageFromUrl() {
   if (typeof window === "undefined") return "overview";
   const path = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
   if (!path) return "overview";
-  const validPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "settings", "auth"];
+  if (path === "settings") {
+    window.history.replaceState({ page: "profile" }, "", "/profile");
+    return "profile";
+  }
+  const validPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "profile", "auth"];
   return validPages.includes(path) ? path : "404";
 }
 
@@ -149,6 +155,7 @@ export function AppProvider({ children }) {
         skills: stored.skills || initialProfile.skills,
         resumeSummary: stored.resumeSummary || initialProfile.resumeSummary,
         platformHandles: stored.platformHandles || initialProfile.platformHandles,
+        profileImage: stored.profileImage || "",
       };
     }
     return loadFromStorage(STORAGE_KEYS.PROFILE, initialProfile);
@@ -288,6 +295,7 @@ export function AppProvider({ children }) {
           gradYear: verifiedUser.gradYear || prev.gradYear,
           skills: verifiedUser.skills || prev.skills,
           platformHandles: verifiedUser.platformHandles || prev.platformHandles,
+          profileImage: verifiedUser.profileImage ?? "",
         }));
       }
     });
@@ -322,6 +330,7 @@ export function AppProvider({ children }) {
         gradYear: data.user.gradYear || prev.gradYear,
         skills: data.user.skills || prev.skills,
         platformHandles: data.user.platformHandles || prev.platformHandles,
+        profileImage: data.user.profileImage ?? "",
       }));
       refreshApplications();
     }
@@ -338,6 +347,8 @@ export function AppProvider({ children }) {
         email: data.user.email || prev.email,
         university: data.user.university || prev.university,
         degree: data.user.degree || prev.degree,
+        platformHandles: data.user.platformHandles || prev.platformHandles,
+        profileImage: data.user.profileImage ?? "",
       }));
     }
     return data;
@@ -375,23 +386,32 @@ export function AppProvider({ children }) {
   }, [dailyChallenge]);
 
   // Profile actions
-  const updateProfile = (updated) => {
-    setProfile((prev) => {
-      const next = { ...prev, ...updated };
-      // Also sync to backend if logged in
-      const token = localStorage.getItem("opportunity_os_auth_token");
-      if (token) {
-        fetch("/api/user/profile", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(next),
-        }).catch((e) => console.warn("Failed to sync profile with server:", e));
+  const updateProfile = async (updated) => {
+    const next = { ...profile, ...updated };
+    const token = getStoredToken();
+
+    if (token) {
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(next),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save profile.");
       }
-      return next;
-    });
+
+      setProfile((prev) => ({ ...prev, ...next, ...data.user }));
+      setUser(data.user);
+      saveSession(token, data.user);
+      return data.user;
+    }
+
+    setProfile(next);
+    return next;
   };
 
   const addSkill = (skill) => {

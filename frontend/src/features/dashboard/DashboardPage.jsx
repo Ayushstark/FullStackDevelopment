@@ -9,17 +9,14 @@ import {
   Flame,
   GitCommit,
   Layers,
-  Plus,
   RotateCw,
-  Shield,
-  Sparkles,
   TrendingUp,
   Trophy,
-  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import ContributionSkyline from "../../components/ui/contribution-skyline.jsx";
+import GridScan from "../../components/ui/GridScan.jsx";
 import "./dashboard.css";
 
 const PLATFORM_META = {
@@ -69,8 +66,6 @@ export function DashboardPage() {
   const {
     profile,
     growthStats,
-    logCodingActivity,
-    useStreakFreeze,
     dailyChallenge,
     completeDailyChallenge,
     syncCodeChefData,
@@ -83,15 +78,8 @@ export function DashboardPage() {
   // State
   const [timeRange, setTimeRange] = useState(14); // 7, 14, 30 days
   const [hoveredPoint, setHoveredPoint] = useState(null);
-  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [syncingPlatform, setSyncingPlatform] = useState(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
-
-  // Quick Log form state
-  const [logPlatform, setLogPlatform] = useState("LeetCode");
-  const [logProblemsSolved, setLogProblemsSolved] = useState(1);
-  const [logDifficulty, setLogDifficulty] = useState("Medium");
-  const [logNotes, setLogNotes] = useState("");
 
   // Extracted platforms data
   const leetcode = growthStats.leetcode ?? {};
@@ -99,7 +87,6 @@ export function DashboardPage() {
   const codechef = growthStats.codechef ?? {};
   const geeksforgeeks = growthStats.geeksforgeeks ?? growthStats.gfg ?? {};
   const github = growthStats.github ?? {};
-  const recentLogs = growthStats.recentLogs ?? [];
 
   // 1. Mathematically Sound Sum of Problems Solved Across Connected Platforms
   const platformProblemsSolved =
@@ -113,24 +100,7 @@ export function DashboardPage() {
       ? platformProblemsSolved
       : Number(growthStats.totalProblemsSolved) || 552;
 
-  // 2. Realistic, Accurate Difficulty Distribution
-  const easyProblems =
-    (Number(leetcode.easy) || 0) + (Number(geeksforgeeks.easy) || 0);
-  const mediumProblems =
-    (Number(leetcode.medium) || 0) + (Number(geeksforgeeks.medium) || 0);
-  const hardProblems =
-    (Number(leetcode.hard) || 0) + (Number(geeksforgeeks.hard) || 0);
-  const contestSolves = Math.max(
-    0,
-    totalProblemsSolved - (easyProblems + mediumProblems + hardProblems)
-  );
-
-  const easyPercent = Math.round((easyProblems / totalProblemsSolved) * 100) || 0;
-  const mediumPercent = Math.round((mediumProblems / totalProblemsSolved) * 100) || 0;
-  const hardPercent = Math.round((hardProblems / totalProblemsSolved) * 100) || 0;
-  const contestPercent = Math.max(0, 100 - (easyPercent + mediumPercent + hardPercent));
-
-  // 3. Dynamic Rolling Practice History Anchored to Today
+  // 2. Dynamic Rolling Practice History Anchored to Today
   const activityMap = useMemo(() => {
     const list = growthStats.monthlyActivity || [];
     return new Map(
@@ -270,21 +240,6 @@ export function DashboardPage() {
     }
   };
 
-  // Submit quick activity log
-  const handleQuickLogSubmit = (e) => {
-    e.preventDefault();
-    logCodingActivity({
-      platform: logPlatform,
-      problemsSolved: Number(logProblemsSolved) || 1,
-      difficulty: logDifficulty,
-      notes: logNotes || `Solved ${logProblemsSolved} ${logDifficulty} problem(s) on ${logPlatform}`,
-    });
-    setLogNotes("");
-    setIsLogModalOpen(false);
-  };
-
-  const streakAtRisk = growthStats.streakAtRisk;
-  const currentStreak = growthStats.currentStreak ?? 18;
   const longestStreak = growthStats.longestStreak ?? 28;
   const dailyGoal = growthStats.dailyGoal ?? 2;
   const todayCount = growthStats.todayCompletedCount ?? 0;
@@ -294,17 +249,26 @@ export function DashboardPage() {
     <main className="page-content dashboard-page">
       {/* 1. Header & Hero Command Deck */}
       <section className="dashboard-masthead" aria-labelledby="dashboard-title">
+        <GridScan
+          className="dashboard-masthead-gridscan"
+          aria-hidden="true"
+          linesColor="#d1d1cd"
+          scanColor="#555550"
+          cells={12}
+          depth={3}
+          depthFade={0.72}
+          shading={0.22}
+          reflection={0.12}
+          points={false}
+          scanDuration={3.2}
+          scanDelay={1.8}
+          scanWidth={0.7}
+          trail={0.32}
+          glow={0.28}
+          clickEffect="none"
+          lightMode
+        />
         <div className="dashboard-intro">
-          <div className="dashboard-kickers">
-            <span className="dashboard-kicker">DEV / RHYTHM — 02</span>
-            <span className="dashboard-kicker dashboard-kicker--accent">
-              <Sparkles size={11} style={{ marginRight: 4 }} />
-              ACTIVE HABIT
-            </span>
-            <span className="dashboard-kicker--muted">
-              5 CONNECTED PLATFORMS · REAL-TIME TELEMETRY
-            </span>
-          </div>
           <h1 id="dashboard-title" className="dashboard-title">
             Your practice.<br />
             <em>In full view.</em>
@@ -314,50 +278,6 @@ export function DashboardPage() {
             daily developer momentum brought into one unified engineering dashboard.
           </p>
 
-          <div className="dashboard-hero-actions">
-            <span
-              className={`dashboard-streak-pill ${
-                todayCount > 0 ? "is-active" : streakAtRisk ? "is-risk" : ""
-              }`}
-            >
-              <Flame size={14} color={todayCount > 0 ? "#10b981" : "#f59e0b"} />
-              {todayCount > 0
-                ? `${currentStreak}d Streak · Practice Logged Today`
-                : `${currentStreak}d Streak · Today Keeps Your Run Alive`}
-            </span>
-
-            <button
-              type="button"
-              className="dashboard-btn-primary"
-              onClick={() => setIsLogModalOpen(true)}
-            >
-              <Plus size={14} />
-              Record Session
-            </button>
-
-            <button
-              type="button"
-              className="dashboard-btn-secondary"
-              onClick={handleSyncAll}
-              disabled={isSyncingAll}
-              title="Sync all connected platforms in parallel"
-            >
-              <RotateCw size={13} className={isSyncingAll ? "animate-spin" : ""} />
-              {isSyncingAll ? "Syncing..." : "Sync All"}
-            </button>
-
-            {growthStats.streakFreezesAvailable > 0 && streakAtRisk && todayCount === 0 && (
-              <button
-                type="button"
-                className="dashboard-btn-secondary"
-                onClick={useStreakFreeze}
-                title="Use 1 streak freeze shield to protect today"
-              >
-                <Shield size={13} color="#10b981" />
-                Use Freeze ({growthStats.streakFreezesAvailable} left)
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Hero High-Impact Metric Cards */}
@@ -431,64 +351,10 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* 2. Competitive Standings Radar Strip */}
-      <section className="dashboard-standings-bar" aria-label="Competitive Programming Standings">
-        <div className="standing-card">
-          <div className="standing-badge" style={{ background: "rgba(245, 158, 11, 0.12)", color: "#d97706" }}>
-            LC
-          </div>
-          <div className="standing-info">
-            <span className="standing-title">LeetCode</span>
-            <span className="standing-val">{leetcode.solved || 215} Solved · Top 42k</span>
-          </div>
-        </div>
-
-        <div className="standing-card">
-          <div className="standing-badge" style={{ background: "rgba(37, 99, 235, 0.12)", color: "#2563eb" }}>
-            CF
-          </div>
-          <div className="standing-info">
-            <span className="standing-title">Codeforces</span>
-            <span className="standing-val">{codeforces.rating || 1340} · {codeforces.rank || "Pupil"}</span>
-          </div>
-        </div>
-
-        <div className="standing-card">
-          <div className="standing-badge" style={{ background: "rgba(217, 119, 6, 0.12)", color: "#b45309" }}>
-            CC
-          </div>
-          <div className="standing-info">
-            <span className="standing-title">CodeChef</span>
-            <span className="standing-val">{codechef.rating || 1650} · {codechef.stars || "3★"} Div 2</span>
-          </div>
-        </div>
-
-        <div className="standing-card">
-          <div className="standing-badge" style={{ background: "rgba(5, 150, 105, 0.12)", color: "#059669" }}>
-            GFG
-          </div>
-          <div className="standing-info">
-            <span className="standing-title">GeeksforGeeks</span>
-            <span className="standing-val">Score {geeksforgeeks.score || 350} · Rank #{geeksforgeeks.instituteRank || 42}</span>
-          </div>
-        </div>
-
-        <div className="standing-card">
-          <div className="standing-badge" style={{ background: "rgba(124, 58, 237, 0.12)", color: "#7c3aed" }}>
-            GH
-          </div>
-          <div className="standing-info">
-            <span className="standing-title">GitHub</span>
-            <span className="standing-val">{github.contributions || 512} Commits · {github.repos || 14} Repos</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Practice Rhythm & Velocity Hub */}
+      {/* 2. Practice Rhythm & Velocity Hub */}
       <section className="dashboard-trend-section" aria-labelledby="rhythm-heading">
         <header className="dashboard-trend-header">
           <div className="dashboard-trend-title-block">
-            <span className="dashboard-kicker--muted">CADENCE TELEMETRY</span>
             <h2 id="rhythm-heading">Practice Rhythm &amp; Velocity</h2>
           </div>
 
@@ -673,8 +539,8 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* 4. Contribution Skyline & Practice Signal */}
-      <section className="dashboard-workspace" aria-label="Practice Activity and Signal Telemetry">
+      {/* 3. Contribution Skyline */}
+      <section className="dashboard-workspace" aria-label="Practice Activity">
         {/* 3D Skyline Canvas Panel */}
         <div className="dashboard-skyline-panel">
           <div className="dashboard-panel-bar">
@@ -706,84 +572,9 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Live Telemetry Sidecar */}
-        <aside className="dashboard-telemetry-panel" aria-label="Live Telemetry and Recent Feed">
-          <div className="telemetry-head">
-            <div>
-              <span className="dashboard-kicker--muted">LIVE READOUT</span>
-              <h3>Practice Signal</h3>
-            </div>
-            <span className="telemetry-live-badge">
-              <span className="telemetry-live-dot" />
-              CONNECTED
-            </span>
-          </div>
-
-          {/* Difficulty Breakdown Bar */}
-          <div className="difficulty-spectrum">
-            <div className="difficulty-spectrum-head">
-              <span>Difficulty Mix</span>
-              <strong>{totalProblemsSolved} Solved</strong>
-            </div>
-
-            <div
-              className="difficulty-multi-bar"
-              role="img"
-              aria-label={`Difficulty breakdown: ${easyProblems} easy, ${mediumProblems} medium, ${hardProblems} hard, ${contestSolves} contest solves`}
-            >
-              <span className="bar-easy" style={{ width: `${easyPercent}%` }} title={`Easy: ${easyProblems}`} />
-              <span className="bar-medium" style={{ width: `${mediumPercent}%` }} title={`Medium: ${mediumProblems}`} />
-              <span className="bar-hard" style={{ width: `${hardPercent}%` }} title={`Hard: ${hardProblems}`} />
-              <span className="bar-contest" style={{ width: `${contestPercent}%` }} title={`Contest / Rated: ${contestSolves}`} />
-            </div>
-
-            <div className="difficulty-legend-row">
-              <span className="difficulty-legend-item">
-                <i className="bar-easy" /> Easy: <strong>{easyProblems}</strong> ({easyPercent}%)
-              </span>
-              <span className="difficulty-legend-item">
-                <i className="bar-medium" /> Medium: <strong>{mediumProblems}</strong> ({mediumPercent}%)
-              </span>
-              <span className="difficulty-legend-item">
-                <i className="bar-hard" /> Hard: <strong>{hardProblems}</strong> ({hardPercent}%)
-              </span>
-              <span className="difficulty-legend-item">
-                <i className="bar-contest" /> Rated: <strong>{contestSolves}</strong>
-              </span>
-            </div>
-          </div>
-
-          {/* Recent Practice Sessions Feed */}
-          <div className="telemetry-recent-section">
-            <div className="recent-stream-title">
-              <span>Recent Sessions</span>
-              <span>{recentLogs.length} LOGGED</span>
-            </div>
-
-            <div className="recent-stream-list">
-              {recentLogs.slice(0, 5).map((log, index) => {
-                const meta = PLATFORM_META[log.platform?.toLowerCase()] || PLATFORM_META.leetcode;
-                return (
-                  <div className="recent-stream-item" key={log.id ?? `${log.date}-${index}`}>
-                    <div className="stream-left">
-                      <span className="stream-platform-dot" style={{ background: meta.color }} />
-                      <div>
-                        <span className="stream-platform-name">{log.platform || "Practice"}</span>
-                        <div className="stream-desc">{log.notes || `${log.difficulty || "Coding"} challenge`}</div>
-                      </div>
-                    </div>
-                    <span className="stream-badge">
-                      +{log.problemsSolved || 1}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
       </section>
 
-      {/* 5. Connected Platforms Pro Cards */}
+      {/* 4. Connected Platforms Pro Cards */}
       <section className="dashboard-platforms-section" aria-labelledby="platforms-heading">
         <header className="dashboard-platforms-head">
           <div>
@@ -1119,99 +910,6 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* 6. Quick Activity Log Modal */}
-      {isLogModalOpen && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="quick-log-title">
-          <div className="quick-log-modal">
-            <div className="modal-header">
-              <h3 id="quick-log-title">Record Coding Practice</h3>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setIsLogModalOpen(false)}
-                aria-label="Close modal"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleQuickLogSubmit} className="quick-log-form">
-              <div className="log-form-row">
-                <div className="log-field-group">
-                  <label htmlFor="log-platform">Platform</label>
-                  <select
-                    id="log-platform"
-                    className="log-select"
-                    value={logPlatform}
-                    onChange={(e) => setLogPlatform(e.target.value)}
-                  >
-                    <option value="LeetCode">LeetCode</option>
-                    <option value="Codeforces">Codeforces</option>
-                    <option value="CodeChef">CodeChef</option>
-                    <option value="GeeksforGeeks">GeeksforGeeks</option>
-                    <option value="GitHub">GitHub</option>
-                  </select>
-                </div>
-
-                <div className="log-field-group">
-                  <label htmlFor="log-difficulty">Difficulty</label>
-                  <select
-                    id="log-difficulty"
-                    className="log-select"
-                    value={logDifficulty}
-                    onChange={(e) => setLogDifficulty(e.target.value)}
-                  >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                    <option value="Contest">Contest / Rated</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="log-form-row">
-                <div className="log-field-group">
-                  <label htmlFor="log-count">Problems / Solves</label>
-                  <input
-                    id="log-count"
-                    type="number"
-                    min="1"
-                    max="50"
-                    className="log-input"
-                    value={logProblemsSolved}
-                    onChange={(e) => setLogProblemsSolved(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  />
-                </div>
-
-                <div className="log-field-group">
-                  <label htmlFor="log-notes">Problem / Session Note</label>
-                  <input
-                    id="log-notes"
-                    type="text"
-                    placeholder="e.g. 3Sum, Tree traversal, etc."
-                    className="log-input"
-                    value={logNotes}
-                    onChange={(e) => setLogNotes(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="log-modal-actions">
-                <button
-                  type="button"
-                  className="dashboard-btn-secondary"
-                  onClick={() => setIsLogModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="dashboard-btn-primary">
-                  Save Session
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

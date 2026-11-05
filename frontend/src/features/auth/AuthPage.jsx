@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Activity,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -11,6 +10,8 @@ import {
 import { FlowButton } from "../../components/ui/FlowButton.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import "./auth-page.css";
+
+const brandLogo = `${import.meta.env.BASE_URL}devrhythm-growth-logo.png`;
 
 function AsciiGlobe() {
   const [angle, setAngle] = useState(0);
@@ -133,7 +134,7 @@ export function AuthPage({ onClose }) {
 
       <header className="auth-page-header">
         <button className="auth-brand" onClick={onClose} type="button" aria-label="Return to DevRhythm">
-          <span className="auth-brand-mark"><Activity size={19} aria-hidden="true" /></span>
+          <span className="auth-brand-mark"><img src={brandLogo} width="32" height="32" alt="" /></span>
           <span>DevRhythm</span>
         </button>
         <FlowButton text="Back to dashboard" onClick={onClose} className="auth-back-flow" />
@@ -148,7 +149,7 @@ export function AuthPage({ onClose }) {
         </div>
         <div className="auth-card">
           <div className="auth-card-heading">
-            <div className="auth-card-mark"><Activity size={19} aria-hidden="true" /></div>
+            <div className="auth-card-mark"><img src={brandLogo} width="32" height="32" alt="" /></div>
             <div>
               <h2 id="auth-title">{mode === "login" ? "Welcome back" : "Create your account"}</h2>
               <p>{mode === "login" ? "Sign in to pick up where you left off." : "One account for your developer journey."}</p>

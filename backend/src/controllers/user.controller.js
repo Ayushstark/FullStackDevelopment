@@ -18,6 +18,14 @@ export async function updateProfile(req, res) {
       if (typeof body[field] === "string") updates[field] = body[field].trim();
     }
 
+    if (typeof body.profileImage === "string") {
+      const isValidImage = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(body.profileImage);
+      if (body.profileImage.length > 240_000 || (body.profileImage && !isValidImage)) {
+        return res.status(400).json({ error: "Profile image must be a JPEG, PNG, or WebP under 170 KB." });
+      }
+      updates.profileImage = body.profileImage;
+    }
+
     for (const field of ["skills", "targetRoles"]) {
       if (Array.isArray(body[field]) && body[field].every((value) => typeof value === "string")) {
         updates[field] = body[field].map((value) => value.trim()).filter(Boolean);

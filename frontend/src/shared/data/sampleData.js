@@ -151,6 +151,7 @@ export const upcomingOpportunities = initialOpportunities;
 export const initialProfile = {
   name: "Alex Shah",
   email: "alex.shah@university.edu",
+  profileImage: "",
   university: "National Institute of Technology",
   degree: "B.Tech in Computer Science & Engineering",
   gradYear: "2027",
@@ -554,4 +555,3 @@ export const initialDailyChallenge = {
   description: "Find the minimum number of operations to reduce x to exactly 0 by removing elements from the left or right of array nums. If impossible, return -1.",
   completed: false,
 };
-
