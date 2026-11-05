@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   Award,
-  Bell,
   BookOpen,
   ChefHat,
   Code2,
@@ -11,109 +10,25 @@ import {
   FileText,
   Flame,
   GitCommit,
-  Trophy,
   Plus,
   RotateCw,
   Search,
   Shield,
   Terminal,
-  TrendingUp,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { streakMilestones } from "../../shared/data/sampleData.js";
 import { exportLogsAsCsv, exportLogsAsJson } from "./utils/exportLogs.js";
-import { PlatformAnalyticsDrawer } from "./PlatformAnalyticsDrawer.jsx";
 
-export const MINDMAP_CONFIG = {
-  view: { width: 1000, height: 760 },
-  hubRadius: 70,
-  platformRadius: 50,
-  portRadius: 24,
-  slotRadius: 210,
-  branchGrowMs: 520,
-  branchWidths: { start: 14, end: 4 },
-  branchSamples: 28,
-  platforms: [
-    { id: "leetcode", color: "#38bdf8", label: "LEETCODE", short: "LC" },
-    { id: "geeksforgeeks", color: "#ec4899", label: "GEEKSFORGEEKS", short: "GFG" },
-    { id: "codechef", color: "#06b6d4", label: "CODECHEF", short: "CC" },
-    { id: "github", color: "#f43f5e", label: "GITHUB", short: "GH" },
-    { id: "codeforces", color: "#3b82f6", label: "CODEFORCES", short: "CF" },
-  ],
+const PLATFORM_COLORS = {
+  leetcode: "#D8D8D8",
+  geeksforgeeks: "#D8D8D8",
+  codechef: "#D8D8D8",
+  github: "#D8D8D8",
+  codeforces: "#D8D8D8",
 };
-
-function cubicPoint(points, t) {
-  const inverse = 1 - t;
-  return {
-    x: inverse ** 3 * points.p0.x + 3 * inverse ** 2 * t * points.p1.x + 3 * inverse * t ** 2 * points.p2.x + t ** 3 * points.p3.x,
-    y: inverse ** 3 * points.p0.y + 3 * inverse ** 2 * t * points.p1.y + 3 * inverse * t ** 2 * points.p2.y + t ** 3 * points.p3.y,
-  };
-}
-
-export function computeLayout(config = MINDMAP_CONFIG, activePlatform = null) {
-  const hub = { cx: config.view.width / 2, cy: config.view.height / 2, r: config.hubRadius, angle: -90, depth: 0 };
-  const slotCount = config.platforms.length;
-  const nodes = new Map([["hub", hub]]);
-  const edges = new Map();
-  const ports = config.platforms.map((platform, index) => {
-    const angle = -90 + (index * 360) / slotCount;
-    const radians = (angle * Math.PI) / 180;
-    const direction = { x: Math.cos(radians), y: Math.sin(radians) };
-    const cx = hub.cx + direction.x * config.slotRadius;
-    const cy = hub.cy + direction.y * config.slotRadius;
-    const node = { ...platform, cx, cy, r: config.platformRadius, angle, depth: 1, direction };
-    nodes.set(platform.id, node);
-    const dx = cx - hub.cx;
-    const dy = cy - hub.cy;
-    const distance = Math.hypot(dx, dy) || 1;
-    const dir = { x: dx / distance, y: dy / distance };
-    const start = { x: hub.cx + dir.x * hub.r, y: hub.cy + dir.y * hub.r };
-    const end = { x: cx - dir.x * node.r, y: cy - dir.y * node.r };
-    const edgeDistance = Math.hypot(end.x - start.x, end.y - start.y);
-    edges.set(platform.id, {
-      p0: start,
-      p1: { x: start.x + dir.x * edgeDistance * 0.45, y: start.y + dir.y * edgeDistance * 0.45 },
-      p2: { x: end.x - dir.x * edgeDistance * 0.45, y: end.y - dir.y * edgeDistance * 0.45 },
-      p3: end,
-      midpoint: null,
-      color: platform.color,
-      depth: 1,
-    });
-    return {
-      ...platform,
-      angle,
-      cx,
-      cy,
-      r: config.portRadius,
-      depth: 1,
-    };
-  });
-  for (const edge of edges.values()) edge.midpoint = cubicPoint(edge, 0.5);
-  return { nodes, edges, ports, hub: nodes.get("hub"), active: activePlatform ? nodes.get(activePlatform) : null };
-}
-
-function createTaperedBranchPath(edge, progress = 1, width = 14, tipWidth = 4, samples = 28) {
-  const endT = Math.max(0, Math.min(1, progress));
-  if (endT <= 0) return "";
-  const left = [];
-  const right = [];
-  for (let index = 0; index <= samples; index += 1) {
-    const t = (index / samples) * endT;
-    const point = cubicPoint(edge, t);
-    const before = cubicPoint(edge, Math.max(0, t - 0.002));
-    const after = cubicPoint(edge, Math.min(1, t + 0.002));
-    const tangentLength = Math.hypot(after.x - before.x, after.y - before.y) || 1;
-    const normal = { x: -(after.y - before.y) / tangentLength, y: (after.x - before.x) / tangentLength };
-    const eased = 1 - (1 - t) ** 2;
-    const halfWidth = (width + (tipWidth - width) * eased) / 2;
-    left.push({ x: point.x + normal.x * halfWidth, y: point.y + normal.y * halfWidth });
-    right.push({ x: point.x - normal.x * halfWidth, y: point.y - normal.y * halfWidth });
-  }
-  const outline = [...left, ...right.reverse()];
-  return `${outline.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ")} Z`;
-}
 
 export function GrowthPage() {
   const {
@@ -126,31 +41,10 @@ export function GrowthPage() {
     syncGfgData,
     syncLeetCodeData,
     syncGitHubData,
-    syncCodeforcesData,
   } = useAppContext();
 
-  const [timeRange, setTimeRange] = useState("Past 24 Hours");
+
   const [expandedPlatform, setExpandedPlatform] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [hubOpen, setHubOpen] = useState(false);
-  const [drawerTab, setDrawerTab] = useState("Overview");
-  const [branchProgress, setBranchProgress] = useState(1);
-  const mindmapLayout = computeLayout(MINDMAP_CONFIG, expandedPlatform);
-  useEffect(() => {
-    if (!expandedPlatform) return undefined;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
-    let frameId;
-    const start = performance.now();
-    const animate = (now) => {
-      const requestedSlowmo = Number(new URLSearchParams(window.location.search).get("slowmo")) || 1;
-      const slowmo = Math.min(5, Math.max(1, requestedSlowmo));
-      const linear = Math.min(1, (now - start) / (MINDMAP_CONFIG.branchGrowMs * slowmo));
-      setBranchProgress(1 - (1 - linear) ** 3);
-      if (linear < 1) frameId = window.requestAnimationFrame(animate);
-    };
-    frameId = window.requestAnimationFrame(animate);
-    return () => window.cancelAnimationFrame(frameId);
-  }, [expandedPlatform]);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
   // Practice History Filter & Search State
@@ -184,61 +78,26 @@ export function GrowthPage() {
     setLogNotes("");
   };
 
-  // Metrics calculations
-  const totalSolved = growthStats.totalProblemsSolved || 0;
   const currentStreak = growthStats.currentStreak || 0;
-  const longestStreak = growthStats.longestStreak || 0;
 
-  const easyCount = (leetcode.easy || 0) + (gfg.easy || 0);
-  const medCount = (leetcode.medium || 0) + (gfg.medium || 0);
-  const hardCount = (leetcode.hard || 0) + (gfg.hard || 0);
-  const totalDiff = Math.max(1, easyCount + medCount + hardCount);
-  const hardPct = Math.round((hardCount / totalDiff) * 100);
-  const medPct = Math.round((medCount / totalDiff) * 100);
-  const easyPct = Math.max(0, 100 - hardPct - medPct);
+  const selectedPlatformLogs = (growthStats.recentLogs || []).filter((log) =>
+    (log.platform || "").toLowerCase().replace(/[^a-z]/g, "").includes(expandedPlatform || "")
+  );
+  const selectedPlatformDays = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date();
+    day.setDate(day.getDate() - (6 - index));
+    const key = day.toISOString().slice(0, 10);
+    const count = selectedPlatformLogs
+      .filter((log) => log.date === key)
+      .reduce((sum, log) => sum + (Number(log.problemsSolved) || 1), 0);
+    return { key, label: day.toLocaleDateString(undefined, { weekday: "short" }), count };
+  });
+  const selectedPlatformActiveDays = selectedPlatformDays.filter((day) => day.count > 0).length;
+  const selectedPlatformWeekTotal = selectedPlatformDays.reduce((sum, day) => sum + day.count, 0);
+  const selectedPlatformPeak = Math.max(1, ...selectedPlatformDays.map((day) => day.count));
 
   const lcSolved = leetcode.solved || 0;
-  const gfgSolved = gfg.solved || 0;
-  const ccSolved = codechef.solved || 0;
   const ghCommits = github.contributions || 0;
-  const totalPlat = Math.max(1, lcSolved + gfgSolved + ccSolved + Math.round(ghCommits / 2));
-  const lcShare = Math.round((lcSolved / totalPlat) * 100);
-  const gfgShare = Math.round((gfgSolved / totalPlat) * 100);
-  const ccShare = Math.round((ccSolved / totalPlat) * 100);
-
-  const platformData = {
-    leetcode: { id: "leetcode", title: "LeetCode", short: "LC", accent: "#f6a83b", icon: Code2, stats: leetcode, handle: profile.platformHandles?.leetcode, solved: leetcode.solved, rating: leetcode.contestRating, peak: leetcode.highestRating, rank: leetcode.ranking, practiceUrl: "https://leetcode.com/problemset/", contestUrl: "https://leetcode.com/contest/", difficulty: { easy: leetcode.easy, medium: leetcode.medium, hard: leetcode.hard } },
-    geeksforgeeks: { id: "geeksforgeeks", title: "GeeksforGeeks", short: "GFG", accent: "#4ade80", icon: BookOpen, stats: gfg, handle: profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg, solved: gfg.solved, rating: gfg.score, peak: gfg.highestScore, rank: gfg.instituteRank, practiceUrl: "https://www.geeksforgeeks.org/explore", contestUrl: "https://www.geeksforgeeks.org/events/", difficulty: { easy: gfg.easy, medium: gfg.medium, hard: gfg.hard } },
-    codechef: { id: "codechef", title: "CodeChef", short: "CC", accent: "#c08457", icon: ChefHat, stats: codechef, handle: profile.platformHandles?.codechef, solved: codechef.solved, rating: codechef.rating, peak: codechef.highestRating, rank: codechef.globalRank, practiceUrl: "https://www.codechef.com/practice", contestUrl: "https://www.codechef.com/contests", difficulty: null },
-    codeforces: { id: "codeforces", title: "Codeforces", short: "CF", accent: "#60a5fa", icon: Award, stats: codeforces, handle: profile.platformHandles?.codeforces, solved: codeforces.solved, rating: codeforces.rating, peak: codeforces.highestRating, rank: codeforces.rank, practiceUrl: "https://codeforces.com/problemset", contestUrl: "https://codeforces.com/contests", difficulty: null },
-    github: { id: "github", title: "GitHub", short: "GH", accent: "#c084fc", icon: GitCommit, stats: github, handle: profile.platformHandles?.github, solved: github.contributions, rating: github.repos, peak: null, rank: github.followers, practiceUrl: "https://github.com/", contestUrl: null, difficulty: null },
-  };
-  const activePlatformData = expandedPlatform ? platformData[expandedPlatform] : null;
-  const activePlatformLogs = (growthStats.recentLogs || [])
-    .filter((log) => String(log.platform || "").toLowerCase().replace(/[^a-z]/g, "") === String(activePlatformData?.title || "").toLowerCase().replace(/[^a-z]/g, ""))
-    .slice(0, 7)
-    .reverse();
-  const leastPracticedDifficulty = activePlatformData?.difficulty
-    ? Object.entries(activePlatformData.difficulty).filter(([, count]) => Number.isFinite(Number(count))).sort((a, b) => Number(a[1]) - Number(b[1]))[0]?.[0]
-    : null;
-  const recommendation = growthStats.streakBroken || growthStats.streakAtRisk
-    ? { title: "Log a short session today", reason: "Your overall streak needs attention. A small practice session can help you keep your routine moving.", action: "Log activity", kind: "log" }
-    : leastPracticedDifficulty
-      ? { title: `Practice more ${leastPracticedDifficulty} problems`, reason: `Your connected platform profile has fewer ${leastPracticedDifficulty} solves than the other tracked difficulties.`, action: "Practice problems", kind: "practice" }
-      : { title: "Keep your profile current", reason: "Recent activity and contest history are limited for this platform. Sync its profile or record a session to add useful signals.", action: "Log activity", kind: "log" };
-
-  const monthlyActivity = useMemo(
-    () => growthStats.monthlyActivity || [],
-    [growthStats.monthlyActivity]
-  );
-  const activeDaysCount = useMemo(
-    () => monthlyActivity.filter((d) => d.count > 0).length,
-    [monthlyActivity]
-  );
-  const consistencyRate = useMemo(
-    () => (monthlyActivity.length > 0 ? Math.round((activeDaysCount / monthlyActivity.length) * 100) : 86),
-    [activeDaysCount, monthlyActivity]
-  );
 
   const filteredLogs = useMemo(() => {
     return (growthStats.recentLogs || []).filter((log) => {
@@ -259,13 +118,10 @@ export function GrowthPage() {
 
   const toggleExpand = (platformKey) => {
     setExpandedPlatform((prev) => (prev === platformKey ? null : platformKey));
-    setDrawerTab("Overview");
-    setDrawerOpen(true);
-    setHubOpen(false);
   };
 
   return (
-    <main className="page-content" style={{ padding: "16px 20px", background: "transparent" }}>
+    <main className="page-content growth-page">
       {/* Streak Recovery Banner when broken */}
       {growthStats.streakBroken && (
         <div
@@ -308,10 +164,10 @@ export function GrowthPage() {
       )}
 
       {/* Main Full-Bleed Visual Dashboard: Transparent Root with Translucent Constellation Figure */}
-      <div className={`visual-root analytics-explorer${drawerOpen || hubOpen ? " has-analytics-drawer" : ""}`}>
+      <div className={`visual-root ${expandedPlatform ? "has-selection" : ""}`}>
         {/* Left Area: Full Screen Translucent Constellation Graph */}
         <div className="visual-constellation-container">
-          <svg viewBox={`0 0 ${MINDMAP_CONFIG.view.width} ${MINDMAP_CONFIG.view.height}`} className="visual-constellation-svg" role="group" aria-label="Coding platform contribution mind map">
+          <svg viewBox="0 0 700 580" className="visual-constellation-svg">
             <defs>
               {/* Outer Donut Gradient */}
               <linearGradient id="cyberDonutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -319,17 +175,6 @@ export function GrowthPage() {
                 <stop offset="50%" stopColor="#06b6d4" />
                 <stop offset="100%" stopColor="#3b82f6" />
               </linearGradient>
-              <linearGradient id="mindmapBranchGradient" gradientUnits="userSpaceOnUse"
-                x1={mindmapLayout.hub.cx} y1={mindmapLayout.hub.cy}
-                x2={mindmapLayout.active?.cx ?? mindmapLayout.hub.cx}
-                y2={mindmapLayout.active?.cy ?? mindmapLayout.hub.cy}>
-                <stop offset="0%" stopColor="#22c55e" />
-                <stop offset="100%" stopColor={mindmapLayout.active?.color ?? "#38bdf8"} />
-              </linearGradient>
-              <filter id="mindmapBranchGlow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="3" result="softGlow" />
-                <feMerge><feMergeNode in="softGlow" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
 
               {/* Cyan Glow Filter */}
               <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
@@ -344,436 +189,605 @@ export function GrowthPage() {
               </filter>
             </defs>
 
-            <g className="mindmap-world">
-
-            {/* CENTRAL DONUT CORE (51% pulse indicator) */}
-            <g className="mindmap-hub-trigger" role="button" tabIndex="0" aria-label="Open cross-platform analytics" onClick={() => { setHubOpen(true); setDrawerOpen(false); setExpandedPlatform(null); setBranchProgress(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setHubOpen(true); setDrawerOpen(false); setExpandedPlatform(null); setBranchProgress(0); } }}>
-            <circle className="mindmap-core-halo" cx={mindmapLayout.hub.cx} cy={mindmapLayout.hub.cy} r={mindmapLayout.hub.r} fill="none" stroke="rgba(56, 189, 248, 0.18)" strokeWidth="2" />
-            <circle className="mindmap-core-progress"
-              cx={mindmapLayout.hub.cx}
-              cy={mindmapLayout.hub.cy}
-              r="52"
+            {/* Circular Orbit Dial with Tick Marks around perimeter */}
+            <circle cx="340" cy="290" r="270" fill="none" stroke="rgba(255, 255, 255, 0.04)" strokeWidth="1" />
+            <circle
+              cx="340"
+              cy="290"
+              r="266"
               fill="none"
-              stroke="url(#cyberDonutGrad)"
-              strokeWidth="12"
-              strokeDasharray="327"
-              strokeDashoffset={327 * (1 - 0.51)}
-              strokeLinecap="round"
+              stroke="rgba(255, 255, 255, 0.07)"
+              strokeWidth="2"
+              strokeDasharray="2 7"
             />
-            <circle className="mindmap-core-face" cx={mindmapLayout.hub.cx} cy={mindmapLayout.hub.cy} r="56" fill="#080b0f" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1.5" />
-            <text className="mindmap-core-check" x={mindmapLayout.hub.cx} y={mindmapLayout.hub.cy - 6} textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="bold">✓</text>
-            <text className="mindmap-core-value"
-              x={mindmapLayout.hub.cx}
-              y={mindmapLayout.hub.cy + 8}
-              textAnchor="middle"
-              fill="#ffffff"
-              fontSize="12"
-              fontWeight="800"
-              fontFamily="monospace"
-            >
-              51%
-            </text>
-            </g>
+            <circle
+              cx="340"
+              cy="290"
+              r="205"
+              fill="none"
+              stroke="rgba(56, 189, 248, 0.12)"
+              strokeWidth="1"
+              strokeDasharray="4 6"
+            />
+            <circle cx="340" cy="290" r="140" fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="1" />
 
-            {mindmapLayout.active && (
-              <g className="mindmap-platform-branch" key={expandedPlatform}>
-                <g filter="url(#mindmapBranchGlow)">
-                  <path d={createTaperedBranchPath(mindmapLayout.edges.get(expandedPlatform), branchProgress, MINDMAP_CONFIG.branchWidths.start, MINDMAP_CONFIG.branchWidths.end, MINDMAP_CONFIG.branchSamples)} fill="url(#mindmapBranchGradient)" opacity="0.92" />
-                </g>
-                {branchProgress > 0 && (() => {
-                  const edge = mindmapLayout.edges.get(expandedPlatform);
-                  const branchTip = cubicPoint(edge, branchProgress);
-                  const tip = { x: branchTip.x + mindmapLayout.active.direction.x * MINDMAP_CONFIG.platformRadius, y: branchTip.y + mindmapLayout.active.direction.y * MINDMAP_CONFIG.platformRadius };
-                  return (
-                    <g className="mindmap-entering-node" transform={`translate(${tip.x} ${tip.y}) scale(${0.4 + branchProgress * 0.6})`} style={{ "--branch-color": mindmapLayout.active.color, opacity: branchProgress }} role="button" tabIndex={branchProgress >= 1 ? 0 : -1} aria-label={`Open ${mindmapLayout.active.label} analytics`} onClick={() => { if (branchProgress >= 1) { setDrawerTab("Overview"); setDrawerOpen(true); setHubOpen(false); } }} onKeyDown={(event) => { if (branchProgress >= 1 && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); setDrawerTab("Overview"); setDrawerOpen(true); setHubOpen(false); } }}>
-                      <circle r={mindmapLayout.active.r} fill="#0b1016" stroke={mindmapLayout.active.color} strokeWidth="4" />
-                      <circle r={mindmapLayout.active.r - 9} fill="#070b10" stroke="rgba(255,255,255,.16)" />
-                      <text y="5" textAnchor="middle" fill={mindmapLayout.active.color} fontSize="15" fontWeight="bold">{mindmapLayout.active.short}</text>
-                      {branchProgress >= 1 && <>
-                        <text y={-mindmapLayout.active.r - 15} textAnchor="middle" fill="#f8fafc" fontSize="13" fontWeight="800"><title>{mindmapLayout.active.label}</title>{mindmapLayout.active.label.length > 14 ? `${mindmapLayout.active.label.slice(0, 12)}…` : mindmapLayout.active.label}</text>
-                        <text y={mindmapLayout.active.r + 20} textAnchor="middle" fill={mindmapLayout.active.color} fontSize="12">{mindmapLayout.active.id === "leetcode" ? `${lcSolved} solved` : mindmapLayout.active.id === "geeksforgeeks" ? `${gfg.score ?? 0} score` : mindmapLayout.active.id === "codechef" ? `${codechef.rating ?? 0} rating` : mindmapLayout.active.id === "github" ? `${ghCommits} contributions` : `${codeforces.rating || 0} rating`}</text>
-                      </>}
-                    </g>
-                  );
-                })()}
-                {branchProgress >= 1 && (() => {
-                  const midpoint = mindmapLayout.edges.get(expandedPlatform).midpoint;
-                  return <g className="mindmap-remove" style={{ "--branch-color": mindmapLayout.active.color }} transform={`translate(${midpoint.x} ${midpoint.y})`} role="button" tabIndex="0" aria-label={`Close ${mindmapLayout.active.label} analytics`} onClick={() => { setExpandedPlatform(null); setDrawerOpen(false); setBranchProgress(0); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setExpandedPlatform(null); setDrawerOpen(false); setBranchProgress(0); } }}>
-                    <circle r="15" fill="#080c10" stroke={mindmapLayout.active.color} strokeWidth="3" />
-                    <text y="6" textAnchor="middle" fill={mindmapLayout.active.color} fontSize="19" fontWeight="bold">−</text>
-                  </g>;
-                })()}
-              </g>
-            )}
+            {/* CURVED BEZIER FIBER LINES FROM CORE TO 5 HUBS */}
+            {/* 1. To LEETCODE (Top) */}
+            <path
+              d="M 340 235 C 340 175, 340 155, 340 110"
+              fill="none"
+              stroke="#0ea5e9"
+              strokeWidth={expandedPlatform === "leetcode" ? "2.5" : "1.6"}
+              strokeDasharray={expandedPlatform === "leetcode" ? "none" : "3 4"}
+              opacity={expandedPlatform === "leetcode" ? "1" : "0.75"}
+            />
+            {/* 2. To GEEKSFORGEEKS (Top-Left) */}
+            <path
+              d="M 285 260 C 220 240, 190 220, 140 180"
+              fill="none"
+              stroke="#ec4899"
+              strokeWidth={expandedPlatform === "geeksforgeeks" ? "2.5" : "1.6"}
+              strokeDasharray={expandedPlatform === "geeksforgeeks" ? "none" : "3 4"}
+              opacity={expandedPlatform === "geeksforgeeks" ? "1" : "0.75"}
+            />
+            {/* 3. To CODECHEF (Bottom-Left) */}
+            <path
+              d="M 295 325 C 230 370, 200 390, 175 430"
+              fill="none"
+              stroke="#06b6d4"
+              strokeWidth={expandedPlatform === "codechef" ? "2.5" : "1.6"}
+              strokeDasharray={expandedPlatform === "codechef" ? "none" : "3 4"}
+              opacity={expandedPlatform === "codechef" ? "1" : "0.75"}
+            />
+            {/* 4. To GITHUB (Bottom) */}
+            <path
+              d="M 340 345 C 340 400, 345 430, 345 480"
+              fill="none"
+              stroke="#f43f5e"
+              strokeWidth={expandedPlatform === "github" ? "2.5" : "1.6"}
+              strokeDasharray={expandedPlatform === "github" ? "none" : "3 4"}
+              opacity={expandedPlatform === "github" ? "1" : "0.75"}
+            />
+            {/* 5. To CODEFORCES (Right) */}
+            <path
+              d="M 395 290 C 440 290, 470 285, 510 280"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth={expandedPlatform === "codeforces" ? "2.5" : "1.6"}
+              strokeDasharray={expandedPlatform === "codeforces" ? "none" : "3 4"}
+              opacity={expandedPlatform === "codeforces" ? "1" : "0.75"}
+            />
+
+            {/* CURVED BRANCHES FROM HUBS TO LEAF NODES */}
+            {/* Hub 1: LEETCODE leaf branches */}
+            <path d="M 340 110 C 320 75, 290 65, 280 60" fill="none" stroke="#38bdf8" strokeWidth="1" opacity="0.6" />
+            <path d="M 340 110 C 340 65, 340 45, 340 35" fill="none" stroke="#38bdf8" strokeWidth="1" opacity="0.6" />
+            <path d="M 340 110 C 360 75, 390 65, 405 55" fill="none" stroke="#38bdf8" strokeWidth="1" opacity="0.6" />
+            <circle cx="280" cy="60" r="9" fill="#080c10" stroke="#38bdf8" strokeWidth="1.5" />
+            <circle cx="340" cy="35" r="9" fill="#080c10" stroke="#38bdf8" strokeWidth="1.5" />
+            <circle cx="405" cy="55" r="9" fill="#080c10" stroke="#38bdf8" strokeWidth="1.5" />
+            <text x="280" y="63" fill="#38bdf8" fontSize="6.5" textAnchor="middle" fontWeight="bold">E</text>
+            <text x="340" y="38" fill="#38bdf8" fontSize="6.5" textAnchor="middle" fontWeight="bold">M</text>
+            <text x="405" y="58" fill="#38bdf8" fontSize="6.5" textAnchor="middle" fontWeight="bold">H</text>
+
+            {/* Hub 2: GEEKSFORGEEKS leaf branches */}
+            <path d="M 140 180 C 110 150, 95 140, 85 125" fill="none" stroke="#ec4899" strokeWidth="1" opacity="0.6" />
+            <path d="M 140 180 C 105 170, 85 175, 70 185" fill="none" stroke="#ec4899" strokeWidth="1" opacity="0.6" />
+            <path d="M 140 180 C 110 205, 95 220, 80 240" fill="none" stroke="#ec4899" strokeWidth="1" opacity="0.6" />
+            <circle cx="85" cy="125" r="9" fill="#080c10" stroke="#ec4899" strokeWidth="1.5" />
+            <circle cx="70" cy="185" r="9" fill="#080c10" stroke="#ec4899" strokeWidth="1.5" />
+            <circle cx="80" cy="240" r="9" fill="#080c10" stroke="#ec4899" strokeWidth="1.5" />
+
+            {/* Hub 3: CODECHEF leaf branches */}
+            <path d="M 175 430 C 145 410, 120 415, 105 425" fill="none" stroke="#06b6d4" strokeWidth="1" opacity="0.6" />
+            <path d="M 175 430 C 140 445, 120 470, 110 490" fill="none" stroke="#06b6d4" strokeWidth="1" opacity="0.6" />
+            <path d="M 175 430 C 160 470, 150 505, 150 525" fill="none" stroke="#06b6d4" strokeWidth="1" opacity="0.6" />
+            <circle cx="105" cy="425" r="9" fill="#080c10" stroke="#06b6d4" strokeWidth="1.5" />
+            <circle cx="110" cy="490" r="9" fill="#080c10" stroke="#06b6d4" strokeWidth="1.5" />
+            <circle cx="150" cy="525" r="9" fill="#080c10" stroke="#06b6d4" strokeWidth="1.5" />
+
+            {/* Hub 4: GITHUB leaf branches */}
+            <path d="M 345 480 C 320 520, 310 540, 305 555" fill="none" stroke="#f43f5e" strokeWidth="1" opacity="0.6" />
+            <path d="M 345 480 C 350 525, 355 545, 360 560" fill="none" stroke="#f43f5e" strokeWidth="1" opacity="0.6" />
+            <path d="M 345 480 C 380 520, 400 540, 415 550" fill="none" stroke="#f43f5e" strokeWidth="1" opacity="0.6" />
+            <circle cx="305" cy="555" r="9" fill="#080c10" stroke="#f43f5e" strokeWidth="1.5" />
+            <circle cx="360" cy="560" r="9" fill="#080c10" stroke="#f43f5e" strokeWidth="1.5" />
+            <circle cx="415" cy="550" r="9" fill="#080c10" stroke="#f43f5e" strokeWidth="1.5" />
+
+            {/* Hub 5: CODEFORCES leaf branches */}
+            <path d="M 510 280 C 550 250, 580 240, 605 230" fill="none" stroke="#3b82f6" strokeWidth="1" opacity="0.6" />
+            <path d="M 510 280 C 560 280, 595 285, 620 290" fill="none" stroke="#3b82f6" strokeWidth="1" opacity="0.6" />
+            <path d="M 510 280 C 555 310, 585 330, 610 350" fill="none" stroke="#3b82f6" strokeWidth="1" opacity="0.6" />
+            <circle cx="605" cy="230" r="9" fill="#080c10" stroke="#3b82f6" strokeWidth="1.5" />
+            <circle cx="620" cy="290" r="9" fill="#080c10" stroke="#3b82f6" strokeWidth="1.5" />
+            <circle cx="610" cy="350" r="9" fill="#080c10" stroke="#3b82f6" strokeWidth="1.5" />
+
+            {/* Clean central core keeps the platform constellation in focus. */}
+            <circle cx="340" cy="290" r="62" fill="none" stroke="rgba(255, 255, 255, 0.04)" strokeWidth="1" />
+            <circle className="orbit-core-progress" cx="340" cy="290" r="52" fill="none" stroke="#777" strokeWidth="10" strokeDasharray="327" strokeDashoffset="161" strokeLinecap="round" />
+            <circle cx="340" cy="290" r="44" fill="#080b0f" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1.5" />
+
+            {/* 4 Green '+' Ports around Central Donut */}
+            <g transform="translate(340, 235)" onClick={() => toggleExpand("leetcode")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("leetcode"); } }} className={`platform-node node-leetcode ${expandedPlatform === "leetcode" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select LeetCode" style={{ cursor: "pointer" }} title="LeetCode">
+              <circle cx="0" cy="0" r="6" fill="#080c10" stroke="#22c55e" strokeWidth="1.2" />
+              <text x="0" y="2.5" fill="#22c55e" fontSize="7" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
+            <g transform="translate(285, 290)" onClick={() => toggleExpand("geeksforgeeks")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("geeksforgeeks"); } }} className={`platform-node node-geeksforgeeks ${expandedPlatform === "geeksforgeeks" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select GeeksforGeeks" style={{ cursor: "pointer" }} title="GeeksforGeeks">
+              <circle cx="0" cy="0" r="6" fill="#080c10" stroke="#22c55e" strokeWidth="1.2" />
+              <text x="0" y="2.5" fill="#22c55e" fontSize="7" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
+            <g transform="translate(340, 345)" onClick={() => toggleExpand("github")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("github"); } }} className={`platform-node node-github ${expandedPlatform === "github" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select GitHub" style={{ cursor: "pointer" }} title="GitHub">
+              <circle cx="0" cy="0" r="6" fill="#080c10" stroke="#22c55e" strokeWidth="1.2" />
+              <text x="0" y="2.5" fill="#22c55e" fontSize="7" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
+            <g transform="translate(395, 290)" onClick={() => toggleExpand("codeforces")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("codeforces"); } }} className={`platform-node node-codeforces ${expandedPlatform === "codeforces" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select Codeforces" style={{ cursor: "pointer" }} title="Codeforces">
+              <circle cx="0" cy="0" r="6" fill="#080c10" stroke="#22c55e" strokeWidth="1.2" />
+              <text x="0" y="2.5" fill="#22c55e" fontSize="7" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
 
             {/* INTERACTIVE EXPAND BUTTONS '+' ALONG SPOKES (Exact Match to Image 2) */}
-            {mindmapLayout.ports.filter((platform) => platform.id !== expandedPlatform).map((platform) => (
-              <g key={platform.id} className="mindmap-plus" transform={`translate(${platform.cx}, ${platform.cy})`} onClick={() => { setBranchProgress(0); toggleExpand(platform.id); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setBranchProgress(0); toggleExpand(platform.id); } }} role="button" tabIndex="0" aria-label={`Open ${platform.label} analytics`} style={{ "--branch-color": platform.color, cursor: "pointer" }}>
-                <circle cx="0" cy="0" r={platform.r} fill="#080c10" stroke={platform.color} strokeWidth="3" />
-                <text className="mindmap-plus-glyph" x="0" y="7" fill={platform.color} fontSize="24" textAnchor="middle" fontWeight="bold">+</text>
-              </g>
-            ))}
+            <g transform="translate(340, 172)" onClick={() => toggleExpand("leetcode")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("leetcode"); } }} className={`platform-node node-leetcode ${expandedPlatform === "leetcode" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select LeetCode" style={{ cursor: "pointer" }} title="Expand LeetCode">
+              <circle cx="0" cy="0" r="7.5" fill="#080c10" stroke="#0ea5e9" strokeWidth="1.4" />
+              <text x="0" y="2.5" fill="#38bdf8" fontSize="8" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
+            <g transform="translate(212, 220)" onClick={() => toggleExpand("geeksforgeeks")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("geeksforgeeks"); } }} className={`platform-node node-geeksforgeeks ${expandedPlatform === "geeksforgeeks" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select GeeksforGeeks" style={{ cursor: "pointer" }} title="Expand GeeksforGeeks">
+              <circle cx="0" cy="0" r="7.5" fill="#080c10" stroke="#ec4899" strokeWidth="1.4" />
+              <text x="0" y="2.5" fill="#ec4899" fontSize="8" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
+            <g transform="translate(235, 378)" onClick={() => toggleExpand("codechef")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("codechef"); } }} className={`platform-node node-codechef ${expandedPlatform === "codechef" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select CodeChef" style={{ cursor: "pointer" }} title="Expand CodeChef">
+              <circle cx="0" cy="0" r="7.5" fill="#080c10" stroke="#06b6d4" strokeWidth="1.4" />
+              <text x="0" y="2.5" fill="#06b6d4" fontSize="8" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
+            <g transform="translate(342, 412)" onClick={() => toggleExpand("github")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("github"); } }} className={`platform-node node-github ${expandedPlatform === "github" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select GitHub" style={{ cursor: "pointer" }} title="Expand GitHub">
+              <circle cx="0" cy="0" r="7.5" fill="#080c10" stroke="#f43f5e" strokeWidth="1.4" />
+              <text x="0" y="2.5" fill="#f43f5e" fontSize="8" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
+            <g transform="translate(452, 285)" onClick={() => toggleExpand("codeforces")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("codeforces"); } }} className={`platform-node node-codeforces ${expandedPlatform === "codeforces" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select Codeforces" style={{ cursor: "pointer" }} title="Expand Codeforces">
+              <circle cx="0" cy="0" r="7.5" fill="#080c10" stroke="#3b82f6" strokeWidth="1.4" />
+              <text x="0" y="2.5" fill="#3b82f6" fontSize="8" textAnchor="middle" fontWeight="bold">+</text>
+            </g>
 
-              {new URLSearchParams(window.location.search).get("debug") === "1" && <g className="mindmap-debug" pointerEvents="none">
-                <rect x="1" y="1" width={MINDMAP_CONFIG.view.width - 2} height={MINDMAP_CONFIG.view.height - 2} fill="none" stroke="#facc15" strokeDasharray="8 6" />
-                <circle cx={mindmapLayout.hub.cx} cy={mindmapLayout.hub.cy} r={mindmapLayout.hub.r} fill="none" stroke="#facc15" />
-                <text x={mindmapLayout.hub.cx + 12} y={mindmapLayout.hub.cy - 75} fill="#facc15" fontSize="12">hub ({mindmapLayout.hub.cx},{mindmapLayout.hub.cy}) r={mindmapLayout.hub.r}</text>
-                {mindmapLayout.ports.map((port) => <g key={`debug-${port.id}`}>
-                  <circle cx={port.cx} cy={port.cy} r={port.r} fill="none" stroke="#facc15" />
-                  <text x={port.cx + 28} y={port.cy} fill="#facc15" fontSize="11">{port.label} {port.angle}°</text>
-                </g>)}
-                {mindmapLayout.active && (() => { const edge = mindmapLayout.edges.get(expandedPlatform); return <g>
-                  <circle cx={mindmapLayout.active.cx} cy={mindmapLayout.active.cy} r={mindmapLayout.active.r} fill="none" stroke="#facc15" />
-                  <circle cx={edge.p0.x} cy={edge.p0.y} r="4" fill="#22c55e" />
-                  <circle cx={edge.p3.x} cy={edge.p3.y} r="4" fill="#ef4444" />
-                  <text x={edge.p0.x + 6} y={edge.p0.y - 6} fill="#22c55e" fontSize="11">edge start</text>
-                  <text x={edge.p3.x + 6} y={edge.p3.y - 6} fill="#ef4444" fontSize="11">edge end</text>
-                </g>; })()}
-              </g>}
+            {/* 5 MAIN PLATFORM HUBS (Interactive Click to Expand) */}
+
+            {/* 1. LEETCODE (Top) */}
+            <g
+              transform="translate(340, 110)"
+              onClick={() => toggleExpand("leetcode")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("leetcode"); } }} className={`platform-node node-leetcode ${expandedPlatform === "leetcode" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select LeetCode"
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx="0" cy="0" r="23" fill="#0b1016" stroke="#38bdf8" strokeWidth={expandedPlatform === "leetcode" ? 3.5 : 2.5} filter="url(#glowCyan)" />
+              <circle cx="0" cy="0" r="17" fill="#070b10" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" />
+              <text x="0" y="4" textAnchor="middle" fill="#38bdf8" fontSize="11" fontWeight="bold">LC</text>
+              <text x="0" y="-30" textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="800" letterSpacing="0.06em">
+                LEETCODE
+              </text>
+              <rect x="-35" y="28" width="70" height="15" rx="7.5" fill="rgba(56, 189, 248, 0.18)" stroke="#38bdf8" strokeWidth="0.8" />
+              <text x="0" y="39" textAnchor="middle" fill="#38bdf8" fontSize="8" fontWeight="bold">
+                {lcSolved} Solved
+              </text>
+            </g>
+
+            {/* 2. GEEKSFORGEEKS (Top-Left) */}
+            <g
+              transform="translate(140, 180)"
+              onClick={() => toggleExpand("geeksforgeeks")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("geeksforgeeks"); } }} className={`platform-node node-geeksforgeeks ${expandedPlatform === "geeksforgeeks" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select GeeksforGeeks"
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx="0" cy="0" r="23" fill="#0b1016" stroke="#ec4899" strokeWidth={expandedPlatform === "geeksforgeeks" ? 3.5 : 2.5} filter="url(#glowPink)" />
+              <circle cx="0" cy="0" r="17" fill="#070b10" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" />
+              <text x="0" y="4" textAnchor="middle" fill="#ec4899" fontSize="9.5" fontWeight="bold">GFG</text>
+              <text x="0" y="-30" textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="800" letterSpacing="0.06em">
+                GEEKSFORGEEKS
+              </text>
+              <rect x="-32" y="28" width="64" height="15" rx="7.5" fill="rgba(236, 72, 153, 0.18)" stroke="#ec4899" strokeWidth="0.8" />
+              <text x="0" y="39" textAnchor="middle" fill="#f472b6" fontSize="8" fontWeight="bold">
+                {gfg.score ?? 350} Score
+              </text>
+            </g>
+
+            {/* 3. CODECHEF (Bottom-Left) */}
+            <g
+              transform="translate(175, 430)"
+              onClick={() => toggleExpand("codechef")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("codechef"); } }} className={`platform-node node-codechef ${expandedPlatform === "codechef" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select CodeChef"
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx="0" cy="0" r="23" fill="#0b1016" stroke="#06b6d4" strokeWidth={expandedPlatform === "codechef" ? 3.5 : 2.5} filter="url(#glowCyan)" />
+              <circle cx="0" cy="0" r="17" fill="#070b10" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" />
+              <text x="0" y="4" textAnchor="middle" fill="#06b6d4" fontSize="9.5" fontWeight="bold">CC</text>
+              <text x="0" y="36" textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="800" letterSpacing="0.06em">
+                CODECHEF
+              </text>
+              <rect x="-35" y="42" width="70" height="15" rx="7.5" fill="rgba(6, 182, 212, 0.18)" stroke="#06b6d4" strokeWidth="0.8" />
+              <text x="0" y="53" textAnchor="middle" fill="#22d3ee" fontSize="8" fontWeight="bold">
+                {codechef.rating ?? 1650} ({codechef.stars || "3★"})
+              </text>
+            </g>
+
+            {/* 4. GITHUB (Bottom) */}
+            <g
+              transform="translate(345, 480)"
+              onClick={() => toggleExpand("github")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("github"); } }} className={`platform-node node-github ${expandedPlatform === "github" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select GitHub"
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx="0" cy="0" r="23" fill="#0b1016" stroke="#f43f5e" strokeWidth={expandedPlatform === "github" ? 3.5 : 2.5} filter="url(#glowPink)" />
+              <circle cx="0" cy="0" r="17" fill="#070b10" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" />
+              <text x="0" y="4" textAnchor="middle" fill="#f43f5e" fontSize="9.5" fontWeight="bold">GH</text>
+              <circle cx="14" cy="14" r="5" fill="#f43f5e" />
+              <text x="14" y="16.5" fill="#ffffff" fontSize="6" textAnchor="middle" fontWeight="bold">✓</text>
+              <text x="0" y="36" textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="800" letterSpacing="0.06em">
+                GITHUB
+              </text>
+              <rect x="-35" y="42" width="70" height="15" rx="7.5" fill="rgba(244, 63, 94, 0.18)" stroke="#f43f5e" strokeWidth="0.8" />
+              <text x="0" y="53" textAnchor="middle" fill="#fb7185" fontSize="8" fontWeight="bold">
+                {ghCommits} Commits
+              </text>
+            </g>
+
+            {/* 5. CODEFORCES (Right) */}
+            <g
+              transform="translate(510, 280)"
+              onClick={() => toggleExpand("codeforces")} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpand("codeforces"); } }} className={`platform-node node-codeforces ${expandedPlatform === "codeforces" ? "is-selected" : ""}`} role="button" tabIndex="0" aria-label="Select Codeforces"
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx="0" cy="0" r="23" fill="#0b1016" stroke="#3b82f6" strokeWidth={expandedPlatform === "codeforces" ? 3.5 : 2.5} filter="url(#glowCyan)" />
+              <circle cx="0" cy="0" r="17" fill="#070b10" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" />
+              <text x="0" y="4" textAnchor="middle" fill="#3b82f6" fontSize="9.5" fontWeight="bold">CF</text>
+              <text x="0" y="-30" textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="800" letterSpacing="0.06em">
+                CODEFORCES
+              </text>
+              <rect x="-35" y="28" width="70" height="15" rx="7.5" fill="rgba(59, 130, 246, 0.18)" stroke="#3b82f6" strokeWidth="0.8" />
+              <text x="0" y="39" textAnchor="middle" fill="#60a5fa" fontSize="8" fontWeight="bold">
+                {codeforces.rating || 1420} Rating
+              </text>
             </g>
           </svg>
-
 
           {/* Bottom Left Legend */}
           <div className="visual-legend">
             <div className="visual-legend-item">
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#38bdf8" }} />
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#D8D8D8" }} />
               <span>Live Synced</span>
             </div>
             <div className="visual-legend-item">
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ec4899" }} />
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#777777" }} />
               <span>Local Profile</span>
             </div>
           </div>
         </div>
 
-
-          {drawerOpen && activePlatformData && <PlatformAnalyticsDrawer
-            platform={activePlatformData}
-            stats={activePlatformData.stats}
-            status={activePlatformData.stats?.error ? "Needs attention" : activePlatformData.stats?.loading ? "Syncing" : activePlatformData.handle ? "Connected" : "Handle not set"}
-            onClose={() => setDrawerOpen(false)}
-            tab={drawerTab}
-            setTab={setDrawerTab}
-            logs={activePlatformLogs}
-            currentStreak={currentStreak}
-            longestStreak={longestStreak}
-            activeDays={activeDaysCount}
-            monthlyActivity={monthlyActivity}
-            milestones={streakMilestones}
-            recommendation={recommendation}
-            onRecommendation={() => { if (recommendation.kind === "log") { setLogPlatform(activePlatformData.title); setIsLogModalOpen(true); } else window.open(activePlatformData.practiceUrl, "_blank", "noopener,noreferrer"); }}
-            onLog={() => { setLogPlatform(activePlatformData.title); setIsLogModalOpen(true); }}
-            onRetry={() => { const handle=activePlatformData.handle; if (!handle) return; if(expandedPlatform === "leetcode") syncLeetCodeData(handle,{force:true}); else if(expandedPlatform === "codechef") syncCodeChefData(handle,{force:true}); else if(expandedPlatform === "geeksforgeeks") syncGfgData(handle,{force:true}); else if(expandedPlatform === "github") syncGitHubData(handle,{force:true}); }}
-          />}
-          {hubOpen && <PlatformAnalyticsDrawer mode="hub" onClose={() => setHubOpen(false)} totalSolved={totalSolved} currentStreak={currentStreak} easyCount={easyCount} mediumCount={medCount} hardCount={hardCount} platformTotals={[{name:"LeetCode",value:lcSolved,color:"#38bdf8"},{name:"GeeksforGeeks",value:gfgSolved,color:"#ec4899"},{name:"CodeChef",value:ccSolved,color:"#06b6d4"},{name:"Codeforces",value:codeforces.solved ?? 0,color:"#3b82f6"}]} />}
-        {/* Right Sidebar: Telemetry Command Panel (OpportunityOS Developer Metrics) */}
-        <div className="visual-sidebar">
-          {/* Top Control Bar with '+', alerts, freeze shields, and Time Range Dropdown */}
-          <div className="visual-top-bar">
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                type="button"
-                className="visual-icon-btn"
-                onClick={() => setIsLogModalOpen(true)}
-                title="Log Today's Practice Session"
-              >
-                <Plus size={13} />
-              </button>
-              <span className="visual-icon-btn" style={{ cursor: "default" }}>
-                <Bell size={12} color="#fbbf24" /> {growthStats.streakAtRisk ? "1" : "0"}
-              </span>
-              <span className="visual-icon-btn" style={{ cursor: "default" }}>
-                <Shield size={12} color="#4ade80" /> {growthStats.streakFreezesAvailable ?? 2}
-              </span>
-            </div>
-
-            <select
-              className="visual-dropdown-select"
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-            >
-              <option value="Past 24 Hours">Past 24 Hours</option>
-              <option value="Past 7 Days">Past 7 Days</option>
-              <option value="Past 28 Days">Past 28 Days</option>
-              <option value="All Time">All Time</option>
-            </select>
-          </div>
-
-          {/* Top Telemetry Header Card (Total Solved & Active Coding Streak) */}
-          <div className="visual-header-card">
-            <div className="visual-header-progress">
-              <div style={{ width: "80%", background: "#22c55e" }} />
-              <div style={{ width: "20%", background: "#f59e0b" }} />
-            </div>
-
-            <div className="visual-header-cols">
-              <div className="visual-header-col-item">
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
-                <div>
-                  <span>Total Solved</span>
-                  <strong>{totalSolved}</strong>
+                  {/* Expanded Details Panel: Appears Inline on Clicking Any Platform Node */}
+          {expandedPlatform && (
+            <div className="visual-expand-panel" style={{ "--selected-platform-color": PLATFORM_COLORS[expandedPlatform] }}>
+              <div className="visual-expand-header">
+                <div className="visual-expand-title">
+                  {expandedPlatform === "geeksforgeeks" && <BookOpen size={18} color="#22c55e" />}
+                  {expandedPlatform === "codechef" && <ChefHat size={18} color="#ea580c" />}
+                  {expandedPlatform === "leetcode" && <Code2 size={18} color="#38bdf8" />}
+                  {expandedPlatform === "codeforces" && <Award size={18} color="#3b82f6" />}
+                  {expandedPlatform === "github" && <GitCommit size={18} color="#f43f5e" />}
+                  <div>
+                    <strong style={{ fontSize: 14, color: "#f8fafc", textTransform: "capitalize" }}>
+                      {expandedPlatform} Details
+                    </strong>
+                    <span style={{ fontSize: 11, color: "#8da0aa", marginLeft: 8 }}>
+                      @{profile.platformHandles?.[expandedPlatform] || profile.platformHandles?.gfg || "Not configured"}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="visual-header-col-item">
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#f59e0b" }} />
-                <div>
-                  <span>Active Streak</span>
-                  <strong>{currentStreak} Days</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 6-Tile Developer Telemetry Grid */}
-          <div className="visual-grid-6">
-            <div className="visual-grid-tile">
-              <div className="visual-grid-tile-label">Daily Velocity</div>
-              <div className="visual-grid-tile-val">
-                <span className="visual-grid-tile-num">4.2 / d</span>
-                <span className="visual-grid-tile-trend up">↑ 29%</span>
-              </div>
-            </div>
-
-            <div className="visual-grid-tile">
-              <div className="visual-grid-tile-label">Weekly Solved</div>
-              <div className="visual-grid-tile-val">
-                <span className="visual-grid-tile-num">29 Solved</span>
-                <span className="visual-grid-tile-trend down">↓ 15%</span>
-              </div>
-            </div>
-
-            <div className="visual-grid-tile">
-              <div className="visual-grid-tile-label">Consistency Rate</div>
-              <div className="visual-grid-tile-val">
-                <span className="visual-grid-tile-num">{consistencyRate}%</span>
-                <span className="visual-grid-tile-trend up">↑ 15%</span>
-              </div>
-            </div>
-
-            <div className="visual-grid-tile">
-              <div className="visual-grid-tile-label">Active Days</div>
-              <div className="visual-grid-tile-val">
-                <span className="visual-grid-tile-num">{activeDaysCount} / 28</span>
-                <span className="visual-grid-tile-trend neutral">↑ 0%</span>
-              </div>
-            </div>
-
-            <div className="visual-grid-tile">
-              <div className="visual-grid-tile-label">Total Contributions</div>
-              <div className="visual-grid-tile-val">
-                <span className="visual-grid-tile-num">{ghCommits}</span>
-                <span className="visual-grid-tile-trend up">↑ 12%</span>
-              </div>
-            </div>
-
-            <div className="visual-grid-tile">
-              <div className="visual-grid-tile-label">Peak Streak</div>
-              <div className="visual-grid-tile-val">
-                <span className="visual-grid-tile-num">{longestStreak}d</span>
-                <span className="visual-grid-tile-trend up">● Live</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Difficulty Breakdown (Replacing Severity Breakdown with Developer Metrics) */}
-          <div className="visual-sidebar-card">
-            <div className="visual-breakdown-title">Difficulty Breakdown</div>
-            <div className="visual-breakdown-bar">
-              <div style={{ width: `${hardPct}%`, background: "#ef4444" }} />
-              <div style={{ width: `${medPct}%`, background: "#f59e0b" }} />
-              <div style={{ width: `${easyPct}%`, background: "#22c55e" }} />
-            </div>
-
-            <div className="visual-breakdown-cards">
-              <div className="visual-breakdown-pill-card">
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#ef4444" }} />
-                  Hard
-                </div>
-                <div className="visual-breakdown-pill-val">{hardCount} Solved</div>
-              </div>
-
-              <div className="visual-breakdown-pill-card">
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#f59e0b" }} />
-                  Medium
-                </div>
-                <div className="visual-breakdown-pill-val">{medCount} Solved</div>
-              </div>
-
-              <div className="visual-breakdown-pill-card">
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#22c55e" }} />
-                  Easy
-                </div>
-                <div className="visual-breakdown-pill-val">{easyCount} Solved</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Platform Distribution (LeetCode, GFG, CodeChef, GitHub) */}
-          <div className="visual-sidebar-card">
-            <div className="visual-breakdown-title">Platform Distribution</div>
-            <div className="visual-breakdown-bar">
-              <div style={{ width: `${lcShare}%`, background: "#38bdf8" }} />
-              <div style={{ width: `${gfgShare}%`, background: "#ec4899" }} />
-              <div style={{ width: `${ccShare}%`, background: "#06b6d4" }} />
-              <div style={{ width: `${Math.max(4, 100 - lcShare - gfgShare - ccShare)}%`, background: "#f43f5e" }} />
-            </div>
-
-            <div className="visual-breakdown-cards">
-              <div
-                className="visual-breakdown-pill-card"
-                onClick={() => toggleExpand("leetcode")}
-              >
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#38bdf8" }} />
-                  LeetCode
-                </div>
-                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>{lcSolved} Solved</span>
-                  {profile.platformHandles?.leetcode && (
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {expandedPlatform === "codechef" && (profile.platformHandles?.codechef) && (
                     <button
                       type="button"
-                      style={{ background: "none", border: "none", color: "#38bdf8", cursor: "pointer", padding: 0 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        syncLeetCodeData(profile.platformHandles?.leetcode, { force: true });
-                      }}
-                      title="Sync LeetCode Live"
-                      disabled={leetcode.loading}
-                    >
-                      <RotateCw size={10} className={leetcode.loading ? "spin" : ""} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div
-                className="visual-breakdown-pill-card"
-                onClick={() => toggleExpand("geeksforgeeks")}
-              >
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#ec4899" }} />
-                  GeeksforGeeks
-                </div>
-                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>{gfgSolved} Solved</span>
-                  {(profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg) && (
-                    <button
-                      type="button"
-                      style={{ background: "none", border: "none", color: "#ec4899", cursor: "pointer", padding: 0 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        syncGfgData(profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg, { force: true });
-                      }}
-                      title="Sync GFG Live"
-                      disabled={gfg.loading}
-                    >
-                      <RotateCw size={10} className={gfg.loading ? "spin" : ""} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div
-                className="visual-breakdown-pill-card"
-                onClick={() => toggleExpand("codechef")}
-              >
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#06b6d4" }} />
-                  CodeChef
-                </div>
-                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>{ccSolved} Solved</span>
-                  {profile.platformHandles?.codechef && (
-                    <button
-                      type="button"
-                      style={{ background: "none", border: "none", color: "#06b6d4", cursor: "pointer", padding: 0 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        syncCodeChefData(profile.platformHandles?.codechef, { force: true });
-                      }}
-                      title="Sync CodeChef Live"
+                      className="button button-secondary button-sm"
+                      style={{ fontSize: 11, padding: "3px 10px", height: "auto" }}
+                      onClick={() => syncCodeChefData(profile.platformHandles?.codechef, { force: true })}
                       disabled={codechef.loading}
                     >
-                      <RotateCw size={10} className={codechef.loading ? "spin" : ""} />
+                      <RotateCw size={11} className={codechef.loading ? "spin" : ""} />
+                      {codechef.loading ? "Syncing..." : "Sync Live"}
                     </button>
                   )}
-                </div>
-              </div>
 
-              <div
-                className="visual-breakdown-pill-card"
-                onClick={() => toggleExpand("codeforces")}
-              >
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#fbbf24" }} />
-                  Codeforces
-                </div>
-                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>{codeforces.solved ?? 0} Solved</span>
-                  {profile.platformHandles?.codeforces && (
+                  {expandedPlatform === "geeksforgeeks" && (profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg) && (
                     <button
                       type="button"
-                      style={{ background: "none", border: "none", color: "#fbbf24", cursor: "pointer", padding: 0 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        syncCodeforcesData(profile.platformHandles?.codeforces, { force: true });
-                      }}
-                      title="Sync Codeforces Live"
-                      disabled={codeforces.loading}
+                      className="button button-secondary button-sm"
+                      style={{ fontSize: 11, padding: "3px 10px", height: "auto" }}
+                      onClick={() => syncGfgData(profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg, { force: true })}
+                      disabled={gfg.loading}
                     >
-                      <RotateCw size={10} className={codeforces.loading ? "spin" : ""} />
+                      <RotateCw size={11} className={gfg.loading ? "spin" : ""} />
+                      {gfg.loading ? "Syncing..." : "Sync Live"}
                     </button>
                   )}
-                </div>
-              </div>
 
-              <div
-                className="visual-breakdown-pill-card"
-                onClick={() => toggleExpand("github")}
-              >
-                <div className="visual-breakdown-pill-label">
-                  <span className="visual-breakdown-pill-dot" style={{ background: "#f43f5e" }} />
-                  GitHub
-                </div>
-                <div className="visual-breakdown-pill-val" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>{ghCommits} Commits</span>
-                  {profile.platformHandles?.github && (
+                  {expandedPlatform === "leetcode" && profile.platformHandles?.leetcode && (
                     <button
                       type="button"
-                      style={{ background: "none", border: "none", color: "#f43f5e", cursor: "pointer", padding: 0 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        syncGitHubData(profile.platformHandles?.github, { force: true });
-                      }}
-                      title="Sync GitHub Live"
+                      className="button button-secondary button-sm"
+                      style={{ fontSize: 11, padding: "3px 10px", height: "auto" }}
+                      onClick={() => syncLeetCodeData(profile.platformHandles?.leetcode, { force: true })}
+                      disabled={leetcode.loading}
+                    >
+                      <RotateCw size={11} className={leetcode.loading ? "spin" : ""} />
+                      {leetcode.loading ? "Syncing..." : "Sync Live"}
+                    </button>
+                  )}
+
+                  {expandedPlatform === "github" && profile.platformHandles?.github && (
+                    <button
+                      type="button"
+                      className="button button-secondary button-sm"
+                      style={{ fontSize: 11, padding: "3px 10px", height: "auto" }}
+                      onClick={() => syncGitHubData(profile.platformHandles?.github, { force: true })}
                       disabled={github.loading}
                     >
-                      <RotateCw size={10} className={github.loading ? "spin" : ""} />
+                      <RotateCw size={11} className={github.loading ? "spin" : ""} />
+                      {github.loading ? "Syncing..." : "Sync Live"}
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", padding: 2 }}
+                    onClick={() => setExpandedPlatform(null)}
+                    title="Close details"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
               </div>
+
+              {/* Specific Expanded Metrics for That Particular Platform */}
+              {expandedPlatform === "geeksforgeeks" && (
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Coding Score</small>
+                      <strong>{gfg.score ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Problems Solved</small>
+                      <strong>{gfg.solved ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Institute Rank</small>
+                      <strong>{gfg.instituteRank && gfg.instituteRank !== "—" ? `#${gfg.instituteRank}` : "—"}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>POTD Streak</small>
+                      <strong>{gfg.currentStreak ? `${gfg.currentStreak} Days` : "—"}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Campus / Org</small>
+                      <strong style={{ fontSize: 13, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                        {gfg.instituteName || "Practice"}
+                      </strong>
+                    </div>
+                  </div>
+                  {gfg.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {gfg.lastSynced}
+                    </span>
+                  )}
+                  {gfg.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {gfg.error}
+                    </span>
+                  )}
+                </>
+              )}
+
+              {expandedPlatform === "codechef" && (
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Current Rating</small>
+                      <strong>{codechef.rating ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Stars & Division</small>
+                      <strong>{codechef.stars || "1★"} ({codechef.division || "Div 2"})</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Problems Solved</small>
+                      <strong>{codechef.solved ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Global Rank</small>
+                      <strong>{codechef.globalRank || "—"}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Peak Rating</small>
+                      <strong>{codechef.highestRating ?? codechef.rating ?? 0}</strong>
+                    </div>
+                  </div>
+                  {codechef.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {codechef.lastSynced}
+                    </span>
+                  )}
+                  {codechef.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {codechef.error}
+                    </span>
+                  )}
+                </>
+              )}
+
+              {expandedPlatform === "leetcode" && (
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Total Solved</small>
+                      <strong>{leetcode.solved ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small style={{ color: "#4ade80" }}>Easy</small>
+                      <strong style={{ color: "#4ade80" }}>{leetcode.easy ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small style={{ color: "#fbbf24" }}>Medium</small>
+                      <strong style={{ color: "#fbbf24" }}>{leetcode.medium ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small style={{ color: "#f87171" }}>Hard</small>
+                      <strong style={{ color: "#f87171" }}>{leetcode.hard ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Global Rank</small>
+                      <strong>{leetcode.ranking ? `#${leetcode.ranking.toLocaleString()}` : "—"}</strong>
+                    </div>
+                    {leetcode.contestRating && (
+                      <div className="visual-expand-tile">
+                        <small>Contest Rating</small>
+                        <strong>{leetcode.contestRating} {leetcode.contestBadge ? `(${leetcode.contestBadge})` : ""}</strong>
+                      </div>
+                    )}
+                  </div>
+                  {leetcode.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {leetcode.lastSynced}
+                    </span>
+                  )}
+                  {leetcode.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {leetcode.error}
+                    </span>
+                  )}
+                </>
+              )}
+
+              {expandedPlatform === "codeforces" && (
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Rating</small>
+                      <strong>{codeforces.rating ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Rank Tier</small>
+                      <strong>{codeforces.rank || "Specialist"}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Max Rating</small>
+                      <strong>{codeforces.maxRating ?? codeforces.rating ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Solved Problems</small>
+                      <strong>{codeforces.solved ?? 0}</strong>
+                    </div>
+                  </div>
+                  {codeforces.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {codeforces.lastSynced}
+                    </span>
+                  )}
+                  {codeforces.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {codeforces.error}
+                    </span>
+                  )}
+                </>
+              )}
+
+              {expandedPlatform === "github" && (
+                <>
+                  <div className="visual-expand-grid">
+                    <div className="visual-expand-tile">
+                      <small>Contributions</small>
+                      <strong>{github.contributions ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Repositories</small>
+                      <strong>{github.repos ?? 0}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Commit Streak</small>
+                      <strong>{github.streak ?? 0} Days</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Longest Streak</small>
+                      <strong>{github.longestStreak ? `${github.longestStreak} Days` : "—"}</strong>
+                    </div>
+                    <div className="visual-expand-tile">
+                      <small>Followers</small>
+                      <strong>{github.followers ?? "—"}</strong>
+                    </div>
+                  </div>
+                  {github.lastSynced && (
+                    <span style={{ fontSize: 11, color: "#4ade80", display: "block" }}>
+                      ✓ Real-time synced at {github.lastSynced}
+                    </span>
+                  )}
+                  {github.error && (
+                    <span style={{ fontSize: 11, color: "#ef4444", display: "block", marginTop: 4 }}>
+                      ⚠️ {github.error}
+                    </span>
+                  )}
+                </>
+              )}
+
+              <section className="platform-insight" aria-label={`${expandedPlatform} performance visualization`}>
+                <div className="platform-insight-heading">
+                  <div><span>PERFORMANCE PROFILE</span><strong>Where your progress sits</strong></div>
+                  <small>LIVE DATA</small>
+                </div>
+                {expandedPlatform === "leetcode" ? (() => {
+                  const easy = Number(leetcode.easy) || 0;
+                  const medium = Number(leetcode.medium) || 0;
+                  const hard = Number(leetcode.hard) || 0;
+                  const total = easy + medium + hard;
+                  const denominator = total || 1;
+                  return <>
+                    <div className="platform-mix-bar" aria-label={`Difficulty distribution: ${easy} easy, ${medium} medium, ${hard} hard`}>
+                      <i style={{ width: `${easy / denominator * 100}%` }} />
+                      <i style={{ width: `${medium / denominator * 100}%` }} />
+                      <i style={{ width: `${hard / denominator * 100}%` }} />
+                    </div>
+                    <div className="platform-mix-legend">
+                      <span><i />Easy <b>{easy}</b></span><span><i />Medium <b>{medium}</b></span><span><i />Hard <b>{hard}</b></span>
+                    </div>
+                    <p className="platform-insight-note">A balanced mix builds fluency and problem-solving depth.</p>
+                  </>;
+                })() : (() => {
+                  const metric = expandedPlatform === "github" ? Number(github.contributions) || 0
+                    : expandedPlatform === "geeksforgeeks" ? Number(gfg.solved) || 0
+                    : expandedPlatform === "codechef" ? Number(codechef.rating) || 0
+                    : Number(codeforces.rating) || 0;
+                  const label = expandedPlatform === "github" ? "CONTRIBUTIONS"
+                    : expandedPlatform === "geeksforgeeks" ? "PROBLEMS SOLVED"
+                    : expandedPlatform === "codechef" || expandedPlatform === "codeforces" ? "CURRENT RATING" : "ACTIVITY";
+                  return <>
+                    <div className="platform-activity-visual" aria-label={`${label}: ${metric}`}>
+                      <div className="platform-activity-bars" aria-label={`Last seven days: ${selectedPlatformWeekTotal} activity across ${selectedPlatformActiveDays} active days`}>
+                        {selectedPlatformDays.map((day) => <i key={day.key} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(5, day.count / selectedPlatformPeak * 100)}%` }} />)}
+                      </div>
+                      <div className="platform-activity-total"><span>{label}</span><strong>{metric.toLocaleString()}</strong></div>
+                    </div>
+                    <div className="platform-week-summary"><span>LAST 7 DAYS <b>{selectedPlatformWeekTotal}</b></span><span>ACTIVE DAYS <b>{selectedPlatformActiveDays}/7</b></span></div>
+                    <p className="platform-insight-note">{selectedPlatformLogs.length ? `From ${selectedPlatformLogs.length} recorded sessions on this platform.` : "Log sessions to build a personal activity trend here."}</p>
+                  </>;
+                })()}
+              </section>
             </div>
-          </div>
-        </div>
+          )}
+
+
       </div>
 
-      {/* Streak Milestones Badges (Image 1 Fixed Contrast & Visual Polish) */}
-      <section className="milestones-section" style={{ marginTop: 28, marginBottom: 32 }}>
+            {/* Streak Milestones Badges (Image 1 Fixed Contrast & Visual Polish) */}
+      <section className="milestones-section growth-milestones-section">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
-            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: "#38bdf8", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Milestones
             </p>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 750, color: "#f8fafc", letterSpacing: "-0.02em" }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 750, color: "var(--color-text-title)", letterSpacing: "-0.02em" }}>
               Streak Consistency Badges
             </h2>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#8da0aa" }}>
+            <p className="practice-history-intro" style={{ margin: "4px 0 0", fontSize: 13, color: "#5D5D5D" }}>
               Unlock developer badges by maintaining unbroken coding streaks.
             </p>
           </div>
@@ -784,14 +798,14 @@ export function GrowthPage() {
               gap: 6,
               padding: "6px 14px",
               borderRadius: 999,
-              background: "rgba(245, 158, 11, 0.15)",
-              border: "1px solid rgba(245, 158, 11, 0.3)",
-              color: "#fbbf24",
+              background: "#f1f1ef",
+              border: "1px solid rgba(0, 0, 0, 0.15)",
+              color: "#222222",
               fontSize: 12,
               fontWeight: 700,
             }}
           >
-            <Flame size={14} color="#f59e0b" />
+            <Flame size={14} color="#222222" />
             {currentStreak} Days Current
           </span>
         </div>
@@ -840,21 +854,22 @@ export function GrowthPage() {
       </section>
 
       {/* PRACTICE HISTORY & EXPORT FEED */}
-      <section className="milestones-section" style={{ marginTop: 24, marginBottom: 32 }}>
+      <section className="milestones-section practice-history-section">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <div>
-            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: "#38bdf8", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Activity Feed
             </p>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 750, color: "#f8fafc", letterSpacing: "-0.02em" }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 750, color: "var(--color-text-title)", letterSpacing: "-0.02em" }}>
               Practice History Logs
             </h2>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#8da0aa" }}>
+            <p className="practice-history-intro" style={{ margin: "4px 0 0", fontSize: 13, color: "#5D5D5D" }}>
               Review recent problem sessions, filter by platform, or export your logs for portfolio and mentor reviews.
             </p>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" className="button button-primary growth-log-action" onClick={() => setIsLogModalOpen(true)}><Plus size={14} /> Log a session</button>
             {/* Search Input */}
             <div style={{ position: "relative" }}>
               <Search
@@ -912,6 +927,7 @@ export function GrowthPage() {
             {/* Export Dropdown */}
             <div style={{ position: "relative" }}>
               <button
+                className="practice-export-trigger"
                 type="button"
                 onClick={() => setIsExportMenuOpen((prev) => !prev)}
                 style={{
@@ -932,7 +948,7 @@ export function GrowthPage() {
               </button>
 
               {isExportMenuOpen && (
-                <div
+                <div className="practice-export-menu"
                   style={{
                     position: "absolute",
                     right: 0,
@@ -948,6 +964,7 @@ export function GrowthPage() {
                   }}
                 >
                   <button
+                    className="practice-export-option"
                     type="button"
                     onClick={() => {
                       exportLogsAsCsv(filteredLogs);
@@ -966,12 +983,11 @@ export function GrowthPage() {
                       cursor: "pointer",
                       textAlign: "left",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                   >
                     <FileSpreadsheet size={13} color="#22c55e" /> Export as CSV
                   </button>
                   <button
+                    className="practice-export-option"
                     type="button"
                     onClick={() => {
                       exportLogsAsJson(filteredLogs);
@@ -990,8 +1006,6 @@ export function GrowthPage() {
                       cursor: "pointer",
                       textAlign: "left",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                   >
                     <FileText size={13} color="#38bdf8" /> Export as JSON
                   </button>
@@ -1013,7 +1027,7 @@ export function GrowthPage() {
           }}
         >
           {filteredLogs.length === 0 ? (
-            <div
+            <div className="practice-logs-empty"
               style={{
                 textAlign: "center",
                 padding: "32px 16px",
@@ -1050,12 +1064,12 @@ export function GrowthPage() {
             filteredLogs.map((log, index) => (
               <div
                 key={index}
+                className="practice-log-card"
                 style={{
                   padding: "12px 16px",
-                  background: "rgba(13, 17, 23, 0.65)",
-                  backdropFilter: "blur(8px)",
+                  background: "#ffffff",
                   borderRadius: 10,
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  border: "1px solid #dededb",
                   display: "flex",
                   flexDirection: "column",
                   gap: 6,
@@ -1063,7 +1077,7 @@ export function GrowthPage() {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <strong style={{ fontSize: 13, color: "#f8fafc" }}>
+                    <strong style={{ fontSize: 13, color: "#222222" }}>
                       {log.platform} · {log.problemsSolved} Solved
                     </strong>
                     {log.difficulty && (
@@ -1112,10 +1126,10 @@ export function GrowthPage() {
                       </span>
                     )}
                   </div>
-                  <span style={{ fontSize: 11, color: "#8da0aa" }}>{log.date}</span>
+                  <span style={{ fontSize: 11, color: "#70706d" }}>{log.date}</span>
                 </div>
                 {log.notes && (
-                  <p style={{ margin: 0, fontSize: 12, color: "#cbd5e1", lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: 12, color: "#555550", lineHeight: 1.5 }}>
                     {log.notes}
                   </p>
                 )}

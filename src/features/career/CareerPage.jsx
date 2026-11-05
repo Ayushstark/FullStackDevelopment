@@ -12,27 +12,10 @@ export function CareerPage({ defaultTab = "applications" }) {
 
   return (
     <div className="career-page-wrapper">
-      {/* Top Header & Tab Switcher */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 12,
-          padding: "20px 24px 0 24px",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
-        <div>
-          <p className="eyebrow">Career Pipeline & Opportunities</p>
-          <h1 style={{ margin: "4px 0 0 0", fontSize: 24, color: "var(--color-text-title)" }}>
-            Career Management
-          </h1>
-        </div>
-
-        <div className="tab-bar" style={{ margin: 0, paddingBottom: 0, borderBottom: "none" }}>
+      {/* Compact switcher keeps the two career tools easy to find without repeating page titles. */}
+      <div className="career-toolbar">
+        <span className="career-toolbar-label"><Briefcase size={14} /> CAREER SPACE</span>
+        <div className="tab-bar career-switcher" aria-label="Career tools">
           <button
             className={`tab-btn ${activeTab === "applications" ? "active" : ""}`}
             onClick={() => setActiveTab("applications")}
