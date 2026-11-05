@@ -232,6 +232,21 @@ export function getGeeksforGeeksContests() {
 }
 
 /**
+ * Safely strips HTML tags without vulnerable single-pass regex replacement.
+ * Prevents incomplete multi-character sanitization (e.g. CodeQL / security scanners).
+ */
+function stripHtmlTags(input) {
+  if (!input || typeof input !== "string") return "";
+  let previous;
+  let sanitized = input;
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, "");
+  } while (sanitized !== previous);
+  return sanitized.trim();
+}
+
+/**
  * 5. Fetch real live Hackathons from Devpost
  */
 export async function fetchDevpostHackathons() {
@@ -246,8 +261,8 @@ export async function fetchDevpostHackathons() {
     const hackathons = Array.isArray(json.hackathons) ? json.hackathons : [];
 
     return hackathons.map((h) => {
-      // Clean prize amount stripping HTML tags if present (e.g. $<span data-currency-value>67,500</span>)
-      const rawPrize = h.prize_amount ? h.prize_amount.replace(/<[^>]+>/g, "").trim() : "";
+      // Safely strip HTML tags if present (e.g. $<span data-currency-value>67,500</span>)
+      const rawPrize = stripHtmlTags(h.prize_amount);
       const themes = Array.isArray(h.themes) ? h.themes.map((t) => t.name) : ["Hackathon"];
       const location = h.displayed_location?.location || "Online";
 
