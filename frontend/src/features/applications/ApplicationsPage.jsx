@@ -4,11 +4,11 @@ import {
   GripVertical,
   MapPin,
   Plus,
-  RotateCw,
   Trash2,
   X,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import "./applications-scratch-board.css";
 
@@ -27,8 +27,6 @@ export function ApplicationsPage() {
     updateApplicationNotes,
     deleteApplication,
     createManualApplication,
-    refreshApplications,
-    isApplicationsLoading,
   } = useAppContext();
 
   // Drag and Drop state (Scratch-inspired tactile block snapping)
@@ -170,17 +168,7 @@ export function ApplicationsPage() {
             Organize your internship and job applications across every recruitment stage.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            className="button button-secondary"
-            onClick={() => refreshApplications()}
-            type="button"
-            disabled={isApplicationsLoading}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
-          >
-            <RotateCw size={14} className={isApplicationsLoading ? "spin-icon" : ""} />
-            {isApplicationsLoading ? "Syncing..." : "Sync Pipeline"}
-          </button>
+        <div className="applications-heading-actions">
           <button
             className="button button-primary"
             onClick={() => setIsAddModalOpen(true)}
@@ -366,15 +354,15 @@ export function ApplicationsPage() {
       </div>
 
       {/* Add Application Modal */}
-      {isAddModalOpen && (
+      {isAddModalOpen && createPortal(
         <div
-          className="modal-overlay"
+          className="modal-overlay applications-modal-overlay"
           onClick={() => setIsAddModalOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-app-dialog-title"
         >
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-dialog applications-modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <h2 id="add-app-dialog-title" style={{ margin: 0, fontSize: 18, color: "var(--color-primary)" }}>
@@ -392,8 +380,8 @@ export function ApplicationsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleAddSubmit}>
-              <div className="modal-body">
+            <form className="applications-modal-form" onSubmit={handleAddSubmit}>
+              <div className="modal-body applications-modal-body">
                 <div className="form-group">
                   <label htmlFor="compName">Company or Institution *</label>
                   <input
@@ -473,7 +461,7 @@ export function ApplicationsPage() {
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className="modal-footer applications-modal-footer">
                 <button
                   type="button"
                   className="button button-secondary"
@@ -487,7 +475,8 @@ export function ApplicationsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </main>
   );

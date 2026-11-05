@@ -1,5 +1,4 @@
 import {
-  Activity,
   BriefcaseBusiness,
   CalendarDays,
   LayoutDashboard,
@@ -7,7 +6,6 @@ import {
 import { CareerPage } from "../features/career";
 import { CalendarPage } from "../features/calendar";
 import { DashboardPage } from "../features/dashboard";
-import { GrowthPage } from "../features/growth";
 import { AuthPage } from "../features/auth";
 import { ProfilePage } from "../features/profile";
 import { NotFoundPage } from "../features/notfound";
@@ -22,7 +20,6 @@ function AppContent() {
     activePage,
     setActivePage,
     applications,
-    growthStats,
     closeAuthPage,
   } = useAppContext();
 
@@ -39,16 +36,6 @@ function AppContent() {
 
   const navigation = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
-    {
-      id: "growth",
-      label: "Individual Analytics",
-      icon: Activity,
-      badge: growthStats?.streakBroken
-        ? "Broken"
-        : growthStats?.streakAtRisk
-        ? "At Risk"
-        : undefined,
-    },
     { id: "calendar", label: "Contests & Events", icon: CalendarDays },
     {
       id: "career",
@@ -63,7 +50,7 @@ function AppContent() {
   }
 
   // Standalone 404 Page (no header or shell navigation)
-  const knownPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "profile"];
+  const knownPages = ["overview", "career", "applications", "calendar", "profile"];
   if (!knownPages.includes(activePage)) {
     return <NotFoundPage />;
   }
@@ -80,12 +67,8 @@ function AppContent() {
     switch (activePage) {
       case "career":
         return <CareerPage />;
-      case "opportunities":
-        return <CareerPage defaultTab="opportunities" />;
       case "applications":
-        return <CareerPage defaultTab="applications" />;
-      case "growth":
-        return <GrowthPage />;
+        return <CareerPage />;
       case "calendar":
         return <CalendarPage />;
       case "profile":

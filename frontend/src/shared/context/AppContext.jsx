@@ -111,7 +111,7 @@ function getPageFromUrl() {
     window.history.replaceState({ page: "profile" }, "", "/profile");
     return "profile";
   }
-  const validPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "profile", "auth"];
+  const validPages = ["overview", "career", "applications", "calendar", "profile", "auth"];
   return validPages.includes(path) ? path : "404";
 }
 
