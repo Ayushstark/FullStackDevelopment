@@ -14,6 +14,7 @@ import { getGfgProfile } from "./services/gfgService.js";
 import { getLeetCodeProfile } from "./services/leetcodeService.js";
 import { getGitHubProfile } from "./services/githubService.js";
 import { getCodeforcesProfile } from "./services/codeforcesService.js";
+import { getAllRealContests } from "./services/contestService.js";
 
 dotenv.config();
 
@@ -437,6 +438,22 @@ app.get("/api/platforms/codeforces/:handle", apiLimiter, async (req, res) => {
   } catch (err) {
     console.error("Codeforces profile retrieval error:", err);
     res.status(500).json({ success: false, error: "Failed to fetch Codeforces statistics." });
+  }
+});
+
+// Live Multi-Platform Contests & Events endpoint
+app.get("/api/contests", apiLimiter, async (req, res) => {
+  try {
+    const force = req.query.force === "true";
+    const contests = await getAllRealContests({ force });
+    res.json({
+      success: true,
+      count: contests.length,
+      contests,
+    });
+  } catch (err) {
+    console.error("Contest retrieval error:", err);
+    res.status(500).json({ success: false, error: "Failed to retrieve real-time contests." });
   }
 });
 

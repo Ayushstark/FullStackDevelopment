@@ -165,3 +165,52 @@ export function getEventCategoryMeta(type) {
   return EVENT_CATEGORY_CONFIG[type] || EVENT_CATEGORY_CONFIG.Default;
 }
 
+/**
+ * Computes whether an event is "Past", "Live", or "Upcoming"
+ * dynamically based on current local date and time.
+ * @param {string} dateStr e.g. "2026-10-31"
+ * @param {string} [timeStr] e.g. "08:00 pm IST (2 hrs)"
+ * @param {string} [declaredStatus] fallback status if any
+ * @returns {"Past"|"Live"|"Upcoming"}
+ */
+export function computeEventStatus(dateStr, timeStr = "", declaredStatus = "") {
+  if (declaredStatus === "Past") return "Past";
+  if (!dateStr) return declaredStatus || "Upcoming";
+
+  const todayKey = normalizeDateKey(new Date());
+
+  // Past calendar day
+  if (dateStr < todayKey) {
+    return "Past";
+  }
+
+  // Future calendar day
+  if (dateStr > todayKey) {
+    return "Upcoming";
+  }
+
+  // Today: check duration window if time is provided
+  if (timeStr) {
+    try {
+      const cleanTime = timeStr.replace(/\(.*?\)/g, "").replace(/IST/i, "").trim();
+      const start = new Date(`${dateStr} ${cleanTime}`);
+      if (!isNaN(start.getTime())) {
+        const now = Date.now();
+        // Extract duration in hours if present (e.g. "(2.5 hrs)" or "(1.5 hrs)")
+        const durMatch = timeStr.match(/\(([0-9.]+)\s*hrs?\)/i);
+        const durationHours = durMatch ? parseFloat(durMatch[1]) : 2;
+        const end = start.getTime() + durationHours * 3600 * 1000;
+
+        if (now > end) return "Past";
+        if (now >= start.getTime() && now <= end) return "Live";
+        return "Upcoming";
+      }
+    } catch {
+      // Fallback below
+    }
+  }
+
+  return declaredStatus === "Live" ? "Live" : "Upcoming";
+}
+
+
