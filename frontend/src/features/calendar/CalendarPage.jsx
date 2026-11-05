@@ -16,7 +16,7 @@ import {
   Trophy,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../../shared/components/EmptyState.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { initialCalendarEvents } from "../../shared/data/sampleData.js";
@@ -68,6 +68,16 @@ export function CalendarPage() {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Close modal on Escape key for keyboard/screen reader users
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setIsAddModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAddModalOpen]);
 
   // Add event form state
   const [modalTitle, setModalTitle] = useState("");
@@ -369,6 +379,11 @@ export function CalendarPage() {
                   role="gridcell"
                   tabIndex={isSelected ? -1 : 0}
                   aria-selected={isSelected}
+                  aria-label={`${cell.dateKey}${cell.isToday ? ", today" : ""}${
+                    dayEvents.length > 0
+                      ? `, ${dayEvents.length} events: ${dayEvents.map((e) => e.title).join(", ")}`
+                      : ", no events"
+                  }`}
                   onKeyDown={(e) => {
                     if (!isSelected && (e.key === "Enter" || e.key === " ")) {
                       handleDateClick(cell.dateKey);
@@ -639,11 +654,17 @@ export function CalendarPage() {
 
       {/* ADD CUSTOM EVENT MODAL */}
       {isAddModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsAddModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-event-dialog-title"
+        >
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: 17, color: "var(--color-primary)" }}>
+                <h2 id="add-event-dialog-title" style={{ margin: 0, fontSize: 17, color: "var(--color-primary)" }}>
                   Add Custom Event
                 </h2>
                 <span style={{ fontSize: 12, color: "#64748b" }}>
@@ -654,8 +675,9 @@ export function CalendarPage() {
                 className="close-btn"
                 onClick={() => setIsAddModalOpen(false)}
                 type="button"
+                aria-label="Close add event dialog"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
 

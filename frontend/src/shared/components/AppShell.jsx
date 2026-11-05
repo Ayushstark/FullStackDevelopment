@@ -23,9 +23,19 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
 
   return (
     <div className="app-shell">
-      <header className="site-nav-shell">
+      {/* Skip to Main Content Link for screen readers and keyboard users */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
+
+      {/* Screen Reader Live Region for Page Transitions */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {`Current page: ${activePage}`}
+      </div>
+
+      <header className="site-nav-shell" role="banner">
         <button className="site-brand" onClick={() => onNavigate("overview")} type="button" aria-label="DevRhythm home">
-          <span className="brand-mark"><img src={brandLogo} width="32" height="32" alt="" /></span>
+          <span className="brand-mark"><img src={brandLogo} width="32" height="32" alt="" aria-hidden="true" /></span>
           <span>DevRhythm</span>
         </button>
 
@@ -42,7 +52,7 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
               >
                 <Icon size={14} aria-hidden="true" />
                 <span>{label}</span>
-                {badge !== undefined && <small>{badge}</small>}
+                {badge !== undefined && <small aria-label={`${badge} notifications`}>{badge}</small>}
               </button>
             );
           })}
@@ -53,11 +63,11 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
             <button
               className="button button-secondary nav-profile-button"
               onClick={() => onNavigate("profile")}
-              title="Go to profile"
+              aria-label={`View user profile for ${profile.name || "User"}`}
               type="button"
               aria-current={activePage === "profile" ? "page" : undefined}
             >
-              <span className="avatar">
+              <span className="avatar" aria-hidden="true">
                 {profileImage ? <img src={profileImage} alt="" /> : initials}
               </span>
               <span>Profile</span>
@@ -68,9 +78,9 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
         </div>
       </header>
 
-      <div className="main-area">
+      <main className="main-area" id="main-content" tabIndex="-1" role="main">
         {children}
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Bookmark,
   CheckCircle,
@@ -20,6 +21,14 @@ export function OpportunityDetailModal({ opportunity, onClose }) {
     setActivePage,
   } = useAppContext();
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   if (!opportunity) return null;
 
   const isSaved = savedOpportunityIds.includes(opportunity.id);
@@ -34,22 +43,28 @@ export function OpportunityDetailModal({ opportunity, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="opportunity-modal-title"
+    >
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <span className={`tag tag-${opportunity.type.toLowerCase()}`}>
               {opportunity.type}
             </span>
-            <h2 style={{ margin: "8px 0 4px", fontSize: 20, color: "var(--color-primary)" }}>
+            <h2 id="opportunity-modal-title" style={{ margin: "8px 0 4px", fontSize: 20, color: "var(--color-primary)" }}>
               {opportunity.title}
             </h2>
             <p className="muted" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <strong>{opportunity.company}</strong> · <MapPin size={14} /> {opportunity.location}
+              <strong>{opportunity.company}</strong> · <MapPin size={14} aria-hidden="true" /> {opportunity.location}
             </p>
           </div>
-          <button className="close-btn" onClick={onClose} type="button" aria-label="Close modal">
-            <X size={20} />
+          <button className="close-btn" onClick={onClose} type="button" aria-label={`Close ${opportunity.title} dialog`}>
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
