@@ -49,11 +49,11 @@ export async function getGfgProfile(handle, options = {}) {
     }
   }
 
-  let problemsSolved = 0;
-  let difficultyBreakdown = { easy: 0, medium: 0, hard: 0 };
+  let problemsSolved = null;
+  let difficultyBreakdown = { easy: null, medium: null, hard: null };
   let recentSubmissions = [];
-  let score = 0;
-  let monthlyScore = 0;
+  let score = null;
+  let monthlyScore = null;
   let instituteRank = "—";
   let instituteName = "";
   let currentStreak = 0;
@@ -155,7 +155,7 @@ export async function getGfgProfile(handle, options = {}) {
       const maxStreakMatch = html.match(/\\?"pod_solved_longest_streak\\?":\s*(\d+)/i);
       if (maxStreakMatch) longestStreak = parseInt(maxStreakMatch[1], 10);
 
-      if (problemsSolved === 0) {
+      if (problemsSolved == null || problemsSolved === 0) {
         const solvedMatch = html.match(/\\?"total_problems_solved\\?":\s*(\d+)/i);
         if (solvedMatch) problemsSolved = parseInt(solvedMatch[1], 10);
       }
@@ -182,7 +182,7 @@ export async function getGfgProfile(handle, options = {}) {
   }
 
   // If neither API nor HTML confirmed a valid profile
-  if (!practiceApiSucceeded && score === 0 && problemsSolved === 0 && !instituteName) {
+  if (!practiceApiSucceeded && score == null && problemsSolved == null && !instituteName) {
     return {
       success: false,
       error: `User "${handle}" not found on GeeksforGeeks.`,

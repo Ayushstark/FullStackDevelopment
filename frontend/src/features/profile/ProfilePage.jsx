@@ -176,22 +176,8 @@ export function ProfilePage() {
     }
   };
 
-  const connectedCount = platforms.filter(({ key }) => handles[key].trim()).length;
-
   return (
     <main className="page-content profile-page">
-      <header className="profile-page-heading">
-        <div>
-          <p className="eyebrow">YOUR CODING IDENTITY</p>
-          <h1>Your profile</h1>
-          <p className="muted">Keep your developer profile and platform accounts in sync.</p>
-        </div>
-        <div className="profile-connected-count">
-          <span>{String(connectedCount).padStart(2, "0")}</span>
-          <span>of 05 accounts linked</span>
-        </div>
-      </header>
-
       <form className="profile-edit-form" onSubmit={handleSubmit}>
         <section className="profile-identity-card" aria-label="Profile photo and account">
           <div className="profile-identity-avatar">

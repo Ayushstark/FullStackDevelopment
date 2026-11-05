@@ -96,6 +96,13 @@ function calculateStreakStatus(lastActiveDate, currentStreak) {
   }
 }
 
+function getPlatformSyncTime(data) {
+  const timestamp = data?.syncedAt || data?.updatedAt;
+  const parsed = timestamp ? new Date(timestamp) : new Date();
+  const safeDate = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  return safeDate.toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+}
+
 function getPageFromUrl() {
   if (typeof window === "undefined") return "overview";
   const path = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
@@ -355,8 +362,10 @@ export function AppProvider({ children }) {
   };
 
   const logout = async () => {
-    await logoutUser();
+    const logoutRequest = logoutUser();
     setUser(null);
+    setActivePage("overview");
+    await logoutRequest;
   };
 
 
@@ -724,7 +733,7 @@ export function AppProvider({ children }) {
     setGrowthStats((prev) => ({
       ...prev,
       codechef: {
-        ...(prev.codechef || initialGrowthStats.codechef),
+        ...(prev.codechef?.handle?.toLowerCase() === handle.toLowerCase() ? prev.codechef : {}),
         loading: true,
         error: null,
       },
@@ -735,22 +744,22 @@ export function AppProvider({ children }) {
     if (result.success && result.data) {
       const live = result.data;
       setGrowthStats((prev) => {
-        const currentCodeChef = prev.codechef || initialGrowthStats.codechef;
+        const currentCodeChef = prev.codechef?.handle?.toLowerCase() === handle.toLowerCase() ? prev.codechef : {};
         const prevSolved = currentCodeChef.solved ?? 0;
-        const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : prevSolved;
-        const diffSolved = liveSolved - prevSolved;
+        const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentCodeChef.solved ?? null);
+        const diffSolved = liveSolved == null ? 0 : liveSolved - prevSolved;
 
         // Record live CodeChef sync activity entry
         const currentLogs = prev.recentLogs || [];
         const ccLog = {
           date: new Date().toISOString().split("T")[0],
           platform: "CodeChef",
-          problemsSolved: diffSolved > 0 ? diffSolved : 1,
+          problemsSolved: Math.max(0, diffSolved),
           difficulty: live.division || "Medium",
           category: "Contest Division",
-          notes: `Synced CodeChef rating ${live.rating || 0} (${live.stars || "1★"}, ${live.division || "Div 4"})`,
+            notes: `Synced CodeChef rating ${live.rating ?? "—"} (${live.stars || "—"}, ${live.division || "—"})`,
         };
-        const incomingLogs = currentLogs.some((l) => l.notes === ccLog.notes && l.date === ccLog.date)
+        const incomingLogs = diffSolved <= 0 || currentLogs.some((l) => l.notes === ccLog.notes && l.date === ccLog.date)
           ? []
           : [ccLog];
 
@@ -759,16 +768,17 @@ export function AppProvider({ children }) {
           totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
           codechef: {
             ...currentCodeChef,
-            rating: typeof live.rating === "number" ? live.rating : (currentCodeChef.rating ?? 0),
-            highestRating: typeof live.highestRating === "number" ? live.highestRating : (currentCodeChef.highestRating ?? 0),
-            stars: live.stars ?? currentCodeChef.stars,
-            starsCount: typeof live.starsCount === "number" ? live.starsCount : (currentCodeChef.starsCount ?? 1),
-            division: live.division || currentCodeChef.division,
-            globalRank: live.globalRank ?? currentCodeChef.globalRank,
-            countryRank: live.countryRank ?? currentCodeChef.countryRank,
+            handle: live.handle || handle,
+            rating: typeof live.rating === "number" ? live.rating : (currentCodeChef.rating ?? null),
+            highestRating: typeof live.highestRating === "number" ? live.highestRating : (currentCodeChef.highestRating ?? null),
+            stars: live.stars ?? currentCodeChef.stars ?? null,
+            starsCount: typeof live.starsCount === "number" ? live.starsCount : (currentCodeChef.starsCount ?? null),
+            division: live.division || currentCodeChef.division || null,
+            globalRank: live.globalRank ?? currentCodeChef.globalRank ?? null,
+            countryRank: live.countryRank ?? currentCodeChef.countryRank ?? null,
             solved: liveSolved,
             name: live.name || currentCodeChef.name,
-            lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            lastSynced: getPlatformSyncTime(live),
             loading: false,
             error: null,
           },
@@ -780,7 +790,7 @@ export function AppProvider({ children }) {
       setGrowthStats((prev) => ({
         ...prev,
         codechef: {
-          ...(prev.codechef || initialGrowthStats.codechef),
+          ...(prev.codechef?.handle?.toLowerCase() === handle.toLowerCase() ? prev.codechef : {}),
           loading: false,
           error: result.error || "Failed to sync CodeChef statistics.",
         },
@@ -798,8 +808,9 @@ export function AppProvider({ children }) {
 
     setGrowthStats((prev) => {
       const currentGfg = prev.geeksforgeeks || prev.gfg || initialGrowthStats.gfg;
+      const matchedGfg = currentGfg?.handle?.toLowerCase() === handle.toLowerCase() ? currentGfg : {};
       const loadingState = {
-        ...currentGfg,
+        ...matchedGfg,
         loading: true,
         error: null,
       };
@@ -815,24 +826,26 @@ export function AppProvider({ children }) {
     if (result.success && result.data) {
       const live = result.data;
       setGrowthStats((prev) => {
-        const currentGfg = prev.geeksforgeeks || prev.gfg || initialGrowthStats.gfg;
+        const storedGfg = prev.geeksforgeeks || prev.gfg;
+        const currentGfg = storedGfg?.handle?.toLowerCase() === handle.toLowerCase() ? storedGfg : {};
         const prevSolved = currentGfg.solved ?? 0;
-        const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : prevSolved;
-        const diffSolved = liveSolved - prevSolved;
+        const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentGfg.solved ?? null);
+        const diffSolved = liveSolved == null ? 0 : liveSolved - prevSolved;
         const updatedGfg = {
           ...currentGfg,
-          score: typeof live.score === "number" ? live.score : (currentGfg.score ?? 0),
-          monthlyScore: typeof live.monthlyScore === "number" ? live.monthlyScore : (currentGfg.monthlyScore ?? 0),
+          handle: live.handle || handle,
+          score: typeof live.score === "number" ? live.score : (currentGfg.score ?? null),
+          monthlyScore: typeof live.monthlyScore === "number" ? live.monthlyScore : (currentGfg.monthlyScore ?? null),
           solved: liveSolved,
-          instituteRank: live.instituteRank ?? currentGfg.instituteRank,
-          instituteName: live.instituteName || currentGfg.instituteName,
-          currentStreak: typeof live.currentStreak === "number" ? live.currentStreak : (currentGfg.currentStreak ?? 0),
-          longestStreak: typeof live.longestStreak === "number" ? live.longestStreak : (currentGfg.longestStreak ?? 0),
-          easy: live.difficultyBreakdown?.easy ?? currentGfg.easy,
-          medium: live.difficultyBreakdown?.medium ?? currentGfg.medium,
-          hard: live.difficultyBreakdown?.hard ?? currentGfg.hard,
+          instituteRank: live.instituteRank ?? currentGfg.instituteRank ?? null,
+          instituteName: live.instituteName || currentGfg.instituteName || null,
+          currentStreak: typeof live.currentStreak === "number" ? live.currentStreak : (currentGfg.currentStreak ?? null),
+          longestStreak: typeof live.longestStreak === "number" ? live.longestStreak : (currentGfg.longestStreak ?? null),
+          easy: live.difficultyBreakdown?.easy ?? currentGfg.easy ?? null,
+          medium: live.difficultyBreakdown?.medium ?? currentGfg.medium ?? null,
+          hard: live.difficultyBreakdown?.hard ?? currentGfg.hard ?? null,
           recentSubmissions: live.recentSubmissions || currentGfg.recentSubmissions,
-          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          lastSynced: getPlatformSyncTime(live),
           loading: false,
           error: null,
         };
@@ -861,7 +874,8 @@ export function AppProvider({ children }) {
       return { success: true, data: result.data };
     } else {
       setGrowthStats((prev) => {
-        const currentGfg = prev.geeksforgeeks || prev.gfg || initialGrowthStats.gfg;
+        const storedGfg = prev.geeksforgeeks || prev.gfg;
+        const currentGfg = storedGfg?.handle?.toLowerCase() === handle.toLowerCase() ? storedGfg : {};
         const errorState = {
           ...currentGfg,
           loading: false,
@@ -887,7 +901,7 @@ export function AppProvider({ children }) {
     setGrowthStats((prev) => ({
       ...prev,
       leetcode: {
-        ...(prev.leetcode || initialGrowthStats.leetcode),
+        ...(prev.leetcode?.handle?.toLowerCase() === handle.toLowerCase() ? prev.leetcode : {}),
         loading: true,
         error: null,
       },
@@ -898,24 +912,25 @@ export function AppProvider({ children }) {
     if (result.success && result.data) {
       const live = result.data;
       setGrowthStats((prev) => {
-        const currentLC = prev.leetcode || initialGrowthStats.leetcode;
+        const currentLC = prev.leetcode?.handle?.toLowerCase() === handle.toLowerCase() ? prev.leetcode : {};
         const prevSolved = currentLC.solved ?? 0;
         const liveSolved = typeof live.solved === "number" ? live.solved : prevSolved;
         const diffSolved = liveSolved - prevSolved;
 
         const updatedLC = {
           ...currentLC,
+          handle: live.handle || handle,
           solved: liveSolved,
-          easy: typeof live.easy === "number" ? live.easy : (currentLC.easy ?? 0),
-          medium: typeof live.medium === "number" ? live.medium : (currentLC.medium ?? 0),
-          hard: typeof live.hard === "number" ? live.hard : (currentLC.hard ?? 0),
-          ranking: live.ranking ?? currentLC.ranking,
+          easy: typeof live.easy === "number" ? live.easy : (currentLC.easy ?? null),
+          medium: typeof live.medium === "number" ? live.medium : (currentLC.medium ?? null),
+          hard: typeof live.hard === "number" ? live.hard : (currentLC.hard ?? null),
+          ranking: live.ranking ?? currentLC.ranking ?? null,
           name: live.name || currentLC.name,
           avatar: live.avatar || currentLC.avatar,
           contestRating: live.contestRating ?? currentLC.contestRating,
           contestRank: live.contestRank ?? currentLC.contestRank,
           contestBadge: live.contestBadge ?? currentLC.contestBadge,
-          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          lastSynced: getPlatformSyncTime(live),
           loading: false,
           error: null,
         };
@@ -938,7 +953,7 @@ export function AppProvider({ children }) {
       setGrowthStats((prev) => ({
         ...prev,
         leetcode: {
-          ...(prev.leetcode || initialGrowthStats.leetcode),
+          ...(prev.leetcode?.handle?.toLowerCase() === handle.toLowerCase() ? prev.leetcode : {}),
           loading: false,
           error: result.error || "Failed to sync LeetCode statistics.",
         },
@@ -957,7 +972,7 @@ export function AppProvider({ children }) {
     setGrowthStats((prev) => ({
       ...prev,
       github: {
-        ...(prev.github || initialGrowthStats.github),
+        ...(prev.github?.handle?.toLowerCase() === handle.toLowerCase() ? prev.github : {}),
         loading: true,
         error: null,
       },
@@ -968,18 +983,19 @@ export function AppProvider({ children }) {
     if (result.success && result.data) {
       const live = result.data;
       setGrowthStats((prev) => {
-        const currentGH = prev.github || initialGrowthStats.github;
+        const currentGH = prev.github?.handle?.toLowerCase() === handle.toLowerCase() ? prev.github : {};
         const updatedGH = {
           ...currentGH,
-          contributions: typeof live.contributions === "number" ? live.contributions : (currentGH.contributions ?? 0),
-          repos: typeof live.repos === "number" ? live.repos : (currentGH.repos ?? 0),
-          streak: typeof live.streak === "number" ? live.streak : (currentGH.streak ?? 0),
-          longestStreak: typeof live.longestStreak === "number" ? live.longestStreak : (currentGH.longestStreak ?? 0),
-          followers: live.followers ?? currentGH.followers,
+          handle: live.handle || handle,
+          contributions: typeof live.contributions === "number" ? live.contributions : (currentGH.contributions ?? null),
+          repos: typeof live.repos === "number" ? live.repos : (currentGH.repos ?? null),
+          streak: typeof live.streak === "number" ? live.streak : (currentGH.streak ?? null),
+          longestStreak: typeof live.longestStreak === "number" ? live.longestStreak : (currentGH.longestStreak ?? null),
+          followers: live.followers ?? currentGH.followers ?? null,
           name: live.name || currentGH.name,
           avatar: live.avatar || currentGH.avatar,
           bio: live.bio || currentGH.bio,
-          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          lastSynced: getPlatformSyncTime(live),
           loading: false,
           error: null,
         };
@@ -1001,7 +1017,7 @@ export function AppProvider({ children }) {
       setGrowthStats((prev) => ({
         ...prev,
         github: {
-          ...(prev.github || initialGrowthStats.github),
+          ...(prev.github?.handle?.toLowerCase() === handle.toLowerCase() ? prev.github : {}),
           loading: false,
           error: result.error || "Failed to sync GitHub statistics.",
         },
@@ -1020,7 +1036,7 @@ export function AppProvider({ children }) {
     setGrowthStats((prev) => ({
       ...prev,
       codeforces: {
-        ...(prev.codeforces || initialGrowthStats.codeforces),
+        ...(prev.codeforces?.handle?.toLowerCase() === handle.toLowerCase() ? prev.codeforces : {}),
         loading: true,
         error: null,
       },
@@ -1031,21 +1047,21 @@ export function AppProvider({ children }) {
     if (result.success && result.data) {
       const live = result.data;
       setGrowthStats((prev) => {
-        const currentCF = prev.codeforces || initialGrowthStats.codeforces;
+        const currentCF = prev.codeforces?.handle?.toLowerCase() === handle.toLowerCase() ? prev.codeforces : {};
         const prevSolved = currentCF.solved ?? 0;
         const liveSolved = typeof live.solved === "number" ? live.solved : prevSolved;
         const diffSolved = liveSolved - prevSolved;
 
         const updatedCF = {
           ...currentCF,
-          handle: live.handle || currentCF.handle,
+          handle: live.handle || handle,
           rating: typeof live.rating === "number" ? live.rating : (currentCF.rating ?? 0),
           maxRating: typeof live.maxRating === "number" ? live.maxRating : (currentCF.maxRating ?? 0),
           rank: live.rank || currentCF.rank,
           maxRank: live.maxRank || currentCF.maxRank,
           solved: liveSolved,
           avatar: live.avatar || currentCF.avatar,
-          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          lastSynced: getPlatformSyncTime(live),
           loading: false,
           error: null,
         };
@@ -1067,7 +1083,7 @@ export function AppProvider({ children }) {
       setGrowthStats((prev) => ({
         ...prev,
         codeforces: {
-          ...(prev.codeforces || initialGrowthStats.codeforces),
+          ...(prev.codeforces?.handle?.toLowerCase() === handle.toLowerCase() ? prev.codeforces : {}),
           loading: false,
           error: result.error || "Failed to sync Codeforces statistics.",
         },

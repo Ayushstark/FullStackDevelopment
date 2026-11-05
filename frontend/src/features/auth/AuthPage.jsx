@@ -158,7 +158,6 @@ export function AuthPage({ onClose }) {
         </div>
         <div className="auth-card">
           <div className="auth-card-heading">
-            <div className="auth-card-mark"><img src={brandLogo} width="32" height="32" alt="" /></div>
             <div>
               <h2 id="auth-title">{mode === "login" ? "Welcome back" : "Create your account"}</h2>
               <p>{mode === "login" ? "Sign in to pick up where you left off." : "One account for your developer journey."}</p>

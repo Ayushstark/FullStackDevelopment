@@ -3,8 +3,13 @@
 .dashboard-page {
   max-width: 1540px;
   margin: 0 auto;
-  padding: 24px 28px 60px;
+  padding: 24px 28px 0;
   color: var(--color-text-main, #343434);
+}
+
+/* Keep shared .page-content rules from adding a trailing scroll area below the pinned cards. */
+.page-content.dashboard-page {
+  padding-bottom: 0;
 }
 
 /* Masthead / Hero Command Deck */
@@ -712,6 +717,20 @@
   margin-top: 24px;
 }
 
+.dashboard-platforms-horizontal {
+  position: relative;
+}
+
+.dashboard-platforms-sticky {
+  position: sticky;
+  top: 76px;
+  display: flex;
+  height: calc(100svh - 76px);
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 16px 0 20px;
+}
+
 .dashboard-platforms-head {
   display: flex;
   flex-wrap: wrap;
@@ -730,20 +749,41 @@
 }
 
 .dashboard-platforms-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  width: max-content;
+  height: 340px;
+  flex: 0 0 auto;
+  align-items: stretch;
   gap: 18px;
+  will-change: transform;
 }
 
-@media (max-width: 1150px) {
-  .dashboard-platforms-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.dashboard-platforms-viewport {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: flex-start;
+  overflow: hidden;
 }
 
 @media (max-width: 760px) {
+  .dashboard-platforms-sticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    padding: 0;
+  }
+
+  .dashboard-platforms-viewport {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 3px 0 12px;
+    scrollbar-width: thin;
+  }
+
   .dashboard-platforms-grid {
-    grid-template-columns: 1fr;
+    height: auto;
+    transform: none !important;
   }
 }
 
@@ -751,25 +791,113 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 270px;
+  width: 380px;
+  min-width: 380px;
+  min-height: 320px;
+  height: 340px;
+  flex: 0 0 380px;
   padding: 20px;
   border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid #dededb;
+  background: linear-gradient(135deg, var(--platform-light-bg, rgba(0, 0, 0, .04)), #fff 72%);
+  border: 1px solid color-mix(in srgb, var(--platform-color, #777) 24%, #dededb);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
 }
 
-.platform-pro-card:hover {
+.platform-pro-card:hover,
+.platform-pro-card:focus,
+.platform-pro-card:focus-within,
+.platform-pro-card:focus-visible {
   transform: translateY(-3px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
-  border-color: #c7c7c2;
+  border-color: color-mix(in srgb, var(--platform-color, #777) 52%, #dededb);
+  outline: none;
+}
+
+.platform-pro-card:focus { outline: none; }
+
+.platform-pro-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--platform-color, #777) 48%, transparent);
+  outline-offset: 3px;
+}
+
+.platform-card-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.platform-card-backdrop::after {
+  position: absolute;
+  inset: 0;
+  background: var(--platform-light-bg, rgba(0, 0, 0, .04));
+  content: "";
+}
+
+.platform-card-backdrop img {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  opacity: .9;
+  filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--platform-color, #777) 24%, transparent));
+  transition: width .24s ease, height .24s ease, opacity .24s ease, filter .24s ease, transform .24s ease;
+}
+
+.platform-pro-card:hover .platform-card-backdrop img,
+.platform-pro-card:focus .platform-card-backdrop img,
+.platform-pro-card:focus-within .platform-card-backdrop img,
+.platform-pro-card:focus-visible .platform-card-backdrop img {
+  width: 180px;
+  height: 180px;
+  opacity: .22;
+  filter: blur(10px);
+  transform: scale(1.08);
+}
+
+.platform-pro-top,
+.platform-pro-primary,
+.platform-metrics-grid,
+.platform-pro-foot {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(7px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.platform-pro-card:hover .platform-pro-top,
+.platform-pro-card:hover .platform-pro-primary,
+.platform-pro-card:hover .platform-metrics-grid,
+.platform-pro-card:hover .platform-pro-foot,
+.platform-pro-card:focus .platform-pro-top,
+.platform-pro-card:focus .platform-pro-primary,
+.platform-pro-card:focus .platform-metrics-grid,
+.platform-pro-card:focus .platform-pro-foot,
+.platform-pro-card:focus-within .platform-pro-top,
+.platform-pro-card:focus-within .platform-pro-primary,
+.platform-pro-card:focus-within .platform-metrics-grid,
+.platform-pro-card:focus-within .platform-pro-foot,
+.platform-pro-card:focus-visible .platform-pro-top,
+.platform-pro-card:focus-visible .platform-pro-primary,
+.platform-pro-card:focus-visible .platform-metrics-grid,
+.platform-pro-card:focus-visible .platform-pro-foot {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .platform-accent-stripe {
   position: absolute;
+  z-index: 2;
   top: 0;
   left: 0;
   right: 0;
@@ -845,6 +973,8 @@
   opacity: 0.7;
 }
 
+.platform-sync-btn:disabled { cursor: not-allowed; opacity: .5; }
+
 .platform-pro-primary {
   margin-bottom: 16px;
 }
@@ -917,8 +1047,10 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #10b981;
+  background: #b4b4ad;
 }
+
+.platform-status-dot i.is-synced { background: #10b981; }
 
 .platform-link-btn {
   display: inline-flex;
@@ -933,6 +1065,16 @@
 
 .platform-link-btn:hover {
   color: #4f46e5;
+}
+
+.platform-link-btn.is-disabled { color: #8c8c86; font-weight: 500; }
+
+@media (max-width: 760px) {
+  .platform-pro-card {
+    width: min(82vw, 380px);
+    min-width: min(82vw, 380px);
+    flex-basis: min(82vw, 380px);
+  }
 }
 
 /* Quick Log Activity Modal */

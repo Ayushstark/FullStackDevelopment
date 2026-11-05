@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Trophy,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import ContributionSkyline from "../../components/ui/contribution-skyline.jsx";
 import GridScan from "../../components/ui/GridScan.jsx";
@@ -65,6 +65,7 @@ const PLATFORM_META = {
 export function DashboardPage() {
   const {
     profile,
+    user,
     growthStats,
     dailyChallenge,
     completeDailyChallenge,
@@ -80,13 +81,30 @@ export function DashboardPage() {
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [syncingPlatform, setSyncingPlatform] = useState(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const horizontalSectionRef = useRef(null);
+  const horizontalStickyRef = useRef(null);
+  const horizontalViewportRef = useRef(null);
+  const horizontalTrackRef = useRef(null);
 
-  // Extracted platforms data
-  const leetcode = growthStats.leetcode ?? {};
-  const codeforces = growthStats.codeforces ?? {};
-  const codechef = growthStats.codechef ?? {};
-  const geeksforgeeks = growthStats.geeksforgeeks ?? growthStats.gfg ?? {};
-  const github = growthStats.github ?? {};
+  const platformHandles = {
+    leetcode: user ? profile.platformHandles?.leetcode?.trim() || "" : "",
+    codeforces: user ? profile.platformHandles?.codeforces?.trim() || "" : "",
+    codechef: user ? profile.platformHandles?.codechef?.trim() || "" : "",
+    geeksforgeeks: user ? (profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg || "").trim() : "",
+    github: user ? profile.platformHandles?.github?.trim() || "" : "",
+  };
+  const syncedForHandle = (stats, handle) => (
+    handle && stats?.handle?.toLowerCase() === handle.toLowerCase() && stats.lastSynced
+      ? stats
+      : {}
+  );
+
+  // Only display a platform snapshot fetched for the currently configured account.
+  const leetcode = syncedForHandle(growthStats.leetcode, platformHandles.leetcode);
+  const codeforces = syncedForHandle(growthStats.codeforces, platformHandles.codeforces);
+  const codechef = syncedForHandle(growthStats.codechef, platformHandles.codechef);
+  const geeksforgeeks = syncedForHandle(growthStats.geeksforgeeks ?? growthStats.gfg, platformHandles.geeksforgeeks);
+  const github = syncedForHandle(growthStats.github, platformHandles.github);
 
   // 1. Mathematically Sound Sum of Problems Solved Across Connected Platforms
   const platformProblemsSolved =
@@ -95,10 +113,7 @@ export function DashboardPage() {
     (Number(codechef.solved) || 0) +
     (Number(geeksforgeeks.solved) || 0);
 
-  const totalProblemsSolved =
-    platformProblemsSolved > 0
-      ? platformProblemsSolved
-      : Number(growthStats.totalProblemsSolved) || 552;
+  const totalProblemsSolved = platformProblemsSolved;
 
   // 2. Dynamic Rolling Practice History Anchored to Today
   const activityMap = useMemo(() => {
@@ -213,32 +228,103 @@ export function DashboardPage() {
 
   // Sync Handlers
   const handleSyncPlatform = async (platformId) => {
+    if (!user || !platformHandles[platformId]) return;
     setSyncingPlatform(platformId);
     try {
-      if (platformId === "leetcode") await syncLeetCodeData();
-      else if (platformId === "codeforces") await syncCodeforcesData();
-      else if (platformId === "codechef") await syncCodeChefData();
-      else if (platformId === "geeksforgeeks") await syncGfgData();
-      else if (platformId === "github") await syncGitHubData();
+      if (platformId === "leetcode") await syncLeetCodeData(platformHandles.leetcode, { force: true });
+      else if (platformId === "codeforces") await syncCodeforcesData(platformHandles.codeforces, { force: true });
+      else if (platformId === "codechef") await syncCodeChefData(platformHandles.codechef, { force: true });
+      else if (platformId === "geeksforgeeks") await syncGfgData(platformHandles.geeksforgeeks, { force: true });
+      else if (platformId === "github") await syncGitHubData(platformHandles.github, { force: true });
     } finally {
       setSyncingPlatform(null);
     }
   };
 
   const handleSyncAll = async () => {
+    if (!user) return;
     setIsSyncingAll(true);
     try {
       await Promise.allSettled([
-        syncLeetCodeData(),
-        syncCodeforcesData(),
-        syncCodeChefData(),
-        syncGfgData(),
-        syncGitHubData(),
+        platformHandles.leetcode && syncLeetCodeData(platformHandles.leetcode, { force: true }),
+        platformHandles.codeforces && syncCodeforcesData(platformHandles.codeforces, { force: true }),
+        platformHandles.codechef && syncCodeChefData(platformHandles.codechef, { force: true }),
+        platformHandles.geeksforgeeks && syncGfgData(platformHandles.geeksforgeeks, { force: true }),
+        platformHandles.github && syncGitHubData(platformHandles.github, { force: true }),
       ]);
     } finally {
       setIsSyncingAll(false);
     }
   };
+
+  useEffect(() => {
+    if (!user) return;
+    const syncTasks = [
+      platformHandles.leetcode && syncLeetCodeData(platformHandles.leetcode, { force: false }),
+      platformHandles.codeforces && syncCodeforcesData(platformHandles.codeforces, { force: false }),
+      platformHandles.codechef && syncCodeChefData(platformHandles.codechef, { force: false }),
+      platformHandles.geeksforgeeks && syncGfgData(platformHandles.geeksforgeeks, { force: false }),
+      platformHandles.github && syncGitHubData(platformHandles.github, { force: false }),
+    ].filter(Boolean);
+    Promise.allSettled(syncTasks);
+  }, [
+    user,
+    platformHandles.leetcode,
+    platformHandles.codeforces,
+    platformHandles.codechef,
+    platformHandles.geeksforgeeks,
+    platformHandles.github,
+  ]);
+
+  useEffect(() => {
+    const section = horizontalSectionRef.current;
+    const sticky = horizontalStickyRef.current;
+    const viewport = horizontalViewportRef.current;
+    const track = horizontalTrackRef.current;
+    if (!section || !sticky || !viewport || !track) return undefined;
+
+    let frame = 0;
+    const updatePosition = () => {
+      frame = 0;
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        section.style.height = "";
+        track.style.transform = "";
+        return;
+      }
+
+      const stickyHeight = sticky.clientHeight;
+      const maxHorizontalScroll = Math.max(0, track.scrollWidth - viewport.clientWidth);
+      const requiredHeight = Math.ceil(stickyHeight + maxHorizontalScroll);
+      if (Math.abs(section.offsetHeight - requiredHeight) > 1) {
+        section.style.height = `${requiredHeight}px`;
+      }
+
+      const stickyTop = Number.parseFloat(window.getComputedStyle(sticky).top) || 76;
+      const rect = section.getBoundingClientRect();
+      const scrollDistance = Math.max(1, requiredHeight - stickyHeight);
+      const progress = Math.max(0, Math.min(1, (stickyTop - rect.top) / scrollDistance));
+      track.style.transform = `translate3d(${-maxHorizontalScroll * progress}px, 0, 0)`;
+    };
+    const scheduleUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updatePosition);
+    };
+
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleUpdate);
+    observer?.observe(viewport);
+    observer?.observe(track);
+    scheduleUpdate();
+
+    return () => {
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      observer?.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+      section.style.height = "";
+      track.style.transform = "";
+    };
+  }, []);
 
   const longestStreak = growthStats.longestStreak ?? 28;
   const dailyGoal = growthStats.dailyGoal ?? 2;
@@ -294,7 +380,7 @@ export function DashboardPage() {
               {totalProblemsSolved.toLocaleString()}
             </div>
             <div className="dashboard-metric-sub">
-              215 LC · 75 CF · {codechef.solved || 142} CC · {geeksforgeeks.solved || 120} GFG
+              {leetcode.solved ?? "—"} LC · {codeforces.solved ?? "—"} CF · {codechef.solved ?? "—"} CC · {geeksforgeeks.solved ?? "—"} GFG
             </div>
           </article>
 
@@ -341,11 +427,11 @@ export function DashboardPage() {
               </span>
             </div>
             <div className="dashboard-metric-val">
-              {codechef.rating ? `${codechef.rating}` : "1650"}
-              <small>★ {codechef.stars || "3★"}</small>
+              {codechef.rating ?? "—"}
+              <small>{codechef.stars ?? ""}</small>
             </div>
             <div className="dashboard-metric-sub">
-              CodeChef Div 2 · CF {codeforces.rating || 1340} ({codeforces.rank || "Pupil"})
+              CodeChef {codechef.division ?? "—"} · CF {codeforces.rating ?? "—"} ({codeforces.rank ?? "—"})
             </div>
           </article>
         </div>
@@ -575,7 +661,8 @@ export function DashboardPage() {
       </section>
 
       {/* 4. Connected Platforms Pro Cards */}
-      <section className="dashboard-platforms-section" aria-labelledby="platforms-heading">
+      <section ref={horizontalSectionRef} className="dashboard-platforms-section dashboard-platforms-horizontal" aria-labelledby="platforms-heading">
+        <div ref={horizontalStickyRef} className="dashboard-platforms-sticky">
         <header className="dashboard-platforms-head">
           <div>
             <span className="dashboard-kicker--muted">ECOSYSTEM TELEMETRY</span>
@@ -585,16 +672,18 @@ export function DashboardPage() {
             type="button"
             className="dashboard-btn-secondary"
             onClick={handleSyncAll}
-            disabled={isSyncingAll}
+            disabled={isSyncingAll || !user || !Object.values(platformHandles).some(Boolean)}
           >
             <RotateCw size={13} className={isSyncingAll ? "animate-spin" : ""} />
             Sync All Profiles
           </button>
         </header>
 
-        <div className="dashboard-platforms-grid">
+        <div ref={horizontalViewportRef} className="dashboard-platforms-viewport">
+        <div ref={horizontalTrackRef} className="dashboard-platforms-grid">
           {/* Card 1: LeetCode */}
-          <article className="platform-pro-card" style={{ "--platform-color": PLATFORM_META.leetcode.color }}>
+          <article tabIndex={0} className="platform-pro-card" aria-label="LeetCode statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.leetcode.color, "--platform-light-bg": PLATFORM_META.leetcode.lightBg }}>
+            <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.leetcode.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
             <div className="platform-pro-top">
               <div className="platform-brand-identity">
@@ -603,7 +692,7 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>LeetCode</strong>
-                  <small>@{profile.platformHandles?.leetcode || "alex_shah"}</small>
+                  <small>{platformHandles.leetcode ? `@${platformHandles.leetcode}` : "No handle connected"}</small>
                 </div>
               </div>
               <button
@@ -612,52 +701,47 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("leetcode")}
                 title="Sync live LeetCode stats"
                 aria-label="Sync LeetCode"
+                disabled={!platformHandles.leetcode || syncingPlatform === "leetcode"}
               >
                 <RotateCw size={13} className={syncingPlatform === "leetcode" ? "animate-spin" : ""} />
               </button>
             </div>
 
             <div className="platform-pro-primary">
-              <div className="platform-big-number">{leetcode.solved || 215}</div>
+              <div className="platform-big-number">{leetcode.solved ?? "—"}</div>
               <span className="platform-big-label">Problems Solved</span>
             </div>
 
             <div className="platform-metrics-grid">
               <div className="platform-metric-pill">
                 <small>Easy</small>
-                <strong>{leetcode.easy || 92}</strong>
+                <strong>{leetcode.easy ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Medium</small>
-                <strong>{leetcode.medium || 104}</strong>
+                <strong>{leetcode.medium ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Hard</small>
-                <strong>{leetcode.hard || 19}</strong>
+                <strong>{leetcode.hard ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Global Rank</small>
-                <strong>{leetcode.ranking ? `Top ${Math.round(leetcode.ranking / 1000)}k` : "Top 42k"}</strong>
+                <strong>{leetcode.ranking ? `Top ${Math.round(leetcode.ranking / 1000)}k` : "—"}</strong>
               </div>
             </div>
 
             <div className="platform-pro-foot">
               <span className="platform-status-dot">
-                <i /> Live Sync Active
+                <i className={leetcode.lastSynced ? "is-synced" : ""} /> {leetcode.lastSynced ? `Fetched ${leetcode.lastSynced}` : growthStats.leetcode?.loading ? "Syncing…" : "No synced data"}
               </span>
-              <a
-                href={PLATFORM_META.leetcode.url(profile.platformHandles?.leetcode || "alex_shah")}
-                target="_blank"
-                rel="noreferrer"
-                className="platform-link-btn"
-              >
-                Profile <ExternalLink size={11} />
-              </a>
+              {platformHandles.leetcode ? <a href={PLATFORM_META.leetcode.url(platformHandles.leetcode)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
             </div>
           </article>
 
           {/* Card 2: Codeforces */}
-          <article className="platform-pro-card" style={{ "--platform-color": PLATFORM_META.codeforces.color }}>
+          <article tabIndex={0} className="platform-pro-card" aria-label="Codeforces statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.codeforces.color, "--platform-light-bg": PLATFORM_META.codeforces.lightBg }}>
+            <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.codeforces.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
             <div className="platform-pro-top">
               <div className="platform-brand-identity">
@@ -666,7 +750,7 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>Codeforces</strong>
-                  <small>@{profile.platformHandles?.codeforces || "alex_coder"}</small>
+                  <small>{platformHandles.codeforces ? `@${platformHandles.codeforces}` : "No handle connected"}</small>
                 </div>
               </div>
               <button
@@ -675,52 +759,47 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("codeforces")}
                 title="Sync live Codeforces stats"
                 aria-label="Sync Codeforces"
+                disabled={!platformHandles.codeforces || syncingPlatform === "codeforces"}
               >
                 <RotateCw size={13} className={syncingPlatform === "codeforces" ? "animate-spin" : ""} />
               </button>
             </div>
 
             <div className="platform-pro-primary">
-              <div className="platform-big-number">{codeforces.solved || 75}</div>
+              <div className="platform-big-number">{codeforces.solved ?? "—"}</div>
               <span className="platform-big-label">Problems Solved</span>
             </div>
 
             <div className="platform-metrics-grid">
               <div className="platform-metric-pill">
                 <small>Rating</small>
-                <strong>{codeforces.rating || 1340}</strong>
+                <strong>{codeforces.rating ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Rank</small>
-                <strong>{codeforces.rank || "Pupil"}</strong>
+                <strong>{codeforces.rank ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
-                <small>Contests</small>
-                <strong>{codeforces.contests || 12}</strong>
+                <small>Max Rank</small>
+                <strong>{codeforces.maxRank ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Max Rating</small>
-                <strong>{codeforces.maxRating || 1380}</strong>
+                <strong>{codeforces.maxRating ?? "—"}</strong>
               </div>
             </div>
 
             <div className="platform-pro-foot">
               <span className="platform-status-dot">
-                <i /> Live Sync Active
+                <i className={codeforces.lastSynced ? "is-synced" : ""} /> {codeforces.lastSynced ? `Fetched ${codeforces.lastSynced}` : growthStats.codeforces?.loading ? "Syncing…" : "No synced data"}
               </span>
-              <a
-                href={PLATFORM_META.codeforces.url(profile.platformHandles?.codeforces || "alex_coder")}
-                target="_blank"
-                rel="noreferrer"
-                className="platform-link-btn"
-              >
-                Profile <ExternalLink size={11} />
-              </a>
+              {platformHandles.codeforces ? <a href={PLATFORM_META.codeforces.url(platformHandles.codeforces)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
             </div>
           </article>
 
           {/* Card 3: CodeChef */}
-          <article className="platform-pro-card" style={{ "--platform-color": PLATFORM_META.codechef.color }}>
+          <article tabIndex={0} className="platform-pro-card" aria-label="CodeChef statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.codechef.color, "--platform-light-bg": PLATFORM_META.codechef.lightBg }}>
+            <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.codechef.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
             <div className="platform-pro-top">
               <div className="platform-brand-identity">
@@ -729,7 +808,7 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>CodeChef</strong>
-                  <small>@{profile.platformHandles?.codechef || "alex_chef"}</small>
+                  <small>{platformHandles.codechef ? `@${platformHandles.codechef}` : "No handle connected"}</small>
                 </div>
               </div>
               <button
@@ -738,52 +817,47 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("codechef")}
                 title="Sync live CodeChef stats"
                 aria-label="Sync CodeChef"
+                disabled={!platformHandles.codechef || syncingPlatform === "codechef"}
               >
                 <RotateCw size={13} className={syncingPlatform === "codechef" ? "animate-spin" : ""} />
               </button>
             </div>
 
             <div className="platform-pro-primary">
-              <div className="platform-big-number">{codechef.solved || 142}</div>
+              <div className="platform-big-number">{codechef.solved ?? "—"}</div>
               <span className="platform-big-label">Problems Solved</span>
             </div>
 
             <div className="platform-metrics-grid">
               <div className="platform-metric-pill">
                 <small>Rating</small>
-                <strong>{codechef.rating || 1650}</strong>
+                <strong>{codechef.rating ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Stars</small>
-                <strong>{codechef.stars || "3★"}</strong>
+                <strong>{codechef.stars ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Division</small>
-                <strong>{codechef.division || "Div 2"}</strong>
+                <strong>{codechef.division ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Country Rank</small>
-                <strong>#{codechef.countryRank || 8200}</strong>
+                <strong>{codechef.countryRank && codechef.countryRank !== "—" ? `#${codechef.countryRank}` : "—"}</strong>
               </div>
             </div>
 
             <div className="platform-pro-foot">
               <span className="platform-status-dot">
-                <i /> Live Sync Active
+                <i className={codechef.lastSynced ? "is-synced" : ""} /> {codechef.lastSynced ? `Fetched ${codechef.lastSynced}` : growthStats.codechef?.loading ? "Syncing…" : "No synced data"}
               </span>
-              <a
-                href={PLATFORM_META.codechef.url(profile.platformHandles?.codechef || "alex_chef")}
-                target="_blank"
-                rel="noreferrer"
-                className="platform-link-btn"
-              >
-                Profile <ExternalLink size={11} />
-              </a>
+              {platformHandles.codechef ? <a href={PLATFORM_META.codechef.url(platformHandles.codechef)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
             </div>
           </article>
 
           {/* Card 4: GeeksforGeeks */}
-          <article className="platform-pro-card" style={{ "--platform-color": PLATFORM_META.geeksforgeeks.color }}>
+          <article tabIndex={0} className="platform-pro-card" aria-label="GeeksforGeeks statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.geeksforgeeks.color, "--platform-light-bg": PLATFORM_META.geeksforgeeks.lightBg }}>
+            <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.geeksforgeeks.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
             <div className="platform-pro-top">
               <div className="platform-brand-identity">
@@ -792,7 +866,7 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>GeeksforGeeks</strong>
-                  <small>@{profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg || "alex_gfg"}</small>
+                  <small>{platformHandles.geeksforgeeks ? `@${platformHandles.geeksforgeeks}` : "No handle connected"}</small>
                 </div>
               </div>
               <button
@@ -801,52 +875,47 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("geeksforgeeks")}
                 title="Sync live GeeksforGeeks stats"
                 aria-label="Sync GeeksforGeeks"
+                disabled={!platformHandles.geeksforgeeks || syncingPlatform === "geeksforgeeks"}
               >
                 <RotateCw size={13} className={syncingPlatform === "geeksforgeeks" ? "animate-spin" : ""} />
               </button>
             </div>
 
             <div className="platform-pro-primary">
-              <div className="platform-big-number">{geeksforgeeks.solved || 120}</div>
+              <div className="platform-big-number">{geeksforgeeks.solved ?? "—"}</div>
               <span className="platform-big-label">Problems Solved</span>
             </div>
 
             <div className="platform-metrics-grid">
               <div className="platform-metric-pill">
                 <small>Coding Score</small>
-                <strong>{geeksforgeeks.score || 350}</strong>
+                <strong>{geeksforgeeks.score ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Campus Rank</small>
-                <strong>#{geeksforgeeks.instituteRank || 42}</strong>
+                <strong>{geeksforgeeks.instituteRank && geeksforgeeks.instituteRank !== "—" ? `#${geeksforgeeks.instituteRank}` : "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Easy / Med</small>
-                <strong>{geeksforgeeks.easy || 58} / {geeksforgeeks.medium || 48}</strong>
+                <strong>{geeksforgeeks.easy ?? "—"} / {geeksforgeeks.medium ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Hard</small>
-                <strong>{geeksforgeeks.hard || 14}</strong>
+                <strong>{geeksforgeeks.hard ?? "—"}</strong>
               </div>
             </div>
 
             <div className="platform-pro-foot">
               <span className="platform-status-dot">
-                <i /> Live Sync Active
+                <i className={geeksforgeeks.lastSynced ? "is-synced" : ""} /> {geeksforgeeks.lastSynced ? `Fetched ${geeksforgeeks.lastSynced}` : (growthStats.geeksforgeeks ?? growthStats.gfg)?.loading ? "Syncing…" : "No synced data"}
               </span>
-              <a
-                href={PLATFORM_META.geeksforgeeks.url(profile.platformHandles?.geeksforgeeks || "alex_gfg")}
-                target="_blank"
-                rel="noreferrer"
-                className="platform-link-btn"
-              >
-                Profile <ExternalLink size={11} />
-              </a>
+              {platformHandles.geeksforgeeks ? <a href={PLATFORM_META.geeksforgeeks.url(platformHandles.geeksforgeeks)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
             </div>
           </article>
 
           {/* Card 5: GitHub */}
-          <article className="platform-pro-card" style={{ "--platform-color": PLATFORM_META.github.color }}>
+          <article tabIndex={0} className="platform-pro-card" aria-label="GitHub statistics. Hover or focus to reveal details." style={{ "--platform-color": PLATFORM_META.github.color, "--platform-light-bg": PLATFORM_META.github.lightBg }}>
+            <div className="platform-card-backdrop" aria-hidden="true"><img src={PLATFORM_META.github.logo} alt="" /></div>
             <div className="platform-accent-stripe" />
             <div className="platform-pro-top">
               <div className="platform-brand-identity">
@@ -855,7 +924,7 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>GitHub</strong>
-                  <small>@{profile.platformHandles?.github || "alexshah-dev"}</small>
+                  <small>{platformHandles.github ? `@${platformHandles.github}` : "No handle connected"}</small>
                 </div>
               </div>
               <button
@@ -864,49 +933,45 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("github")}
                 title="Sync live GitHub contributions"
                 aria-label="Sync GitHub"
+                disabled={!platformHandles.github || syncingPlatform === "github"}
               >
                 <RotateCw size={13} className={syncingPlatform === "github" ? "animate-spin" : ""} />
               </button>
             </div>
 
             <div className="platform-pro-primary">
-              <div className="platform-big-number">{github.contributions || 512}</div>
-              <span className="platform-big-label">Contributions</span>
+              <div className="platform-big-number">{github.contributions ?? "—"}</div>
+              <span className="platform-big-label">Contributions (1y)</span>
             </div>
 
             <div className="platform-metrics-grid">
               <div className="platform-metric-pill">
-                <small>Repositories</small>
-                <strong>{github.repos || 14}</strong>
+                <small>Public Repos</small>
+                <strong>{github.repos ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
                 <small>Commit Streak</small>
-                <strong>{github.streak ? `${github.streak}d` : "18d"}</strong>
+                <strong>{github.streak != null ? `${github.streak}d` : "—"}</strong>
               </div>
               <div className="platform-metric-pill">
-                <small>Primary Lang</small>
-                <strong>JavaScript</strong>
+                <small>Followers</small>
+                <strong>{github.followers ?? "—"}</strong>
               </div>
               <div className="platform-metric-pill">
-                <small>Status</small>
-                <strong>Active Contributor</strong>
+                <small>Longest Streak</small>
+                <strong>{github.longestStreak != null ? `${github.longestStreak}d` : "—"}</strong>
               </div>
             </div>
 
             <div className="platform-pro-foot">
               <span className="platform-status-dot">
-                <i /> Live Sync Active
+                <i className={github.lastSynced ? "is-synced" : ""} /> {github.lastSynced ? `Fetched ${github.lastSynced}` : growthStats.github?.loading ? "Syncing…" : "No synced data"}
               </span>
-              <a
-                href={PLATFORM_META.github.url(profile.platformHandles?.github || "alexshah-dev")}
-                target="_blank"
-                rel="noreferrer"
-                className="platform-link-btn"
-              >
-                Profile <ExternalLink size={11} />
-              </a>
+              {platformHandles.github ? <a href={PLATFORM_META.github.url(platformHandles.github)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
             </div>
           </article>
+        </div>
+        </div>
         </div>
       </section>
 
