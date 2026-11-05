@@ -545,6 +545,12 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   .home-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-stats-grid > .home-stat-glow:last-child { grid-column: 1 / -1; }
 }
+@media (max-width: 600px) {
+  .calendar-page-container .calendar-header-toolbar > div:first-child {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+}
 
 @media (max-width: 1050px) {
   .site-nav-shell { flex-wrap: wrap; justify-content: space-between; }
