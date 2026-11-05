@@ -20,6 +20,7 @@ import { fetchLiveCodeChefStats } from "../services/codechefService.js";
 import { fetchLiveGfgStats } from "../services/gfgService.js";
 import { fetchLiveLeetCodeStats } from "../services/leetcodeService.js";
 import { fetchLiveGitHubStats } from "../services/githubService.js";
+import { fetchLiveCodeforcesStats } from "../services/codeforcesService.js";
 
 const STORAGE_KEYS = {
   PROFILE: "opportunity_os_profile_v1",
@@ -131,8 +132,20 @@ export function AppProvider({ children }) {
     try {
       const loaded = loadFromStorage(STORAGE_KEYS.GROWTH, initialGrowthStats);
       const status = calculateStreakStatus(loaded.lastActiveDate, loaded.currentStreak);
+
+      // Clean out any legacy static mock entries saved in browser localStorage
+      const legacyStaticNotes = [
+        "Solved Binary Tree Maximum Path Sum and 2 medium tree traversals.",
+        "Participated in Round 980 Div 3, upsolved problem D.",
+        "Dynamic Programming knapsack practice.",
+      ];
+      const cleanedLogs = (loaded.recentLogs || []).filter(
+        (log) => !legacyStaticNotes.includes(log.notes)
+      );
+
       return {
         ...loaded,
+        recentLogs: cleanedLogs,
         codechef: loaded.codechef || initialGrowthStats.codechef,
         gfg: loaded.gfg || initialGrowthStats.gfg,
         streakAtRisk: status.streakAtRisk,
@@ -577,6 +590,20 @@ export function AppProvider({ children }) {
         const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : prevSolved;
         const diffSolved = liveSolved - prevSolved;
 
+        // Record live CodeChef sync activity entry
+        const currentLogs = prev.recentLogs || [];
+        const ccLog = {
+          date: new Date().toISOString().split("T")[0],
+          platform: "CodeChef",
+          problemsSolved: diffSolved > 0 ? diffSolved : 1,
+          difficulty: live.division || "Medium",
+          category: "Contest Division",
+          notes: `Synced CodeChef rating ${live.rating || 0} (${live.stars || "1★"}, ${live.division || "Div 4"})`,
+        };
+        const incomingLogs = currentLogs.some((l) => l.notes === ccLog.notes && l.date === ccLog.date)
+          ? []
+          : [ccLog];
+
         return {
           ...prev,
           totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
@@ -595,6 +622,7 @@ export function AppProvider({ children }) {
             loading: false,
             error: null,
           },
+          recentLogs: [...incomingLogs, ...currentLogs].slice(0, 20),
         };
       });
       return { success: true, data: result.data };
@@ -659,11 +687,25 @@ export function AppProvider({ children }) {
           error: null,
         };
 
+        // Merge live GeeksforGeeks problems into recentLogs
+        const currentLogs = prev.recentLogs || [];
+        const incomingLogs = (live.recentSubmissions || []).slice(0, 5).map((pTitle) => ({
+          date: new Date().toISOString().split("T")[0],
+          platform: "GeeksforGeeks",
+          problemsSolved: 1,
+          difficulty: "Medium",
+          category: "Practice Problem",
+          notes: `Solved "${pTitle}" on GeeksforGeeks`,
+        })).filter((inc) => {
+          return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
+        });
+
         return {
           ...prev,
           totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
           gfg: updatedGfg,
           geeksforgeeks: updatedGfg,
+          recentLogs: [...incomingLogs, ...currentLogs].slice(0, 20),
         };
       });
       return { success: true, data: result.data };
@@ -728,10 +770,17 @@ export function AppProvider({ children }) {
           error: null,
         };
 
+        // Merge live LeetCode submissions into recentLogs avoiding duplicates
+        const currentLogs = prev.recentLogs || [];
+        const incomingLogs = (live.recentSubmissions || []).filter((inc) => {
+          return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
+        });
+
         return {
           ...prev,
           totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
           leetcode: updatedLC,
+          recentLogs: [...incomingLogs, ...currentLogs].slice(0, 15),
         };
       });
       return { success: true, data: result.data };
@@ -785,9 +834,16 @@ export function AppProvider({ children }) {
           error: null,
         };
 
+        // Merge live GitHub commit events into recentLogs avoiding duplicates
+        const currentLogs = prev.recentLogs || [];
+        const incomingLogs = (live.recentEvents || []).filter((inc) => {
+          return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
+        });
+
         return {
           ...prev,
           github: updatedGH,
+          recentLogs: [...incomingLogs, ...currentLogs].slice(0, 15),
         };
       });
       return { success: true, data: result.data };
@@ -798,6 +854,72 @@ export function AppProvider({ children }) {
           ...(prev.github || initialGrowthStats.github),
           loading: false,
           error: result.error || "Failed to sync GitHub statistics.",
+        },
+      }));
+      return { success: false, error: result.error };
+    }
+  };
+
+  // Real-time Codeforces Data Synchronization
+  const syncCodeforcesData = async (handleToUse, options = { force: true }) => {
+    const handle = handleToUse || profile.platformHandles?.codeforces;
+    if (!handle) {
+      return { success: false, error: "No Codeforces handle configured." };
+    }
+
+    setGrowthStats((prev) => ({
+      ...prev,
+      codeforces: {
+        ...(prev.codeforces || initialGrowthStats.codeforces),
+        loading: true,
+        error: null,
+      },
+    }));
+
+    const result = await fetchLiveCodeforcesStats(handle, options);
+
+    if (result.success && result.data) {
+      const live = result.data;
+      setGrowthStats((prev) => {
+        const currentCF = prev.codeforces || initialGrowthStats.codeforces;
+        const prevSolved = currentCF.solved ?? 0;
+        const liveSolved = typeof live.solved === "number" ? live.solved : prevSolved;
+        const diffSolved = liveSolved - prevSolved;
+
+        const updatedCF = {
+          ...currentCF,
+          handle: live.handle || currentCF.handle,
+          rating: typeof live.rating === "number" ? live.rating : (currentCF.rating ?? 0),
+          maxRating: typeof live.maxRating === "number" ? live.maxRating : (currentCF.maxRating ?? 0),
+          rank: live.rank || currentCF.rank,
+          maxRank: live.maxRank || currentCF.maxRank,
+          solved: liveSolved,
+          avatar: live.avatar || currentCF.avatar,
+          lastSynced: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          loading: false,
+          error: null,
+        };
+
+        const currentLogs = prev.recentLogs || [];
+        const incomingLogs = (live.recentSubmissions || []).filter((inc) => {
+          return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
+        });
+
+        return {
+          ...prev,
+          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          codeforces: updatedCF,
+          recentLogs: [...incomingLogs, ...currentLogs].slice(0, 15),
+        };
+      });
+      return { success: true, data: result.data };
+    } else {
+      setGrowthStats((prev) => ({
+        ...prev,
+        codeforces: {
+          ...(prev.codeforces || initialGrowthStats.codeforces),
+          loading: false,
+          error: result.error || "Failed to sync Codeforces statistics.",
         },
       }));
       return { success: false, error: result.error };
@@ -882,6 +1004,7 @@ export function AppProvider({ children }) {
         syncGfgData,
         syncLeetCodeData,
         syncGitHubData,
+        syncCodeforcesData,
         dailyChallenge,
         completeDailyChallenge,
         calendarEvents,

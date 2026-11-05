@@ -47,6 +47,13 @@ const LEETCODE_PROFILE_QUERY = `
         name
       }
     }
+    recentSubmissionList(username: $username, limit: 10) {
+      title
+      titleSlug
+      timestamp
+      statusDisplay
+      lang
+    }
   }
 `;
 
@@ -139,6 +146,23 @@ export async function getLeetCodeProfile(handle, options = {}) {
     const contestRank = contest?.globalRanking || null;
     const contestBadge = contest?.badge?.name || null;
 
+    // Recent Accepted Submissions for real-time practice feed
+    const rawSubmissions = json.data?.recentSubmissionList || [];
+    const recentSubmissions = rawSubmissions
+      .filter((s) => s.statusDisplay === "Accepted")
+      .map((s) => {
+        const dateObj = s.timestamp ? new Date(Number(s.timestamp) * 1000) : new Date();
+        const dateStr = dateObj.toISOString().split("T")[0];
+        return {
+          date: dateStr,
+          platform: "LeetCode",
+          problemsSolved: 1,
+          difficulty: "Medium", // default level when not provided by recent submission list
+          category: s.lang ? `Solved in ${s.lang}` : "Algorithms & DSA",
+          notes: `Solved ${s.title || "LeetCode problem"}`,
+        };
+      });
+
     const data = {
       success: true,
       handle: matchedUser.username || normalizedHandle,
@@ -152,6 +176,7 @@ export async function getLeetCodeProfile(handle, options = {}) {
       contestRating,
       contestRank,
       contestBadge,
+      recentSubmissions,
       syncedAt: new Date().toISOString(),
     };
 

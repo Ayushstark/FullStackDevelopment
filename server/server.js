@@ -13,6 +13,7 @@ import { getCodeChefProfile } from "./services/codechefService.js";
 import { getGfgProfile } from "./services/gfgService.js";
 import { getLeetCodeProfile } from "./services/leetcodeService.js";
 import { getGitHubProfile } from "./services/githubService.js";
+import { getCodeforcesProfile } from "./services/codeforcesService.js";
 import { getAllRealContests } from "./services/contestService.js";
 
 dotenv.config();
@@ -292,7 +293,7 @@ app.post("/api/growth/log", apiLimiter, authMiddleware, async (req, res) => {
   try {
     const { platform, problemsSolved, notes } = req.body || {};
 
-    const validPlatforms = ["LeetCode", "Codeforces", "CodeChef", "GitHub", "AtCoder", "HackerRank"];
+    const validPlatforms = ["LeetCode", "Codeforces", "CodeChef", "GeeksforGeeks", "GitHub"];
     if (!platform || !validPlatforms.includes(platform)) {
       return res.status(400).json({ error: "Invalid or unsupported platform." });
     }
@@ -418,6 +419,25 @@ app.get("/api/platforms/github/:handle", apiLimiter, async (req, res) => {
   } catch (err) {
     console.error("GitHub profile retrieval error:", err);
     res.status(500).json({ success: false, error: "Failed to fetch GitHub statistics." });
+  }
+});
+
+// Real-time Codeforces profile retrieval endpoint
+app.get("/api/platforms/codeforces/:handle", apiLimiter, async (req, res) => {
+  try {
+    const { handle } = req.params;
+    const forceRefresh = req.query.force === "true";
+    const profileData = await getCodeforcesProfile(handle, { forceRefresh });
+
+    if (!profileData.success) {
+      const isNotFound = profileData.error && profileData.error.toLowerCase().includes("not found");
+      return res.status(isNotFound ? 404 : 400).json(profileData);
+    }
+
+    res.json(profileData);
+  } catch (err) {
+    console.error("Codeforces profile retrieval error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch Codeforces statistics." });
   }
 });
 
