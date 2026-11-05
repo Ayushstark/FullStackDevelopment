@@ -4,6 +4,7 @@ import {
   GripVertical,
   MapPin,
   Plus,
+  RotateCw,
   Trash2,
   X,
 } from "lucide-react";
@@ -26,6 +27,8 @@ export function ApplicationsPage() {
     updateApplicationNotes,
     deleteApplication,
     createManualApplication,
+    refreshApplications,
+    isApplicationsLoading,
   } = useAppContext();
 
   // Drag and Drop state (Scratch-inspired tactile block snapping)
@@ -158,6 +161,16 @@ export function ApplicationsPage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
+          <button
+            className="button button-secondary"
+            onClick={() => refreshApplications()}
+            type="button"
+            disabled={isApplicationsLoading}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
+          >
+            <RotateCw size={14} className={isApplicationsLoading ? "spin-icon" : ""} />
+            {isApplicationsLoading ? "Syncing..." : "Sync Pipeline"}
+          </button>
           <button
             className="button button-primary"
             onClick={() => setIsAddModalOpen(true)}

@@ -27,5 +27,5 @@ export default defineConfig({
     outDir: "../dist",
     emptyOutDir: true,
   },
-  base: process.env.NODE_ENV === "production" ? "/FullStackDevelopment/" : "/",
+  base: process.env.VITE_BASE_PATH || "/",
 });

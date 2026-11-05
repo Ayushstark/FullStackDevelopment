@@ -4,6 +4,7 @@ import {
   Calendar,
   Filter,
   MapPin,
+  RotateCw,
   Search,
   Sparkles,
   XCircle,
@@ -21,6 +22,8 @@ export function OpportunityPage() {
     profile,
     setSelectedOpportunityForAnalysis,
     setActivePage,
+    refreshOpportunities,
+    isOpportunitiesLoading,
   } = useAppContext();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -133,20 +136,32 @@ export function OpportunityPage() {
       </form>
 
       {/* Tabs: All vs Saved */}
-      <div className="tab-bar">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+        <div className="tab-bar" style={{ margin: 0 }}>
+          <button
+            className={`tab-btn ${viewTab === "all" ? "active" : ""}`}
+            onClick={() => setViewTab("all")}
+            type="button"
+          >
+            All Opportunities ({opportunities.length})
+          </button>
+          <button
+            className={`tab-btn ${viewTab === "saved" ? "active" : ""}`}
+            onClick={() => setViewTab("saved")}
+            type="button"
+          >
+            Saved Roles ({savedOpportunityIds.length})
+          </button>
+        </div>
         <button
-          className={`tab-btn ${viewTab === "all" ? "active" : ""}`}
-          onClick={() => setViewTab("all")}
           type="button"
+          className="button button-secondary"
+          onClick={() => refreshOpportunities()}
+          disabled={isOpportunitiesLoading}
+          style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
         >
-          All Opportunities ({opportunities.length})
-        </button>
-        <button
-          className={`tab-btn ${viewTab === "saved" ? "active" : ""}`}
-          onClick={() => setViewTab("saved")}
-          type="button"
-        >
-          Saved Roles ({savedOpportunityIds.length})
+          <RotateCw size={12} className={isOpportunitiesLoading ? "spin-icon" : ""} />
+          {isOpportunitiesLoading ? "Refreshing..." : "Refresh Roles"}
         </button>
       </div>
 

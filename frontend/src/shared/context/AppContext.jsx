@@ -21,6 +21,14 @@ import { fetchLiveGfgStats } from "../services/gfgService.js";
 import { fetchLiveLeetCodeStats } from "../services/leetcodeService.js";
 import { fetchLiveGitHubStats } from "../services/githubService.js";
 import { fetchLiveCodeforcesStats } from "../services/codeforcesService.js";
+import { fetchLiveContests } from "../services/contestClientService.js";
+import { fetchOpportunities } from "../services/opportunityService.js";
+import {
+  fetchApplications,
+  createRemoteApplication,
+  updateRemoteApplication,
+  deleteRemoteApplication,
+} from "../services/applicationService.js";
 
 const STORAGE_KEYS = {
   PROFILE: "opportunity_os_profile_v1",
@@ -146,17 +154,21 @@ export function AppProvider({ children }) {
     return loadFromStorage(STORAGE_KEYS.PROFILE, initialProfile);
   });
 
-  const [opportunities] = useState(() =>
+  const [opportunities, setOpportunities] = useState(() =>
     loadFromStorage(STORAGE_KEYS.OPPORTUNITIES, initialOpportunities),
   );
 
   const [savedOpportunityIds, setSavedOpportunityIds] = useState(() =>
-    loadFromStorage(STORAGE_KEYS.SAVED_IDS, ["stripe-swe", "cred-frontend"]),
+    loadFromStorage(STORAGE_KEYS.SAVED_IDS, ["stripe-swe-intern", "cred-frontend-intern", "google-swe-intern"]),
   );
 
   const [applications, setApplications] = useState(() =>
     loadFromStorage(STORAGE_KEYS.APPLICATIONS, initialApplications),
   );
+
+  const [isContestsLoading, setIsContestsLoading] = useState(false);
+  const [isOpportunitiesLoading, setIsOpportunitiesLoading] = useState(false);
+  const [isApplicationsLoading, setIsApplicationsLoading] = useState(false);
 
   const [growthStats, setGrowthStats] = useState(() => {
     try {
@@ -211,7 +223,50 @@ export function AppProvider({ children }) {
     useState(null);
 
 
-  // Check auth session on mount
+  // Live Data Refresh Handlers
+  const refreshLiveContests = async (force = false) => {
+    setIsContestsLoading(true);
+    try {
+      const res = await fetchLiveContests({ force });
+      if (res.success && Array.isArray(res.contests) && res.contests.length > 0) {
+        setCalendarEvents(res.contests);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch live contests:", err);
+    } finally {
+      setIsContestsLoading(false);
+    }
+  };
+
+  const refreshOpportunities = async (filters = {}) => {
+    setIsOpportunitiesLoading(true);
+    try {
+      const res = await fetchOpportunities(filters);
+      if (res.success && Array.isArray(res.opportunities) && res.opportunities.length > 0) {
+        setOpportunities(res.opportunities);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch opportunities:", err);
+    } finally {
+      setIsOpportunitiesLoading(false);
+    }
+  };
+
+  const refreshApplications = async () => {
+    setIsApplicationsLoading(true);
+    try {
+      const res = await fetchApplications();
+      if (res.success && Array.isArray(res.applications) && res.applications.length > 0) {
+        setApplications(res.applications);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch applications:", err);
+    } finally {
+      setIsApplicationsLoading(false);
+    }
+  };
+
+  // Check auth session & fetch initial live data on mount
   useEffect(() => {
     // Remove keys saved by earlier browser-side AI configuration.
     try {
@@ -220,6 +275,7 @@ export function AppProvider({ children }) {
     } catch {
       // Storage may be unavailable in a restricted browser session.
     }
+
     checkSession().then((verifiedUser) => {
       if (verifiedUser) {
         setUser(verifiedUser);
@@ -235,6 +291,22 @@ export function AppProvider({ children }) {
         }));
       }
     });
+
+    // Wire real live data on startup asynchronously to prevent cascading renders
+    let cancelled = false;
+    const loadInitialData = async () => {
+      await Promise.resolve();
+      if (!cancelled) {
+        refreshLiveContests();
+        refreshOpportunities();
+        refreshApplications();
+      }
+    };
+    loadInitialData();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = async (email, password) => {
@@ -251,6 +323,7 @@ export function AppProvider({ children }) {
         skills: data.user.skills || prev.skills,
         platformHandles: data.user.platformHandles || prev.platformHandles,
       }));
+      refreshApplications();
     }
     return data;
   };
@@ -346,22 +419,26 @@ export function AppProvider({ children }) {
 
   // Application tracker actions
   const addApplicationFromOpportunity = (opp) => {
+    const oppId = opp.id || opp._id;
     setApplications((prev) => {
-      if (prev.some((a) => a.opportunityId === opp.id)) {
+      if (prev.some((a) => a.opportunityId === oppId)) {
         return prev;
       }
       const newApp = {
         id: `app-${Date.now()}`,
-        opportunityId: opp.id,
+        opportunityId: oppId,
         role: opp.title,
         company: opp.company,
         location: opp.location,
         status: "Applied",
         appliedDate: new Date().toISOString().split("T")[0],
         deadline: opp.deadline,
-        notes: `Applied via ${opp.source}.`,
+        notes: `Applied via ${opp.source || "OpportunityOS"}.`,
         sourceUrl: opp.sourceUrl,
       };
+      createRemoteApplication(newApp).catch((err) => {
+        console.warn("Offline application sync:", err);
+      });
       return [newApp, ...prev];
     });
   };
@@ -372,22 +449,34 @@ export function AppProvider({ children }) {
       id: `app-${Date.now()}`,
     };
     setApplications((prev) => [newApp, ...prev]);
+    createRemoteApplication(newApp).catch((err) => {
+      console.warn("Offline application sync:", err);
+    });
   };
 
   const updateApplicationStatus = (id, status) => {
     setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, status } : app)),
+      prev.map((app) => (app.id === id || app._id === id ? { ...app, status } : app)),
     );
+    updateRemoteApplication(id, { status }).catch((err) => {
+      console.warn("Offline application status update:", err);
+    });
   };
 
   const updateApplicationNotes = (id, notes) => {
     setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, notes } : app)),
+      prev.map((app) => (app.id === id || app._id === id ? { ...app, notes } : app)),
     );
+    updateRemoteApplication(id, { notes }).catch((err) => {
+      console.warn("Offline application notes update:", err);
+    });
   };
 
   const deleteApplication = (id) => {
-    setApplications((prev) => prev.filter((app) => app.id !== id));
+    setApplications((prev) => prev.filter((app) => app.id !== id && app._id !== id));
+    deleteRemoteApplication(id).catch((err) => {
+      console.warn("Offline application delete:", err);
+    });
   };
 
   // Developer Growth & Streak actions (Streak Module)
@@ -967,6 +1056,17 @@ export function AppProvider({ children }) {
     }
   };
 
+  const syncAllPlatforms = async (handlesToUse = null) => {
+    const handles = handlesToUse || profile.platformHandles || {};
+    return Promise.allSettled([
+      handles.leetcode ? syncLeetCodeData(handles.leetcode) : Promise.resolve(),
+      handles.codeforces ? syncCodeforcesData(handles.codeforces) : Promise.resolve(),
+      handles.codechef ? syncCodeChefData(handles.codechef) : Promise.resolve(),
+      handles.gfg || handles.geeksforgeeks ? syncGfgData(handles.gfg || handles.geeksforgeeks) : Promise.resolve(),
+      handles.github ? syncGitHubData(handles.github) : Promise.resolve(),
+    ]);
+  };
+
   // Calendar actions
   const toggleCalendarReminder = (id) => {
     setCalendarEvents((prev) =>
@@ -1003,7 +1103,7 @@ export function AppProvider({ children }) {
     localStorage.removeItem(STORAGE_KEYS.CALENDAR);
 
     setProfile(initialProfile);
-    setSavedOpportunityIds(["stripe-swe", "cred-frontend"]);
+    setSavedOpportunityIds(["stripe-swe-intern", "cred-frontend-intern"]);
     setApplications(initialApplications);
     setGrowthStats(initialGrowthStats);
     setCalendarEvents(initialCalendarEvents);
@@ -1046,9 +1146,16 @@ export function AppProvider({ children }) {
         syncLeetCodeData,
         syncGitHubData,
         syncCodeforcesData,
+        syncAllPlatforms,
         dailyChallenge,
         completeDailyChallenge,
         calendarEvents,
+        isContestsLoading,
+        isOpportunitiesLoading,
+        isApplicationsLoading,
+        refreshLiveContests,
+        refreshOpportunities,
+        refreshApplications,
         toggleCalendarReminder,
         addCalendarEvent,
         resetAllData,
