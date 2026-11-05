@@ -719,6 +719,20 @@
   border-radius: 12px;
   border: 1px solid #e6e6e2;
   background: #fafaf8;
+  position: relative;
+}
+
+/* Engineering tech grid background for Skyline */
+.skyline-with-grid {
+  background-color: #fafaf7 !important;
+  background-image:
+    linear-gradient(to right, rgba(132, 204, 22, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(132, 204, 22, 0.18) 1px, transparent 1px),
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px) !important;
+  background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px !important;
+  background-position: center center !important;
+  border-color: #e2e2de !important;
 }
 
 .dashboard-skyline-footer {
@@ -1287,3 +1301,4 @@
     grid-template-columns: 1fr;
   }
 }
+

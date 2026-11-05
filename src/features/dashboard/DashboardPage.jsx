@@ -689,11 +689,12 @@ export function DashboardPage() {
             <ContributionSkyline
               endDate={today}
               title={<span className="home-skyline-title">DevRhythm Activity Skyline</span>}
-              palette={["#e2e2df", "#93c5fd", "#3b82f6", "#1e3a8a"]}
+              palette={["#d9f99d", "#a3e635", "#65a30d", "#3f6212"]}
               defaultView="3d"
               defaultYaw={26}
               zoom={1}
               maxHeight={290}
+              className="skyline-with-grid"
             />
           </div>
 
