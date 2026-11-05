@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    profileImage: {
+      type: String,
+      default: "",
+      maxlength: 240_000,
+    },
     university: {
       type: String,
       default: "National Institute of Technology",
@@ -56,12 +61,12 @@ const userSchema = new mongoose.Schema(
         "Computer Science undergraduate with hands-on experience building fullstack and reactive web apps. Active competitive programmer with consistent problem-solving practice.",
     },
     platformHandles: {
-      leetcode: { type: String, default: "alex_shah" },
-      codeforces: { type: String, default: "alex_coder" },
-      codechef: { type: String, default: "alex_chef" },
-      geeksforgeeks: { type: String, default: "alex_gfg" },
-      gfg: { type: String, default: "alex_gfg" },
-      github: { type: String, default: "alexshah-dev" },
+      leetcode: { type: String, default: "" },
+      codeforces: { type: String, default: "" },
+      codechef: { type: String, default: "" },
+      geeksforgeeks: { type: String, default: "" },
+      gfg: { type: String, default: "" },
+      github: { type: String, default: "" },
     },
   },
   {
@@ -70,4 +75,3 @@ const userSchema = new mongoose.Schema(
 );
 
 export const User = mongoose.models.User || mongoose.model("User", userSchema);
-

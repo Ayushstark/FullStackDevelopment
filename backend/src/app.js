@@ -22,7 +22,7 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: "256kb" }));
 
 // Mount all routes
 app.use(routes);
