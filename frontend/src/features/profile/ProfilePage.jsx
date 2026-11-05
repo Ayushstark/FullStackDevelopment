@@ -288,7 +288,9 @@ export function ProfilePage() {
                       id={`handle-${key}`}
                       className="form-input"
                       autoComplete="off"
-                      maxLength={80}
+                      maxLength={40}
+                      pattern="[A-Za-z0-9_.\-]*"
+                      title="Letters, numbers, dot, dash and underscore only"
                       value={handles[key]}
                       onChange={(event) => {
                         setHandles((previous) => ({ ...previous, [key]: event.target.value }));

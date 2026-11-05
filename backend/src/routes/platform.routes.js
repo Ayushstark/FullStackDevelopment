@@ -11,6 +11,15 @@ import {
 
 const router = Router();
 
+// Platform handles are short usernames; reject anything else before calling a provider.
+const HANDLE_PATTERN = /^[A-Za-z0-9_.-]{1,40}$/;
+router.param("handle", (req, res, next, handle) => {
+  if (!HANDLE_PATTERN.test(handle)) {
+    return res.status(400).json({ success: false, error: "Invalid platform handle." });
+  }
+  return next();
+});
+
 router.get("/daily-challenge", apiLimiter, getDailyChallenge);
 router.get("/codechef/:handle", apiLimiter, getCodeChef);
 router.get("/gfg/:handle", apiLimiter, getGfg);

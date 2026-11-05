@@ -10,9 +10,7 @@ import { AuthPage } from "../features/auth";
 import { ProfilePage } from "../features/profile";
 import { NotFoundPage } from "../features/notfound";
 import { AppShell } from "../shared/components/AppShell.jsx";
-import { useState } from "react";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
-import { PageSkeleton } from "../shared/components/PageSkeleton.jsx";
 import { ErrorBoundary } from "../shared/components/ErrorBoundary.jsx";
 
 function AppContent() {
@@ -22,15 +20,9 @@ function AppContent() {
     closeAuthPage,
   } = useAppContext();
 
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
   const handleNavigate = (page) => {
     if (page === activePage) return;
-    setIsTransitioning(true);
     setActivePage(page);
-    setTimeout(() => {
-      setIsTransitioning(false);
-    }, 280);
   };
 
   const navigation = [
@@ -50,14 +42,6 @@ function AppContent() {
   }
 
   const renderActivePage = () => {
-    if (isTransitioning) {
-      return (
-        <main className="page-content">
-          <PageSkeleton type={activePage} />
-        </main>
-      );
-    }
-
     switch (activePage) {
       case "career":
         return <CareerPage />;

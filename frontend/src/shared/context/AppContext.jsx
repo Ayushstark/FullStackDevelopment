@@ -1,12 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
-  initialApplications,
-  initialCalendarEvents,
   initialDailyChallenge,
   initialGrowthStats,
   initialOpportunities,
-  initialProfile,
 } from "../data/sampleData.js";
 import {
   checkSession,
@@ -39,7 +36,7 @@ const STORAGE_KEYS = {
   APPLICATIONS: "opportunity_os_applications_v1",
   GROWTH: "opportunity_os_growth_v1",
   CALENDAR: "opportunity_os_calendar_nov_test_v3",
-  DAILY_CHALLENGE: "opportunity_os_daily_challenge_v1",
+  DAILY_CHALLENGE: "opportunity_os_daily_challenge_v2",
 };
 
 function loadFromStorage(key, fallback) {
@@ -115,6 +112,32 @@ function getPageFromUrl() {
   return validPages.includes(path) ? path : "404";
 }
 
+// A visitor has no handles until they add their own, so nothing is synced for them.
+const EMPTY_PROFILE = {
+  name: "",
+  email: "",
+  university: "",
+  degree: "",
+  gradYear: "",
+  targetRoles: [],
+  skills: [],
+  resumeSummary: "",
+  platformHandles: { leetcode: "", codeforces: "", codechef: "", geeksforgeeks: "", gfg: "", github: "" },
+  profileImage: "",
+};
+
+// A new or signed-out user starts from zero; numbers only appear once a platform syncs.
+const EMPTY_GROWTH_STATS = {
+  ...initialGrowthStats,
+  currentStreak: 0,
+  longestStreak: 0,
+  lastActiveDate: null,
+  totalProblemsSolved: 0,
+  monthlyActivity: [],
+  annualActivity: [],
+  recentLogs: [],
+};
+
 export function AppProvider({ children }) {
   const [activePage, setActivePageState] = useState(() => getPageFromUrl());
 
@@ -154,19 +177,19 @@ export function AppProvider({ children }) {
     const stored = getStoredUser();
     if (stored) {
       return {
-        name: stored.name || initialProfile.name,
-        email: stored.email || initialProfile.email,
-        university: stored.university || initialProfile.university,
-        degree: stored.degree || initialProfile.degree,
-        gradYear: stored.gradYear || initialProfile.gradYear,
-        targetRoles: stored.targetRoles || initialProfile.targetRoles,
-        skills: stored.skills || initialProfile.skills,
-        resumeSummary: stored.resumeSummary || initialProfile.resumeSummary,
-        platformHandles: stored.platformHandles || initialProfile.platformHandles,
+        name: stored.name || EMPTY_PROFILE.name,
+        email: stored.email || EMPTY_PROFILE.email,
+        university: stored.university || EMPTY_PROFILE.university,
+        degree: stored.degree || EMPTY_PROFILE.degree,
+        gradYear: stored.gradYear || EMPTY_PROFILE.gradYear,
+        targetRoles: stored.targetRoles || EMPTY_PROFILE.targetRoles,
+        skills: stored.skills || EMPTY_PROFILE.skills,
+        resumeSummary: stored.resumeSummary || EMPTY_PROFILE.resumeSummary,
+        platformHandles: stored.platformHandles || EMPTY_PROFILE.platformHandles,
         profileImage: stored.profileImage || "",
       };
     }
-    return loadFromStorage(STORAGE_KEYS.PROFILE, initialProfile);
+    return loadFromStorage(STORAGE_KEYS.PROFILE, EMPTY_PROFILE);
   });
 
   const [opportunities, setOpportunities] = useState(() =>
@@ -174,14 +197,14 @@ export function AppProvider({ children }) {
   );
 
   const [savedOpportunityIds, setSavedOpportunityIds] = useState(() =>
-    loadFromStorage(STORAGE_KEYS.SAVED_IDS, ["stripe-swe-intern", "cred-frontend-intern", "google-swe-intern"]),
+    loadFromStorage(STORAGE_KEYS.SAVED_IDS, []),
   );
 
   const [applications, setApplications] = useState(() => {
-    const loaded = loadFromStorage(STORAGE_KEYS.APPLICATIONS, initialApplications);
+    const loaded = loadFromStorage(STORAGE_KEYS.APPLICATIONS, []);
     return Array.isArray(loaded)
       ? loaded.map((app) => ({ ...app, id: String(app.id || app._id) }))
-      : initialApplications;
+      : [];
   });
 
   const [isContestsLoading, setIsContestsLoading] = useState(false);
@@ -190,7 +213,8 @@ export function AppProvider({ children }) {
 
   const [growthStats, setGrowthStats] = useState(() => {
     try {
-      const loaded = loadFromStorage(STORAGE_KEYS.GROWTH, initialGrowthStats);
+      // A new user starts from zero; numbers only appear once a platform syncs.
+      const loaded = loadFromStorage(STORAGE_KEYS.GROWTH, EMPTY_GROWTH_STATS);
 
 
       const legacyStaticNotes = [
@@ -203,21 +227,17 @@ export function AppProvider({ children }) {
       );
 
 
-      const latestActivityDate = loaded.monthlyActivity?.length
-        ? loaded.monthlyActivity[loaded.monthlyActivity.length - 1]?.date
-        : null;
-      const todayStr = new Date().toISOString().split("T")[0];
-      const isOutdated = !latestActivityDate || latestActivityDate < todayStr;
-      const activityToUse = isOutdated ? initialGrowthStats.monthlyActivity : loaded.monthlyActivity;
-      const lastActive = isOutdated ? initialGrowthStats.lastActiveDate : loaded.lastActiveDate;
+      // Keep the user's own history even when it is not from today.
+      const activityToUse = loaded.monthlyActivity || [];
+      const lastActive = loaded.lastActiveDate ?? null;
       const freshStatus = calculateStreakStatus(lastActive, loaded.currentStreak);
 
       return {
         ...loaded,
         lastActiveDate: lastActive,
         monthlyActivity: activityToUse,
-        annualActivity: loaded.annualActivity || initialGrowthStats.annualActivity,
-        recentLogs: cleanedLogs.length > 0 ? cleanedLogs : initialGrowthStats.recentLogs,
+        annualActivity: loaded.annualActivity || [],
+        recentLogs: cleanedLogs,
         codechef: loaded.codechef || initialGrowthStats.codechef,
         gfg: loaded.gfg || initialGrowthStats.gfg,
         streakAtRisk: freshStatus.streakAtRisk,
@@ -231,12 +251,16 @@ export function AppProvider({ children }) {
   });
 
   const [calendarEvents, setCalendarEvents] = useState(() =>
-    loadFromStorage(STORAGE_KEYS.CALENDAR, initialCalendarEvents),
+    loadFromStorage(STORAGE_KEYS.CALENDAR, []),
   );
 
-  const [dailyChallenge, setDailyChallenge] = useState(() =>
-    loadFromStorage(STORAGE_KEYS.DAILY_CHALLENGE, initialDailyChallenge),
-  );
+  const [dailyChallenge, setDailyChallenge] = useState(() => {
+    const stored = loadFromStorage(STORAGE_KEYS.DAILY_CHALLENGE, initialDailyChallenge);
+    if (!stored || stored.title === "Minimum Operations to Reduce X to Zero") {
+      return initialDailyChallenge;
+    }
+    return stored;
+  });
 
   const [selectedOpportunityForAnalysis, setSelectedOpportunityForAnalysis] =
     useState(null);
@@ -275,7 +299,7 @@ export function AppProvider({ children }) {
     setIsApplicationsLoading(true);
     try {
       const res = await fetchApplications();
-      if (res.success && Array.isArray(res.applications) && res.applications.length > 0) {
+      if (res.success && Array.isArray(res.applications)) {
         setApplications(
           res.applications.map((app) => ({
             ...app,
@@ -290,6 +314,24 @@ export function AppProvider({ children }) {
     }
   };
 
+  const refreshDailyChallenge = async () => {
+    try {
+      const res = await fetchDailyChallenge();
+      if (res?.success && res.data) {
+        setDailyChallenge((prev) => {
+          const isSameDay = prev?.date === res.data.date;
+          return {
+            ...res.data,
+            completed: isSameDay ? Boolean(prev?.completed) : false,
+          };
+        });
+        return res.data;
+      }
+    } catch (err) {
+      console.warn("Failed to fetch live daily challenge:", err);
+    }
+    return null;
+  };
 
   useEffect(() => {
 
@@ -325,19 +367,7 @@ export function AppProvider({ children }) {
         refreshLiveContests();
         refreshOpportunities();
         refreshApplications();
-        fetchDailyChallenge()
-          .then((res) => {
-            if (!cancelled && res.success && res.data) {
-              setDailyChallenge((prev) => {
-                const isSameDay = prev?.date === res.data.date;
-                return {
-                  ...res.data,
-                  completed: isSameDay ? Boolean(prev?.completed) : false,
-                };
-              });
-            }
-          })
-          .catch(() => {});
+        refreshDailyChallenge();
       }
     };
     loadInitialData();
@@ -879,7 +909,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
           : [ccLog];
 
         const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, incomingLogs);
-        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, incomingLogs);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || [], incomingLogs);
         const nextSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentCodeChef.solved ?? 0);
         const totalSolved =
           (Number(prev.leetcode?.solved) || 0) +
@@ -988,7 +1018,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
         });
 
         const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, incomingLogs);
-        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, incomingLogs);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || [], incomingLogs);
         const nextSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentGfg.solved ?? 0);
         const totalSolved =
           (Number(prev.leetcode?.solved) || 0) +
@@ -1075,7 +1105,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
         });
 
         const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, live.recentSubmissions || []);
-        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, live.recentSubmissions || []);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || [], live.recentSubmissions || []);
         const totalSolved =
           (Number(liveSolved) || 0) +
           (Number(prev.codeforces?.solved) || 0) +
@@ -1150,7 +1180,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
         });
 
         const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, incomingLogs);
-        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, incomingLogs);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || [], incomingLogs);
 
         return {
           ...prev,
@@ -1218,7 +1248,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
         });
 
         const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, live.recentSubmissions || []);
-        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, live.recentSubmissions || []);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || [], live.recentSubmissions || []);
         const totalSolved =
           (Number(prev.leetcode?.solved) || 0) +
           (Number(liveSolved) || 0) +
@@ -1249,6 +1279,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
   };
 
   const syncAllPlatforms = async (handlesToUse = null) => {
+    refreshDailyChallenge().catch(() => {});
     const handles = handlesToUse || profile.platformHandles || {};
     const results = [];
     if (handles.leetcode) {
@@ -1311,11 +1342,11 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
     localStorage.removeItem(STORAGE_KEYS.GROWTH);
     localStorage.removeItem(STORAGE_KEYS.CALENDAR);
 
-    setProfile(initialProfile);
-    setSavedOpportunityIds(["stripe-swe-intern", "cred-frontend-intern"]);
-    setApplications(initialApplications);
-    setGrowthStats(initialGrowthStats);
-    setCalendarEvents(initialCalendarEvents);
+    setProfile(EMPTY_PROFILE);
+    setSavedOpportunityIds([]);
+    setApplications([]);
+    setGrowthStats(EMPTY_GROWTH_STATS);
+    setCalendarEvents([]);
     setSelectedOpportunityForAnalysis(null);
   };
 
@@ -1357,6 +1388,7 @@ function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = 
         syncCodeforcesData,
         syncAllPlatforms,
         dailyChallenge,
+        refreshDailyChallenge,
         completeDailyChallenge,
         calendarEvents,
         isContestsLoading,

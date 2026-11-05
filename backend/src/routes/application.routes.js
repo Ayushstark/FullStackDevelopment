@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { optionalAuth } from "../middleware/auth.js";
+import { authMiddleware } from "../middleware/auth.js";
+import { apiLimiter } from "../middleware/rateLimiter.js";
 import {
   getApplications,
   createApplication,
@@ -9,7 +10,7 @@ import {
 
 const router = Router();
 
-router.use(optionalAuth);
+router.use(apiLimiter, authMiddleware);
 
 router.get("/applications", getApplications);
 router.post("/applications", createApplication);

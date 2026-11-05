@@ -4,7 +4,7 @@
 
 The application uses JavaScript ES modules throughout. The frontend is React with Vite and JSX; `src/app` composes the app, `src/features` contains product pages, `src/shared` contains reusable components, state, sample data, and services, and `src/styles` contains CSS. The backend is an Express API on Node.js. It uses MongoDB through Mongoose when available and a local JSON fallback store for development.
 
-The current checkout includes inherited opportunity, application, and assistant scaffolding alongside the practice and growth UI. These modules are part of the existing codebase; they do not define the product's future scope. Product work is directed toward DevRhythm, a multi-platform coding activity and streak analyzer. Changes to remove or replace existing modules are separate implementation work, not part of this documentation update.
+The current checkout includes inherited opportunity and application scaffolding alongside the practice and growth UI. These modules are part of the existing codebase; they do not define the product's future scope. Product work is directed toward DevRhythm, a multi-platform coding activity and streak analyzer. Changes to remove or replace existing modules are separate implementation work, not part of this documentation update.
 
 ```text
 src/

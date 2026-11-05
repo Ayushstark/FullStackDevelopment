@@ -15,8 +15,12 @@ export async function createLog(req, res) {
     }
 
     const count = parseInt(problemsSolved, 10);
-    if (isNaN(count) || count < 1) {
-      return res.status(400).json({ error: "Problems or items count must be at least 1." });
+    if (isNaN(count) || count < 1 || count > 50) {
+      return res.status(400).json({ error: "Problems or items count must be between 1 and 50." });
+    }
+
+    if (notes !== undefined && (typeof notes !== "string" || notes.length > 500)) {
+      return res.status(400).json({ error: "Notes must be text of at most 500 characters." });
     }
 
     const today = new Date().toISOString().split("T")[0];

@@ -20,6 +20,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../../shared/components/EmptyState.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { initialCalendarEvents } from "../../shared/data/sampleData.js";
+import { PageSkeleton } from "../../shared/components/PageSkeleton.jsx";
 import {
   formatMonthYear,
   formatSelectedDateHeading,
@@ -38,6 +39,9 @@ export function CalendarPage() {
     isContestsLoading,
   } = useAppContext();
 
+
+  // Sample events are shown only when the live contest feed returned nothing.
+  const isShowingSample = !contextEvents || contextEvents.length === 0;
 
   const calendarEvents = useMemo(() => {
     if (contextEvents && contextEvents.length > 0) {
@@ -204,6 +208,14 @@ export function CalendarPage() {
     setModalDescription("");
   };
 
+  if (isContestsLoading && isShowingSample) {
+    return (
+      <main className="page-content">
+        <PageSkeleton type="calendar" />
+      </main>
+    );
+  }
+
   return (
     <main className="page-content calendar-page-container">
 
@@ -215,6 +227,11 @@ export function CalendarPage() {
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
             Stay ahead of the competition. Discover coding contests, hackathons, workshops and developer events.
           </p>
+          {isShowingSample && (
+            <p className="muted" role="status" style={{ margin: "6px 0 0", fontSize: 12 }}>
+              Live contest data is unavailable, so sample events are shown.
+            </p>
+          )}
         </div>
 
         <div className="calendar-filters-row">

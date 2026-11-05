@@ -10,6 +10,9 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 export const PORT = process.env.PORT || 5000;
 export const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/opportunity_os";
-export const JWT_SECRET = process.env.JWT_SECRET || "opportunity_os_jwt_secret_dev_key_2026";
 export const NODE_ENV = process.env.NODE_ENV || "development";
+if (!process.env.JWT_SECRET && NODE_ENV === "production") {
+  throw new Error("JWT_SECRET must be set in production.");
+}
+export const JWT_SECRET = process.env.JWT_SECRET || "local-dev-only-secret";
 export const CLIENT_ORIGINS = process.env.CLIENT_ORIGINS || "";

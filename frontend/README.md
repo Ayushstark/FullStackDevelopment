@@ -8,7 +8,7 @@ Vite + React single page application with modern UI components, competitive prog
 frontend/
 ├── src/
 │   ├── app/                   # App root component
-│   ├── components/            # Reusable UI primitives (DotGrid, FlowButton, PillNav, etc.)
+│   ├── components/            # Reusable UI primitives (FlowButton, PillNav, GridScan, etc.)
 │   ├── features/              # Feature modules (auth, dashboard, growth, calendar, etc.)
 │   ├── shared/                # Shared context, services, and sample data
 │   ├── styles/                # Global CSS styles and design themes

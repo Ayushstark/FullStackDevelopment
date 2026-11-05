@@ -295,6 +295,7 @@ export function ApplicationsPage() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
                           <textarea
                             className="form-textarea"
+                            maxLength={2000}
                             style={{ minHeight: 60, fontSize: 12 }}
                             value={tempNotes}
                             onChange={(e) => setTempNotes(e.target.value)}
@@ -403,6 +404,7 @@ export function ApplicationsPage() {
                   <input
                     id="compName"
                     className="form-input"
+                    maxLength={120}
                     placeholder="e.g. Google, Stripe, IIT Delhi Lab"
                     required
                     value={newCompany}
@@ -415,6 +417,7 @@ export function ApplicationsPage() {
                   <input
                     id="roleTitle"
                     className="form-input"
+                    maxLength={120}
                     placeholder="e.g. Software Engineering Intern, ML Researcher"
                     required
                     value={newRole}
@@ -470,6 +473,7 @@ export function ApplicationsPage() {
                   <textarea
                     id="notesInput"
                     className="form-textarea"
+                    maxLength={2000}
                     placeholder="Referral name, round progress, follow-up date..."
                     value={newNotes}
                     onChange={(e) => setNewNotes(e.target.value)}

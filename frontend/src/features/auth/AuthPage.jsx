@@ -203,6 +203,8 @@ export function AuthPage({ onClose }) {
                   type="text"
                   autoComplete="name"
                   placeholder="Your name"
+                  minLength={2}
+                  maxLength={80}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   required
@@ -229,8 +231,8 @@ export function AuthPage({ onClose }) {
                 name="password"
                 type={passwordVisible ? "text" : "password"}
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
-                placeholder="At least 6 characters"
-                minLength={6}
+                placeholder={mode === "login" ? "Your password" : "At least 8 characters"}
+                minLength={mode === "login" ? undefined : 8}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required

@@ -43,7 +43,8 @@ const defaultApplications = [
 ];
 
 const defaultData = {
-  users: [
+  // The demo account exists only for local development, never in production.
+  users: process.env.NODE_ENV === "production" ? [] : [
     {
       _id: "user-default-1",
       name: "Alex Shah",

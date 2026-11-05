@@ -13,6 +13,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Vercel runs the API behind one proxy; trust it so rate limits key on the client IP.
+app.set("trust proxy", 1);
+
 
 app.use(cors({
   origin: true,

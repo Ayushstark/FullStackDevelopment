@@ -17,8 +17,16 @@ export async function register(req, res) {
       return res.status(400).json({ error: "Name, email, and password are required." });
     }
 
-    if (typeof password !== "string" || password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters long." });
+    if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+      return res.status(400).json({ error: "Password must be 8 to 128 characters long." });
+    }
+
+    if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 80) {
+      return res.status(400).json({ error: "Name must be 2 to 80 characters long." });
+    }
+
+    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return res.status(400).json({ error: "Enter a valid email address." });
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
@@ -41,7 +49,7 @@ export async function register(req, res) {
           gradYear: gradYear || "2027",
         });
 
-        const secret = JWT_SECRET || "opportunity_os_super_secure_jwt_secret_2026";
+        const secret = JWT_SECRET;
         const token = jwt.sign({ id: newUser._id, email: newUser.email }, secret, {
           expiresIn: "7d",
         });
@@ -75,7 +83,7 @@ export async function register(req, res) {
       gradYear: gradYear || "2027",
     });
 
-    const secret = JWT_SECRET || "opportunity_os_super_secure_jwt_secret_2026";
+    const secret = JWT_SECRET;
     const token = jwt.sign({ id: newUser._id, email: newUser.email }, secret, {
       expiresIn: "7d",
     });
@@ -87,7 +95,7 @@ export async function register(req, res) {
     });
   } catch (err) {
     console.error("Register error:", err);
-    return res.status(500).json({ error: err.message || "Internal server error during registration." });
+    return res.status(500).json({ error: "Registration failed. Please try again." });
   }
 }
 
@@ -117,10 +125,6 @@ export async function login(req, res) {
     }
 
 
-    if (!user) {
-      user = fallbackStore.findUserByEmail(normalizedEmail);
-    }
-
     if (!user || !user.password) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
@@ -130,7 +134,7 @@ export async function login(req, res) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
-    const secret = JWT_SECRET || "opportunity_os_super_secure_jwt_secret_2026";
+    const secret = JWT_SECRET;
     const token = jwt.sign({ id: user._id, email: user.email }, secret, {
       expiresIn: "7d",
     });
@@ -142,7 +146,7 @@ export async function login(req, res) {
     });
   } catch (err) {
     console.error("Login error:", err);
-    return res.status(500).json({ error: err.message || "Internal server error during login." });
+    return res.status(500).json({ error: "Login failed. Please try again." });
   }
 }
 
