@@ -86,8 +86,38 @@ function calculateStreakStatus(lastActiveDate, currentStreak) {
   }
 }
 
+function getPageFromUrl() {
+  if (typeof window === "undefined") return "overview";
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+  if (!path) return "overview";
+  const validPages = ["overview", "career", "opportunities", "applications", "growth", "calendar", "settings", "auth"];
+  return validPages.includes(path) ? path : "404";
+}
+
 export function AppProvider({ children }) {
-  const [activePage, setActivePage] = useState("overview");
+  const [activePage, setActivePageState] = useState(() => getPageFromUrl());
+
+  const setActivePage = (page) => {
+    setActivePageState(page);
+    try {
+      if (typeof window !== "undefined") {
+        const targetUrl = page === "overview" ? "/" : `/${page}`;
+        if (window.location.pathname !== targetUrl) {
+          window.history.pushState({ page }, "", targetUrl);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to update history state:", e);
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActivePageState(getPageFromUrl());
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Authentication State
   const [user, setUser] = useState(() => getStoredUser());
