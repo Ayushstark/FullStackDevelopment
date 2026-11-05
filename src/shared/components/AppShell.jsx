@@ -1,7 +1,5 @@
 import { Activity, LogOut, UserRound } from "lucide-react";
-import PillNav from "../../components/ui/PillNav.jsx";
 import { FlowButton } from "../../components/ui/FlowButton.jsx";
-import GridScan from "../../components/ui/GridScan.jsx";
 import { useAppContext } from "../context/AppContext.jsx";
 
 export function AppShell({ navigation, activePage, onNavigate, children }) {
@@ -21,75 +19,32 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
         .toUpperCase()
     : "OP";
 
-  const items = navigation.map(({ id, label, icon: Icon, badge }) => ({
-    href: id,
-    label,
-    icon: (
-      <>
-        {Icon && <Icon aria-hidden="true" />}
-        {badge !== undefined && <span className="pill-nav-badge">{badge}</span>}
-      </>
-    ),
-  }));
-
-  function AppNavButton({ href, className, children: linkChildren, ...props }) {
-    return (
-      <button
-        type="button"
-        className={className}
-        {...props}
-        onClick={(event) => {
-          props.onClick?.(event);
-          if (href === "#brand") onNavigate("overview");
-        }}
-      >
-        {linkChildren}
-      </button>
-    );
-  }
-
   return (
     <div className="app-shell">
-      <div className="app-background" aria-hidden="true">
-        <GridScan
-          linesColor="#7b8497"
-          scanColor="#7dd3fc"
-          cells={8}
-          depth={3}
-          scanDuration={2.4}
-          scanDelay={1.6}
-          clickEffect="ping"
-        />
-      </div>
-
       <header className="site-nav-shell">
         <button className="site-brand" onClick={() => onNavigate("overview")} type="button" aria-label="DevRhythm home">
           <span className="brand-mark"><Activity size={18} aria-hidden="true" /></span>
           <span>DevRhythm</span>
         </button>
 
-        <div className="site-nav-main">
-          <PillNav
-            items={items}
-            activeHref={activePage === "opportunities" || activePage === "applications" ? "career" : activePage}
-            onItemClick={(item) => onNavigate(item.href)}
-            linkComponent={AppNavButton}
-            theme="dark"
-            layout="split"
-            itemStyle="plain"
-            hoverEffect="fill"
-            indicator="dot"
-            surface="glass"
-            size="md"
-            highlightColor="#7dd3fc"
-            highlightTextColor="#08202a"
-            barColor="rgba(14, 19, 23, 0.76)"
-            textColor="#aab8c0"
-            collapse="auto"
-            ariaLabel="Main navigation"
-            className="site-pill-nav"
-          />
-        </div>
+        <nav className="site-nav-main" aria-label="Main navigation">
+          {navigation.map(({ id, label, icon: Icon, badge }) => {
+            const isCurrent = (activePage === "opportunities" || activePage === "applications" ? "career" : activePage) === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`site-nav-link ${isCurrent ? "is-current" : ""}`}
+                aria-current={isCurrent ? "page" : undefined}
+                onClick={() => onNavigate(id)}
+              >
+                <Icon size={14} aria-hidden="true" />
+                <span>{label}</span>
+                {badge !== undefined && <small>{badge}</small>}
+              </button>
+            );
+          })}
+        </nav>
 
         <div className="site-nav-auth">
           {user ? (
@@ -116,7 +71,15 @@ export function AppShell({ navigation, activePage, onNavigate, children }) {
         </div>
       </header>
 
-      <div className="main-area">{children}</div>
+      <div className="main-area">
+        <div className="runtime-strip" aria-label="Platform connection status">
+          <span className="runtime-node">DEVRHYTHM // LIVE</span>
+          <span className="runtime-status"><i aria-hidden="true" />{["leetcode", "codeforces", "codechef", "geeksforgeeks", "github"].filter((platform) => profile.platformHandles?.[platform]).length} PLATFORMS CONNECTED</span>
+          <span className="runtime-detail">LOCAL SYNC · READY</span>
+          <span className="runtime-detail runtime-user">{user?.name ? `SESSION: ${user.name.toUpperCase()}` : "SESSION: GUEST"}</span>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

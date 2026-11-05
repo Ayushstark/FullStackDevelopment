@@ -9,24 +9,16 @@ import {
   Globe,
   MapPin,
   Plus,
-  RefreshCw,
   Search,
   Sparkles,
   Tag,
   Trophy,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { initialCalendarEvents } from "../../shared/data/sampleData.js";
-import { fetchLiveContests } from "../../shared/services/contestClientService.js";
 import {
-  cancelContestReminder,
-  requestNotificationPermission,
-  scheduleContestReminder,
-} from "../../shared/services/notificationService.js";
-import {
-  computeEventStatus,
   formatMonthYear,
   formatSelectedDateHeading,
   generateMonthGrid,
@@ -38,69 +30,21 @@ import "./calendar-page.css";
 export function CalendarPage() {
   const { calendarEvents: contextEvents, toggleCalendarReminder, addCalendarEvent } = useAppContext();
 
-  // Live external contests state
-  const [liveEvents, setLiveEvents] = useState([]);
-  const [isLoadingLive, setIsLoadingLive] = useState(false);
-
-  // Load real-time contests from backend on mount
-  const loadRealContests = async (force = false) => {
-    setIsLoadingLive(true);
-    try {
-      const res = await fetchLiveContests({ force });
-      if (res.success && Array.isArray(res.contests)) {
-        setLiveEvents(res.contests);
-      }
-    } catch (err) {
-      console.warn("Failed to load live contests:", err);
-    } finally {
-      setIsLoadingLive(false);
-    }
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-    fetchLiveContests({ force: false })
-      .then((res) => {
-        if (isMounted && res.success && Array.isArray(res.contests)) {
-          setLiveEvents(res.contests);
-        }
-      })
-      .catch((err) => {
-        console.warn("Failed to load initial live contests:", err);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Merge live events, initial seed events, and user-added events seamlessly
+  // Ensure initial seed events (e.g. November 1 test events) are always included alongside user additions
   const calendarEvents = useMemo(() => {
+    if (!contextEvents || contextEvents.length <= 1) {
+      return initialCalendarEvents;
+    }
+    // Merge initial sample events with context events to prevent stale cache lock
     const map = new Map();
-
-    // 1. Initial base events
     for (const evt of initialCalendarEvents) {
       map.set(evt.id, evt);
     }
-
-    // 2. Real-time live contests from Codeforces, LeetCode, CodeChef, and GeeksforGeeks
-    for (const evt of liveEvents) {
+    for (const evt of contextEvents) {
       map.set(evt.id, evt);
     }
-
-    // 3. User custom events & reminder states from AppContext
-    if (contextEvents && contextEvents.length > 0) {
-      for (const evt of contextEvents) {
-        const existing = map.get(evt.id);
-        map.set(evt.id, {
-          ...(existing || {}),
-          ...evt,
-        });
-      }
-    }
-
     return Array.from(map.values());
-  }, [liveEvents, contextEvents]);
+  }, [contextEvents]);
 
   // Navigation state (defaults to Nov 2026 where events exist)
   const [currentYear, setCurrentYear] = useState(2026);
@@ -205,20 +149,6 @@ export function CalendarPage() {
 
   const handleToggleExpand = (id) => {
     setUserExpandedId((prev) => (prev === id ? "__NONE__" : id));
-  };
-
-  const handleToggleReminder = async (evt) => {
-    const willBeSet = !evt.isReminderSet;
-    toggleCalendarReminder(evt.id);
-
-    if (willBeSet) {
-      const granted = await requestNotificationPermission();
-      if (granted) {
-        scheduleContestReminder(evt);
-      }
-    } else {
-      cancelContestReminder(evt.id);
-    }
   };
 
   const handleFormSubmit = (e) => {
@@ -346,19 +276,6 @@ export function CalendarPage() {
           >
             <Plus size={14} /> Add Event
           </button>
-
-          {/* Sync Live Contests Button */}
-          <button
-            className="button button-secondary"
-            onClick={() => loadRealContests(true)}
-            type="button"
-            disabled={isLoadingLive}
-            title="Refresh real-time contests from Codeforces, LeetCode, CodeChef, and GFG"
-            style={{ padding: "6px 12px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-          >
-            <RefreshCw size={13} className={isLoadingLive ? "spinning" : ""} />
-            <span>{isLoadingLive ? "Syncing..." : "Sync Live"}</span>
-          </button>
         </div>
       </div>
 
@@ -369,7 +286,7 @@ export function CalendarPage() {
           {/* Navigation Bar */}
           <div className="calendar-nav-bar">
             <div className="calendar-current-month">
-              <CalendarDays size={18} color="#38bdf8" />
+              <CalendarDays size={18} color="#222222" />
               <span>{formatMonthYear(currentYear, currentMonth)}</span>
             </div>
 
@@ -527,11 +444,11 @@ export function CalendarPage() {
                 minHeight: 260,
               }}
             >
-              <Trophy size={32} color="#64748b" style={{ margin: "0 auto 10px" }} />
-              <h3 style={{ margin: "0 0 6px", fontSize: 15, color: "#f8fafc", fontWeight: 700 }}>
+              <Trophy size={32} color="#333333" style={{ margin: "0 auto 10px" }} />
+              <h3 style={{ margin: "0 0 6px", fontSize: 15, color: "#111111", fontWeight: 700 }}>
                 No events scheduled for this day
               </h3>
-              <p style={{ margin: "0 0 16px", fontSize: 13, color: "#94a3b8", maxWidth: 320 }}>
+              <p style={{ margin: "0 0 16px", fontSize: 13, color: "#5D5D5D", maxWidth: 320 }}>
                 Looks like a quiet day. Explore highlighted dates on the calendar or jump to upcoming rounds.
               </p>
               <button
@@ -548,14 +465,11 @@ export function CalendarPage() {
               {selectedDateEvents.map((evt) => {
                 const isExpanded = expandedEventId === evt.id;
                 const meta = getEventCategoryMeta(evt.type);
-                const currentStatus = computeEventStatus(evt.date, evt.time, evt.status);
 
                 return (
                   <article
                     key={evt.id}
-                    className={`event-accordion-card ${isExpanded ? "expanded" : ""} ${
-                      currentStatus === "Past" ? "is-past" : ""
-                    }`}
+                    className={`event-accordion-card ${isExpanded ? "expanded" : ""}`}
                   >
                     <button
                       type="button"
@@ -572,21 +486,15 @@ export function CalendarPage() {
                         <div className="event-title-meta">
                           <h3 className="event-row-title">{evt.title}</h3>
                           <div className="event-row-subtitle">
-                            <span style={{ fontWeight: 700, color: meta.dotColor }}>
+                            <span style={{ fontWeight: 700, color: "#333333" }}>
                               {evt.organizer}
                             </span>
                             <span>•</span>
                             <span>{meta.label}</span>
-                            {currentStatus === "Live" && (
+                            {evt.status === "Live" && (
                               <>
                                 <span>•</span>
-                                <span style={{ color: "#34d399", fontWeight: 700 }}>● LIVE NOW</span>
-                              </>
-                            )}
-                            {currentStatus === "Past" && (
-                              <>
-                                <span>•</span>
-                                <span style={{ color: "#64748b", fontWeight: 600 }}>Ended / Past</span>
+                                <span style={{ color: "#222222", fontWeight: 700 }}>● LIVE NOW</span>
                               </>
                             )}
                           </div>
@@ -594,26 +502,24 @@ export function CalendarPage() {
                       </div>
 
                       <div className="event-trigger-right">
-                        {currentStatus !== "Past" && (
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleReminder(evt);
-                            }}
-                            style={{
-                              cursor: "pointer",
-                              padding: "6px",
-                              borderRadius: 6,
-                              background: evt.isReminderSet ? "rgba(251, 191, 36, 0.2)" : "transparent",
-                              color: evt.isReminderSet ? "#fbbf24" : "#94a3b8",
-                              display: "inline-flex",
-                              alignItems: "center",
-                            }}
-                            title={evt.isReminderSet ? "Reminder Active" : "Set Alert"}
-                          >
-                            <Bell size={15} />
-                          </span>
-                        )}
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCalendarReminder(evt.id);
+                          }}
+                          style={{
+                            cursor: "pointer",
+                            padding: "6px",
+                            borderRadius: 6,
+                            background: evt.isReminderSet ? "#f1f1ef" : "transparent",
+                            color: evt.isReminderSet ? "#222222" : "#666666",
+                            display: "inline-flex",
+                            alignItems: "center",
+                          }}
+                          title={evt.isReminderSet ? "Reminder Active" : "Set Alert"}
+                        >
+                          <Bell size={15} />
+                        </span>
 
                         <div className="event-expand-icon">
                           <ChevronDown size={15} />
@@ -629,32 +535,23 @@ export function CalendarPage() {
 
                         <div className="event-details-grid">
                           <div className="event-detail-item">
-                            <Globe size={14} color="#38bdf8" />
+                            <Globe size={14} color="#333333" />
                             <span>Platform: <strong>{evt.organizer}</strong></span>
                           </div>
 
                           <div className="event-detail-item">
-                            <Clock size={14} color="#c084fc" />
+                            <Clock size={14} color="#333333" />
                             <span>Timing: <strong>{evt.time}</strong></span>
                           </div>
 
                           <div className="event-detail-item">
-                            <MapPin size={14} color="#34d399" />
+                            <MapPin size={14} color="#333333" />
                             <span>Location: <strong>Online / Arena</strong></span>
                           </div>
 
                           <div className="event-detail-item">
-                            <Sparkles
-                              size={14}
-                              color={
-                                currentStatus === "Past"
-                                  ? "#64748b"
-                                  : currentStatus === "Live"
-                                  ? "#34d399"
-                                  : "#fbbf24"
-                              }
-                            />
-                            <span>Status: <strong>{currentStatus}</strong></span>
+                            <Sparkles size={14} color="#333333" />
+                            <span>Status: <strong>{evt.status || "Upcoming"}</strong></span>
                           </div>
                         </div>
 
@@ -685,10 +582,10 @@ export function CalendarPage() {
                           <button
                             type="button"
                             className="button button-secondary"
-                            onClick={() => handleToggleReminder(evt)}
+                            onClick={() => toggleCalendarReminder(evt.id)}
                             style={{ fontSize: 12, padding: "5px 12px" }}
                           >
-                            <Bell size={13} color={evt.isReminderSet ? "#fbbf24" : "currentColor"} />
+                            <Bell size={13} color={evt.isReminderSet ? "#222222" : "currentColor"} />
                             {evt.isReminderSet ? "Reminder Set" : "Notify Me"}
                           </button>
 

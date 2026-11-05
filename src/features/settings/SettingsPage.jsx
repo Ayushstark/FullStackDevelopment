@@ -100,7 +100,7 @@ export function SettingsPage() {
   const suggestedSkills = ["Next.js", "Docker", "GraphQL", "PostgreSQL", "Tailwind CSS", "Go"];
 
   return (
-    <main className="page-content">
+    <main className="page-content settings-page">
       {/* Page Heading */}
       <div className="page-heading">
         <div>
@@ -119,7 +119,7 @@ export function SettingsPage() {
 
       <div className="content-grid">
         {/* Left Column: Profile & Handles Form */}
-        <form onSubmit={handleSaveProfile} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <form className="settings-profile-form" onSubmit={handleSaveProfile} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div className="panel">
             <div className="panel-heading">
               <div>
@@ -273,7 +273,7 @@ export function SettingsPage() {
         </form>
 
         {/* Account, skills and data */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="settings-account-column" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Account */}
           <div className="panel">
             <div className="panel-heading">
