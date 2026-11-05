@@ -9,6 +9,79 @@
   align-items: start;
 }
 
+.applications-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* Rendered at document level so the app shell and sticky nav cannot cover the dialog. */
+.applications-modal-overlay {
+  z-index: 200;
+}
+
+.applications-modal-dialog {
+  max-height: 90vh;
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+}
+
+.applications-modal-form {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.applications-modal-dialog > .modal-header,
+.applications-modal-footer {
+  flex: 0 0 auto;
+}
+
+.applications-modal-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 600px) {
+  .applications-heading-actions {
+    width: 100%;
+  }
+
+  .applications-heading-actions .button {
+    flex: 1 1 auto;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .applications-modal-overlay {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .applications-modal-dialog {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .applications-modal-dialog > .modal-header,
+  .applications-modal-body {
+    padding: 16px;
+  }
+
+  .applications-modal-body > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+
+  .applications-modal-footer {
+    padding: 12px 16px;
+  }
+}
+
 /* Category Columns with dynamic height based on content */
 .tracker-column.application-column {
   background: #f0f0ed !important;

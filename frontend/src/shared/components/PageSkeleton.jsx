@@ -1,45 +1,6 @@
 import "./PageSkeleton.css";
 
 export function PageSkeleton({ type = "default" }) {
-  if (type === "growth" || type === "analytics") {
-    return (
-      <div className="page-skeleton-container" aria-label="Loading analytics content" role="status">
-        <div className="skeleton-header-block">
-          <div className="skeleton-shimmer skeleton-title" />
-          <div className="skeleton-shimmer skeleton-subtitle" />
-        </div>
-
-        {/* Circular / Constellation Skeleton */}
-        <div className="skeleton-main-card" style={{ height: 420, marginBottom: 24, alignItems: "center", justifyContent: "center" }}>
-          <div
-            className="skeleton-shimmer"
-            style={{ width: 220, height: 220, borderRadius: "50%" }}
-          />
-        </div>
-
-        {/* 4 Cards Skeleton */}
-        <div className="skeleton-metrics-grid">
-          <div className="skeleton-metric-card">
-            <div className="skeleton-shimmer" style={{ width: 80, height: 12 }} />
-            <div className="skeleton-shimmer" style={{ width: 60, height: 24 }} />
-          </div>
-          <div className="skeleton-metric-card">
-            <div className="skeleton-shimmer" style={{ width: 80, height: 12 }} />
-            <div className="skeleton-shimmer" style={{ width: 60, height: 24 }} />
-          </div>
-          <div className="skeleton-metric-card">
-            <div className="skeleton-shimmer" style={{ width: 80, height: 12 }} />
-            <div className="skeleton-shimmer" style={{ width: 60, height: 24 }} />
-          </div>
-          <div className="skeleton-metric-card">
-            <div className="skeleton-shimmer" style={{ width: 80, height: 12 }} />
-            <div className="skeleton-shimmer" style={{ width: 60, height: 24 }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (type === "career") {
     return (
       <div className="page-skeleton-container" aria-label="Loading career board" role="status">
