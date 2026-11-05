@@ -18,7 +18,10 @@ export async function fetchLiveCodeforcesStats(handle, options = {}) {
     });
 
     const data = await response.json();
-    return data;
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || `Failed to retrieve Codeforces profile (Status ${response.status}).` };
+    }
+    return { success: true, data };
   } catch (err) {
     return {
       success: false,

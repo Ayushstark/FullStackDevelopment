@@ -1,18 +1,9 @@
 .profile-page {
   width: min(1120px, 100%);
   margin: 0 auto;
-  padding: 38px 34px 60px;
+  padding: 18px 34px 16px;
 }
 
-.profile-page-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 25px;
-}
-
-.profile-page-heading .eyebrow,
 .profile-panel-heading .eyebrow {
   margin: 0 0 7px;
   color: #788076;
@@ -22,52 +13,20 @@
   letter-spacing: .12em;
 }
 
-.profile-page-heading h1 {
-  margin: 0;
-  color: #202923;
-  font-size: clamp(29px, 4vw, 38px);
-  letter-spacing: -.055em;
-}
-
-.profile-page-heading .muted {
-  margin: 8px 0 0;
-  font-size: 13px;
-}
-
-.profile-connected-count {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 13px;
-  border: 1px solid #e6e2d7;
-  border-radius: 999px;
-  background: #fffdf7;
-  color: #788076;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.profile-connected-count span:first-child {
-  color: #234e40;
-  font-family: var(--font-mono);
-  font-size: 16px;
-  font-weight: 700;
-}
-
 .profile-edit-form {
   display: flex;
   flex-direction: column;
-  gap: 17px;
+  gap: 12px;
 }
 
 .profile-identity-card {
   position: relative;
   isolation: isolate;
   display: flex;
-  min-height: 166px;
+  min-height: 126px;
   align-items: center;
-  gap: 21px;
-  padding: 24px 28px;
+  gap: 17px;
+  padding: 16px 22px;
   overflow: hidden;
   border: 1px solid #26343a;
   border-radius: 16px;
@@ -84,9 +43,9 @@
 .profile-identity-avatar {
   position: relative;
   display: grid;
-  width: 92px;
-  height: 92px;
-  flex: 0 0 92px;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
   place-items: center;
   overflow: visible;
   border: 3px solid rgba(233, 241, 245, .8);
@@ -178,12 +137,12 @@
   display: grid;
   grid-template-columns: minmax(240px, .75fr) minmax(0, 1.5fr);
   align-items: start;
-  gap: 17px;
+  gap: 14px;
 }
 
 .profile-panel {
   min-width: 0;
-  padding: 23px;
+  padding: 18px;
   border: 1px solid #e6e2d7;
   border-radius: 14px;
   background: #fffdf7;
@@ -194,7 +153,7 @@
   display: flex;
   align-items: flex-start;
   gap: 11px;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 
 .profile-panel-icon {
@@ -240,8 +199,8 @@
 }
 
 .profile-email-field {
-  margin-top: 20px;
-  padding-top: 18px;
+  margin-top: 14px;
+  padding-top: 13px;
   border-top: 1px solid #eeeadf;
 }
 
@@ -254,21 +213,21 @@
 
 .profile-email-field small { color: #92978d; font-size: 10px; line-height: 1.5; }
 
-.profile-platform-heading { margin-bottom: 18px; }
+.profile-platform-heading { margin-bottom: 13px; }
 .profile-panel-description { margin: 5px 0 0; color: #858b81; font-size: 11px; line-height: 1.5; }
 
 .profile-platform-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .profile-platform-field {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 10px;
-  padding: 11px;
+  gap: 8px;
+  padding: 8px;
   border: 1px solid #eeece4;
   border-radius: 10px;
   background: #fff;
@@ -302,7 +261,7 @@
 
 .profile-save-row {
   display: flex;
-  min-height: 48px;
+  min-height: 40px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -328,8 +287,6 @@
 
 @media (max-width: 520px) {
   .profile-page { padding: 22px 13px 36px; }
-  .profile-page-heading { align-items: flex-start; flex-direction: column; gap: 14px; }
-  .profile-connected-count { align-self: flex-start; }
   .profile-identity-card { align-items: flex-start; flex-wrap: wrap; gap: 15px; padding: 19px; }
   .profile-identity-avatar { width: 72px; height: 72px; flex-basis: 72px; }
   .profile-identity-avatar > svg { width: 29px; }

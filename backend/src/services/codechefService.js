@@ -42,19 +42,11 @@ function parseCodeChefHtml(html, handle) {
     html.match(/class="[^"]*rating-number[^"]*"[^>]*>\s*([0-9]+)/i) ||
     html.match(/<div class="rating-header[^"]*">[\s\S]*?([0-9]{3,4})/i) ||
     html.match(/var\s+current_user_rating\s*=\s*([0-9]+)/i);
-  const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0;
+  const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : null;
 
   // 2. Division (e.g. Div 1, Div 2, Div 3, Div 4)
   const divMatch = html.match(/\((Div\s*[0-9]+)\)/i);
-  const division = divMatch
-    ? divMatch[1]
-    : rating >= 2000
-    ? "Div 1"
-    : rating >= 1600
-    ? "Div 2"
-    : rating >= 1400
-    ? "Div 3"
-    : "Div 4";
+  const division = divMatch ? divMatch[1] : null;
 
   // 3. Highest Rating
   const highestRatingMatch =
@@ -62,7 +54,7 @@ function parseCodeChefHtml(html, handle) {
     html.match(/highest[-_]rating[^>]*>\s*([0-9]+)/i);
   const highestRating = highestRatingMatch
     ? parseInt(highestRatingMatch[1], 10)
-    : rating;
+    : null;
 
   // 4. Stars
   const starMatches = html.match(/class="rating-star">([\s\S]*?)<\/div>/);
@@ -73,7 +65,7 @@ function parseCodeChefHtml(html, handle) {
     const starText = html.match(/([1-7])\s*★/) || html.match(/([1-7])\s*star/i);
     if (starText) starsCount = parseInt(starText[1], 10);
   }
-  const stars = starsCount > 0 ? `${starsCount}★` : "1★";
+  const stars = starsCount > 0 ? `${starsCount}★` : "—";
 
   // 5. Global Rank & Country Rank
   const globalRankMatch = html.match(
@@ -93,7 +85,7 @@ function parseCodeChefHtml(html, handle) {
     html.match(/problems-solved[^>]*>[\s\S]*?([0-9]+)/i);
   const problemsSolved = fullySolvedMatch
     ? parseInt(fullySolvedMatch[1], 10)
-    : 0;
+    : null;
 
   // 7. Display Name
   const nameMatch =

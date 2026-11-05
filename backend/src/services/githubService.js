@@ -85,9 +85,9 @@ export async function getGitHubProfile(handle, options = {}) {
     const bio = userData.bio || "";
 
     // 2. Fetch public contribution calendar to calculate total contributions and streaks
-    let contributions = 0;
-    let currentStreak = 0;
-    let longestStreak = 0;
+    let contributions = null;
+    let currentStreak = null;
+    let longestStreak = null;
 
     try {
       const contribRes = await fetch(
@@ -113,6 +113,8 @@ export async function getGitHubProfile(handle, options = {}) {
           const days = dayMatches
             .map((m) => ({ date: m[1], level: parseInt(m[2], 10) }))
             .sort((a, b) => a.date.localeCompare(b.date));
+          currentStreak = 0;
+          longestStreak = 0;
 
           // Calculate current streak
           for (let i = days.length - 1; i >= 0; i--) {
@@ -140,12 +142,7 @@ export async function getGitHubProfile(handle, options = {}) {
         }
       }
     } catch (contribErr) {
-      console.warn("Could not fetch GitHub contributions HTML; fallback to estimated commits:", contribErr.message);
-    }
-
-    // If contributions parsing returned 0, provide a reasonable lower bound based on public repos
-    if (contributions === 0 && publicRepos > 0) {
-      contributions = publicRepos * 5;
+      console.warn("Could not fetch GitHub contributions HTML:", contribErr.message);
     }
 
     // 3. Fetch recent public events to extract real-time push, PR, and issue activity logs
