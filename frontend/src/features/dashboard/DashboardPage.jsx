@@ -74,6 +74,7 @@ export function DashboardPage() {
     syncLeetCodeData,
     syncGitHubData,
     syncCodeforcesData,
+    updateProfile,
   } = useAppContext();
 
   // State
@@ -81,25 +82,34 @@ export function DashboardPage() {
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [syncingPlatform, setSyncingPlatform] = useState(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [editingPlatform, setEditingPlatform] = useState(null);
+  const [handleInputValue, setHandleInputValue] = useState("");
+  const [isSavingHandle, setIsSavingHandle] = useState(false);
   const horizontalSectionRef = useRef(null);
   const horizontalStickyRef = useRef(null);
   const horizontalViewportRef = useRef(null);
   const horizontalTrackRef = useRef(null);
 
   const platformHandles = {
-    leetcode: user ? profile.platformHandles?.leetcode?.trim() || "" : "",
-    codeforces: user ? profile.platformHandles?.codeforces?.trim() || "" : "",
-    codechef: user ? profile.platformHandles?.codechef?.trim() || "" : "",
-    geeksforgeeks: user ? (profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg || "").trim() : "",
-    github: user ? profile.platformHandles?.github?.trim() || "" : "",
+    leetcode: (profile.platformHandles?.leetcode || "").trim(),
+    codeforces: (profile.platformHandles?.codeforces || "").trim(),
+    codechef: (profile.platformHandles?.codechef || "").trim(),
+    geeksforgeeks: (profile.platformHandles?.geeksforgeeks || profile.platformHandles?.gfg || "").trim(),
+    github: (profile.platformHandles?.github || "").trim(),
   };
-  const syncedForHandle = (stats, handle) => (
-    handle && stats?.handle?.toLowerCase() === handle.toLowerCase() && stats.lastSynced
-      ? stats
-      : {}
-  );
 
-  // Only display a platform snapshot fetched for the currently configured account.
+  const syncedForHandle = (stats, handle) => {
+    if (!stats) return {};
+    if (handle && stats.handle && stats.handle.toLowerCase() === handle.toLowerCase()) {
+      return stats;
+    }
+    if (stats.solved !== undefined || stats.contributions !== undefined || stats.rating !== undefined) {
+      return stats;
+    }
+    return {};
+  };
+
+  // Display platform snapshots fetched for configured platforms
   const leetcode = syncedForHandle(growthStats.leetcode, platformHandles.leetcode);
   const codeforces = syncedForHandle(growthStats.codeforces, platformHandles.codeforces);
   const codechef = syncedForHandle(growthStats.codechef, platformHandles.codechef);
@@ -125,7 +135,7 @@ export function DashboardPage() {
           count: Number(d.count) || 0,
           problemCount: Number(d.problemCount ?? d.count) || 0,
         },
-      ])
+      ]),
     );
   }, [growthStats.monthlyActivity]);
 
@@ -137,7 +147,7 @@ export function DashboardPage() {
 
   const formatDateKey = (d) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
+      d.getDate(),
     ).padStart(2, "0")}`;
   };
 
@@ -149,8 +159,8 @@ export function DashboardPage() {
       d.setDate(d.getDate() - i);
       const key = formatDateKey(d);
       const row = activityMap.get(key) ?? {
-        count: i === 0 ? growthStats.todayCompletedCount || 0 : (i % 5 === 0 ? 0 : 3 + (i % 3)),
-        problemCount: i === 0 ? growthStats.todayCompletedCount || 0 : (i % 5 === 0 ? 0 : 3 + (i % 3)),
+        count: i === 0 ? (growthStats.todayCompletedCount || 0) : 0,
+        problemCount: i === 0 ? (growthStats.todayCompletedCount || 0) : 0,
       };
       const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
       list.push({
@@ -173,11 +183,11 @@ export function DashboardPage() {
     return trendDays.filter((day) => day.problems > 0 || day.activity > 0).length;
   }, [trendDays]);
 
-  const rangeVelocity = (rangeTotalProblems / timeRange).toFixed(1);
+  const rangeVelocity = rangeTotalProblems > 0 ? (rangeTotalProblems / timeRange).toFixed(1) : "0.0";
   const consistencyPercent = Math.round((rangeActiveDays / timeRange) * 100);
 
   const peakDay = useMemo(() => {
-    let peak = { dayName: "Sat", problems: 0 };
+    let peak = { dayName: "—", problems: 0 };
     trendDays.forEach((d) => {
       if (d.problems > peak.problems) {
         peak = d;
@@ -185,6 +195,27 @@ export function DashboardPage() {
     });
     return peak;
   }, [trendDays]);
+
+  // 365-day Skyline Data derived from real activity
+  const skylineData = useMemo(() => {
+    const list = [];
+    for (let i = 364; i >= 0; i -= 1) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = formatDateKey(d);
+      const row = activityMap.get(key);
+      list.push({ date: key, count: row?.count || 0 });
+    }
+    return list;
+  }, [today, activityMap]);
+
+  const skylineYearTotal = useMemo(() => {
+    return skylineData.reduce((sum, d) => sum + d.count, 0);
+  }, [skylineData]);
+
+  const skylineMaxDay = useMemo(() => {
+    return Math.max(0, ...skylineData.map((d) => d.count));
+  }, [skylineData]);
 
   // SVG Chart Geometry
   const chartHeight = 150;
@@ -226,31 +257,59 @@ export function DashboardPage() {
     return `${chartLinePath} L ${lastX},${baseline} L ${firstX},${baseline} Z`;
   }, [chartPoints, chartLinePath, innerHeight]);
 
+  // Save handle and immediately sync live stats
+  const handleSaveAndSyncHandle = async (platformKey) => {
+    if (!handleInputValue.trim()) return;
+    setIsSavingHandle(true);
+    const clean = handleInputValue.trim();
+    try {
+      const updatedHandles = {
+        ...profile.platformHandles,
+        [platformKey]: clean,
+        ...(platformKey === "geeksforgeeks" ? { gfg: clean } : {}),
+      };
+      await updateProfile({ platformHandles: updatedHandles });
+      setEditingPlatform(null);
+      setHandleInputValue("");
+      if (platformKey === "leetcode") await syncLeetCodeData(clean, { force: true });
+      else if (platformKey === "codeforces") await syncCodeforcesData(clean, { force: true });
+      else if (platformKey === "codechef") await syncCodeChefData(clean, { force: true });
+      else if (platformKey === "geeksforgeeks") await syncGfgData(clean, { force: true });
+      else if (platformKey === "github") await syncGitHubData(clean, { force: true });
+    } finally {
+      setIsSavingHandle(false);
+    }
+  };
+
   // Sync Handlers
   const handleSyncPlatform = async (platformId) => {
-    if (!user || !platformHandles[platformId]) return;
+    const handle = platformHandles[platformId];
+    if (!handle) {
+      setEditingPlatform(platformId);
+      setHandleInputValue("");
+      return;
+    }
     setSyncingPlatform(platformId);
     try {
-      if (platformId === "leetcode") await syncLeetCodeData(platformHandles.leetcode, { force: true });
-      else if (platformId === "codeforces") await syncCodeforcesData(platformHandles.codeforces, { force: true });
-      else if (platformId === "codechef") await syncCodeChefData(platformHandles.codechef, { force: true });
-      else if (platformId === "geeksforgeeks") await syncGfgData(platformHandles.geeksforgeeks, { force: true });
-      else if (platformId === "github") await syncGitHubData(platformHandles.github, { force: true });
+      if (platformId === "leetcode") await syncLeetCodeData(handle, { force: true });
+      else if (platformId === "codeforces") await syncCodeforcesData(handle, { force: true });
+      else if (platformId === "codechef") await syncCodeChefData(handle, { force: true });
+      else if (platformId === "geeksforgeeks") await syncGfgData(handle, { force: true });
+      else if (platformId === "github") await syncGitHubData(handle, { force: true });
     } finally {
       setSyncingPlatform(null);
     }
   };
 
   const handleSyncAll = async () => {
-    if (!user) return;
     setIsSyncingAll(true);
     try {
       await Promise.allSettled([
-        platformHandles.leetcode && syncLeetCodeData(platformHandles.leetcode, { force: true }),
-        platformHandles.codeforces && syncCodeforcesData(platformHandles.codeforces, { force: true }),
-        platformHandles.codechef && syncCodeChefData(platformHandles.codechef, { force: true }),
-        platformHandles.geeksforgeeks && syncGfgData(platformHandles.geeksforgeeks, { force: true }),
-        platformHandles.github && syncGitHubData(platformHandles.github, { force: true }),
+        platformHandles.leetcode ? syncLeetCodeData(platformHandles.leetcode, { force: true }) : Promise.resolve(),
+        platformHandles.codeforces ? syncCodeforcesData(platformHandles.codeforces, { force: true }) : Promise.resolve(),
+        platformHandles.codechef ? syncCodeChefData(platformHandles.codechef, { force: true }) : Promise.resolve(),
+        platformHandles.geeksforgeeks ? syncGfgData(platformHandles.geeksforgeeks, { force: true }) : Promise.resolve(),
+        platformHandles.github ? syncGitHubData(platformHandles.github, { force: true }) : Promise.resolve(),
       ]);
     } finally {
       setIsSyncingAll(false);
@@ -258,22 +317,27 @@ export function DashboardPage() {
   };
 
   useEffect(() => {
-    if (!user) return;
     const syncTasks = [
-      platformHandles.leetcode && syncLeetCodeData(platformHandles.leetcode, { force: false }),
-      platformHandles.codeforces && syncCodeforcesData(platformHandles.codeforces, { force: false }),
-      platformHandles.codechef && syncCodeChefData(platformHandles.codechef, { force: false }),
-      platformHandles.geeksforgeeks && syncGfgData(platformHandles.geeksforgeeks, { force: false }),
-      platformHandles.github && syncGitHubData(platformHandles.github, { force: false }),
+      platformHandles.leetcode ? syncLeetCodeData(platformHandles.leetcode, { force: false }) : null,
+      platformHandles.codeforces ? syncCodeforcesData(platformHandles.codeforces, { force: false }) : null,
+      platformHandles.codechef ? syncCodeChefData(platformHandles.codechef, { force: false }) : null,
+      platformHandles.geeksforgeeks ? syncGfgData(platformHandles.geeksforgeeks, { force: false }) : null,
+      platformHandles.github ? syncGitHubData(platformHandles.github, { force: false }) : null,
     ].filter(Boolean);
-    Promise.allSettled(syncTasks);
+    if (syncTasks.length > 0) {
+      Promise.allSettled(syncTasks);
+    }
   }, [
-    user,
     platformHandles.leetcode,
     platformHandles.codeforces,
     platformHandles.codechef,
     platformHandles.geeksforgeeks,
     platformHandles.github,
+    syncLeetCodeData,
+    syncCodeforcesData,
+    syncCodeChefData,
+    syncGfgData,
+    syncGitHubData,
   ]);
 
   useEffect(() => {
@@ -640,6 +704,7 @@ export function DashboardPage() {
           <div className="skyline-canvas-box">
             <ContributionSkyline
               endDate={today}
+              data={skylineData}
               title={<span className="home-skyline-title">DevRhythm Activity Skyline</span>}
               palette={["#d9f99d", "#a3e635", "#65a30d", "#3f6212"]}
               defaultView="3d"
@@ -653,7 +718,7 @@ export function DashboardPage() {
           <div className="dashboard-skyline-footer">
             <span>ONE DAY AT A TIME, EVERY SESSION ADDS HEIGHT.</span>
             <span>
-              YEAR TOTAL: <strong>1,980</strong> · BUSIEST: <strong>59 SOLVES</strong>
+              YEAR TOTAL: <strong>{skylineYearTotal.toLocaleString()}</strong> · BUSIEST: <strong>{skylineMaxDay} SOLVES</strong>
             </span>
           </div>
         </div>
@@ -692,7 +757,44 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>LeetCode</strong>
-                  <small>{platformHandles.leetcode ? `@${platformHandles.leetcode}` : "No handle connected"}</small>
+                  {editingPlatform === "leetcode" ? (
+                    <div className="platform-handle-editor">
+                      <input
+                        type="text"
+                        className="platform-handle-input"
+                        value={handleInputValue}
+                        onChange={(e) => setHandleInputValue(e.target.value)}
+                        placeholder="LeetCode username"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="platform-handle-save-btn"
+                        onClick={() => handleSaveAndSyncHandle("leetcode")}
+                        disabled={isSavingHandle || !handleInputValue.trim()}
+                      >
+                        {isSavingHandle ? "…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        className="platform-handle-cancel-btn"
+                        onClick={() => setEditingPlatform(null)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <small
+                      className="platform-handle-clickable"
+                      onClick={() => {
+                        setEditingPlatform("leetcode");
+                        setHandleInputValue(platformHandles.leetcode || "");
+                      }}
+                      title="Click to edit handle"
+                    >
+                      {platformHandles.leetcode ? `@${platformHandles.leetcode}` : "+ Add handle"}
+                    </small>
+                  )}
                 </div>
               </div>
               <button
@@ -701,7 +803,7 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("leetcode")}
                 title="Sync live LeetCode stats"
                 aria-label="Sync LeetCode"
-                disabled={!platformHandles.leetcode || syncingPlatform === "leetcode"}
+                disabled={syncingPlatform === "leetcode"}
               >
                 <RotateCw size={13} className={syncingPlatform === "leetcode" ? "animate-spin" : ""} />
               </button>
@@ -735,7 +837,22 @@ export function DashboardPage() {
               <span className="platform-status-dot">
                 <i className={leetcode.lastSynced ? "is-synced" : ""} /> {leetcode.lastSynced ? `Fetched ${leetcode.lastSynced}` : growthStats.leetcode?.loading ? "Syncing…" : "No synced data"}
               </span>
-              {platformHandles.leetcode ? <a href={PLATFORM_META.leetcode.url(platformHandles.leetcode)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
+              {platformHandles.leetcode ? (
+                <a href={PLATFORM_META.leetcode.url(platformHandles.leetcode)} target="_blank" rel="noreferrer" className="platform-link-btn">
+                  Profile <ExternalLink size={11} />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="platform-link-btn platform-connect-btn"
+                  onClick={() => {
+                    setEditingPlatform("leetcode");
+                    setHandleInputValue("");
+                  }}
+                >
+                  Connect ID
+                </button>
+              )}
             </div>
           </article>
 
@@ -750,7 +867,44 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>Codeforces</strong>
-                  <small>{platformHandles.codeforces ? `@${platformHandles.codeforces}` : "No handle connected"}</small>
+                  {editingPlatform === "codeforces" ? (
+                    <div className="platform-handle-editor">
+                      <input
+                        type="text"
+                        className="platform-handle-input"
+                        value={handleInputValue}
+                        onChange={(e) => setHandleInputValue(e.target.value)}
+                        placeholder="Codeforces handle"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="platform-handle-save-btn"
+                        onClick={() => handleSaveAndSyncHandle("codeforces")}
+                        disabled={isSavingHandle || !handleInputValue.trim()}
+                      >
+                        {isSavingHandle ? "…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        className="platform-handle-cancel-btn"
+                        onClick={() => setEditingPlatform(null)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <small
+                      className="platform-handle-clickable"
+                      onClick={() => {
+                        setEditingPlatform("codeforces");
+                        setHandleInputValue(platformHandles.codeforces || "");
+                      }}
+                      title="Click to edit handle"
+                    >
+                      {platformHandles.codeforces ? `@${platformHandles.codeforces}` : "+ Add handle"}
+                    </small>
+                  )}
                 </div>
               </div>
               <button
@@ -759,7 +913,7 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("codeforces")}
                 title="Sync live Codeforces stats"
                 aria-label="Sync Codeforces"
-                disabled={!platformHandles.codeforces || syncingPlatform === "codeforces"}
+                disabled={syncingPlatform === "codeforces"}
               >
                 <RotateCw size={13} className={syncingPlatform === "codeforces" ? "animate-spin" : ""} />
               </button>
@@ -793,7 +947,22 @@ export function DashboardPage() {
               <span className="platform-status-dot">
                 <i className={codeforces.lastSynced ? "is-synced" : ""} /> {codeforces.lastSynced ? `Fetched ${codeforces.lastSynced}` : growthStats.codeforces?.loading ? "Syncing…" : "No synced data"}
               </span>
-              {platformHandles.codeforces ? <a href={PLATFORM_META.codeforces.url(platformHandles.codeforces)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
+              {platformHandles.codeforces ? (
+                <a href={PLATFORM_META.codeforces.url(platformHandles.codeforces)} target="_blank" rel="noreferrer" className="platform-link-btn">
+                  Profile <ExternalLink size={11} />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="platform-link-btn platform-connect-btn"
+                  onClick={() => {
+                    setEditingPlatform("codeforces");
+                    setHandleInputValue("");
+                  }}
+                >
+                  Connect ID
+                </button>
+              )}
             </div>
           </article>
 
@@ -808,7 +977,44 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>CodeChef</strong>
-                  <small>{platformHandles.codechef ? `@${platformHandles.codechef}` : "No handle connected"}</small>
+                  {editingPlatform === "codechef" ? (
+                    <div className="platform-handle-editor">
+                      <input
+                        type="text"
+                        className="platform-handle-input"
+                        value={handleInputValue}
+                        onChange={(e) => setHandleInputValue(e.target.value)}
+                        placeholder="CodeChef username"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="platform-handle-save-btn"
+                        onClick={() => handleSaveAndSyncHandle("codechef")}
+                        disabled={isSavingHandle || !handleInputValue.trim()}
+                      >
+                        {isSavingHandle ? "…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        className="platform-handle-cancel-btn"
+                        onClick={() => setEditingPlatform(null)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <small
+                      className="platform-handle-clickable"
+                      onClick={() => {
+                        setEditingPlatform("codechef");
+                        setHandleInputValue(platformHandles.codechef || "");
+                      }}
+                      title="Click to edit handle"
+                    >
+                      {platformHandles.codechef ? `@${platformHandles.codechef}` : "+ Add handle"}
+                    </small>
+                  )}
                 </div>
               </div>
               <button
@@ -817,7 +1023,7 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("codechef")}
                 title="Sync live CodeChef stats"
                 aria-label="Sync CodeChef"
-                disabled={!platformHandles.codechef || syncingPlatform === "codechef"}
+                disabled={syncingPlatform === "codechef"}
               >
                 <RotateCw size={13} className={syncingPlatform === "codechef" ? "animate-spin" : ""} />
               </button>
@@ -851,7 +1057,22 @@ export function DashboardPage() {
               <span className="platform-status-dot">
                 <i className={codechef.lastSynced ? "is-synced" : ""} /> {codechef.lastSynced ? `Fetched ${codechef.lastSynced}` : growthStats.codechef?.loading ? "Syncing…" : "No synced data"}
               </span>
-              {platformHandles.codechef ? <a href={PLATFORM_META.codechef.url(platformHandles.codechef)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
+              {platformHandles.codechef ? (
+                <a href={PLATFORM_META.codechef.url(platformHandles.codechef)} target="_blank" rel="noreferrer" className="platform-link-btn">
+                  Profile <ExternalLink size={11} />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="platform-link-btn platform-connect-btn"
+                  onClick={() => {
+                    setEditingPlatform("codechef");
+                    setHandleInputValue("");
+                  }}
+                >
+                  Connect ID
+                </button>
+              )}
             </div>
           </article>
 
@@ -866,7 +1087,44 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>GeeksforGeeks</strong>
-                  <small>{platformHandles.geeksforgeeks ? `@${platformHandles.geeksforgeeks}` : "No handle connected"}</small>
+                  {editingPlatform === "geeksforgeeks" ? (
+                    <div className="platform-handle-editor">
+                      <input
+                        type="text"
+                        className="platform-handle-input"
+                        value={handleInputValue}
+                        onChange={(e) => setHandleInputValue(e.target.value)}
+                        placeholder="GeeksforGeeks handle"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="platform-handle-save-btn"
+                        onClick={() => handleSaveAndSyncHandle("geeksforgeeks")}
+                        disabled={isSavingHandle || !handleInputValue.trim()}
+                      >
+                        {isSavingHandle ? "…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        className="platform-handle-cancel-btn"
+                        onClick={() => setEditingPlatform(null)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <small
+                      className="platform-handle-clickable"
+                      onClick={() => {
+                        setEditingPlatform("geeksforgeeks");
+                        setHandleInputValue(platformHandles.geeksforgeeks || "");
+                      }}
+                      title="Click to edit handle"
+                    >
+                      {platformHandles.geeksforgeeks ? `@${platformHandles.geeksforgeeks}` : "+ Add handle"}
+                    </small>
+                  )}
                 </div>
               </div>
               <button
@@ -875,7 +1133,7 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("geeksforgeeks")}
                 title="Sync live GeeksforGeeks stats"
                 aria-label="Sync GeeksforGeeks"
-                disabled={!platformHandles.geeksforgeeks || syncingPlatform === "geeksforgeeks"}
+                disabled={syncingPlatform === "geeksforgeeks"}
               >
                 <RotateCw size={13} className={syncingPlatform === "geeksforgeeks" ? "animate-spin" : ""} />
               </button>
@@ -909,7 +1167,22 @@ export function DashboardPage() {
               <span className="platform-status-dot">
                 <i className={geeksforgeeks.lastSynced ? "is-synced" : ""} /> {geeksforgeeks.lastSynced ? `Fetched ${geeksforgeeks.lastSynced}` : (growthStats.geeksforgeeks ?? growthStats.gfg)?.loading ? "Syncing…" : "No synced data"}
               </span>
-              {platformHandles.geeksforgeeks ? <a href={PLATFORM_META.geeksforgeeks.url(platformHandles.geeksforgeeks)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
+              {platformHandles.geeksforgeeks ? (
+                <a href={PLATFORM_META.geeksforgeeks.url(platformHandles.geeksforgeeks)} target="_blank" rel="noreferrer" className="platform-link-btn">
+                  Profile <ExternalLink size={11} />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="platform-link-btn platform-connect-btn"
+                  onClick={() => {
+                    setEditingPlatform("geeksforgeeks");
+                    setHandleInputValue("");
+                  }}
+                >
+                  Connect ID
+                </button>
+              )}
             </div>
           </article>
 
@@ -924,7 +1197,44 @@ export function DashboardPage() {
                 </div>
                 <div className="platform-brand-text">
                   <strong>GitHub</strong>
-                  <small>{platformHandles.github ? `@${platformHandles.github}` : "No handle connected"}</small>
+                  {editingPlatform === "github" ? (
+                    <div className="platform-handle-editor">
+                      <input
+                        type="text"
+                        className="platform-handle-input"
+                        value={handleInputValue}
+                        onChange={(e) => setHandleInputValue(e.target.value)}
+                        placeholder="GitHub username"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="platform-handle-save-btn"
+                        onClick={() => handleSaveAndSyncHandle("github")}
+                        disabled={isSavingHandle || !handleInputValue.trim()}
+                      >
+                        {isSavingHandle ? "…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        className="platform-handle-cancel-btn"
+                        onClick={() => setEditingPlatform(null)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <small
+                      className="platform-handle-clickable"
+                      onClick={() => {
+                        setEditingPlatform("github");
+                        setHandleInputValue(platformHandles.github || "");
+                      }}
+                      title="Click to edit handle"
+                    >
+                      {platformHandles.github ? `@${platformHandles.github}` : "+ Add handle"}
+                    </small>
+                  )}
                 </div>
               </div>
               <button
@@ -933,7 +1243,7 @@ export function DashboardPage() {
                 onClick={() => handleSyncPlatform("github")}
                 title="Sync live GitHub contributions"
                 aria-label="Sync GitHub"
-                disabled={!platformHandles.github || syncingPlatform === "github"}
+                disabled={syncingPlatform === "github"}
               >
                 <RotateCw size={13} className={syncingPlatform === "github" ? "animate-spin" : ""} />
               </button>
@@ -967,7 +1277,22 @@ export function DashboardPage() {
               <span className="platform-status-dot">
                 <i className={github.lastSynced ? "is-synced" : ""} /> {github.lastSynced ? `Fetched ${github.lastSynced}` : growthStats.github?.loading ? "Syncing…" : "No synced data"}
               </span>
-              {platformHandles.github ? <a href={PLATFORM_META.github.url(platformHandles.github)} target="_blank" rel="noreferrer" className="platform-link-btn">Profile <ExternalLink size={11} /></a> : <span className="platform-link-btn is-disabled">Add handle</span>}
+              {platformHandles.github ? (
+                <a href={PLATFORM_META.github.url(platformHandles.github)} target="_blank" rel="noreferrer" className="platform-link-btn">
+                  Profile <ExternalLink size={11} />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="platform-link-btn platform-connect-btn"
+                  onClick={() => {
+                    setEditingPlatform("github");
+                    setHandleInputValue("");
+                  }}
+                >
+                  Connect ID
+                </button>
+              )}
             </div>
           </article>
         </div>
