@@ -12,7 +12,10 @@ import { AuthPage } from "../features/auth";
 import { ProfilePage } from "../features/profile";
 import { NotFoundPage } from "../features/notfound";
 import { AppShell } from "../shared/components/AppShell.jsx";
+import { useEffect, useState } from "react";
 import { AppProvider, useAppContext } from "../shared/context/AppContext.jsx";
+import { PageSkeleton } from "../shared/components/PageSkeleton.jsx";
+import { ErrorBoundary } from "../shared/components/ErrorBoundary.jsx";
 
 function AppContent() {
   const {
@@ -22,6 +25,17 @@ function AppContent() {
     growthStats,
     closeAuthPage,
   } = useAppContext();
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Trigger smooth skeleton shimmer on tab transitions
+  useEffect(() => {
+    setIsTransitioning(true);
+    const timer = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 280);
+    return () => clearTimeout(timer);
+  }, [activePage]);
 
   const navigation = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -55,6 +69,14 @@ function AppContent() {
   }
 
   const renderActivePage = () => {
+    if (isTransitioning) {
+      return (
+        <main className="page-content">
+          <PageSkeleton type={activePage} />
+        </main>
+      );
+    }
+
     switch (activePage) {
       case "career":
         return <CareerPage />;
@@ -80,7 +102,9 @@ function AppContent() {
       activePage={activePage}
       onNavigate={setActivePage}
     >
-      {renderActivePage()}
+      <ErrorBoundary onGoHome={() => setActivePage("overview")}>
+        {renderActivePage()}
+      </ErrorBoundary>
     </AppShell>
   );
 }
