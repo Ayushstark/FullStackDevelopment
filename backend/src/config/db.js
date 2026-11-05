@@ -1,29 +1,45 @@
 import mongoose from "mongoose";
 import { MONGODB_URI } from "./env.js";
 
-let isMongoConnected = false;
+let isMongoConnecting = null;
 
 /**
  * Returns the current MongoDB connection status.
  */
 export function getMongoStatus() {
-  return isMongoConnected;
+  return mongoose.connection.readyState === 1;
 }
 
 /**
- * Attempts to connect to MongoDB. Falls back to resilient local mode on failure.
+ * Connects to MongoDB with connection caching for serverless environments.
  */
 export async function connectDB() {
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 3000,
-    });
-    isMongoConnected = true;
-    console.info(`[MongoDB] Connected successfully to Database (${MONGODB_URI})`);
-  } catch (err) {
-    isMongoConnected = false;
-    console.warn(`[MongoDB] Notice: Could not connect to MongoDB at ${MONGODB_URI}: ${err.message}`);
-    console.warn("[MongoDB] Operating in resilient fallback mode so login, registration, and sessions work seamlessly.");
-    console.warn("[MongoDB] To connect a live database, set MONGODB_URI in .env or connect MongoDB Atlas.");
+  if (mongoose.connection.readyState === 1) {
+    return true;
   }
+
+  if (isMongoConnecting) {
+    return isMongoConnecting;
+  }
+
+  isMongoConnecting = (async () => {
+    try {
+      if (!MONGODB_URI) {
+        return false;
+      }
+      await mongoose.connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        bufferCommands: false,
+      });
+      console.info("[MongoDB] Connected successfully to Database");
+      return true;
+    } catch (err) {
+      console.warn(`[MongoDB] Notice: Could not connect to MongoDB: ${err.message}`);
+      return false;
+    } finally {
+      isMongoConnecting = null;
+    }
+  })();
+
+  return isMongoConnecting;
 }

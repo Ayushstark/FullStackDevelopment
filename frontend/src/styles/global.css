@@ -1,4 +1,5 @@
 @import "./skyline.css";
+@import "./accessibility.css";
 
 :root {
   --font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -2430,6 +2431,19 @@ body {
   .site-brand { gap: 7px; font-size: 14px; }
   .site-brand .brand-mark { width: 30px; height: 30px; }
   .site-nav-auth .button { gap: 5px; padding-right: 10px; padding-left: 10px; font-size: 11px; }
+  .site-nav-main {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .site-nav-main::-webkit-scrollbar { display: none; }
+  .site-nav-link { flex: 0 0 auto; scroll-snap-align: start; }
+}
+@media (max-width: 480px) {
+  .site-nav-link { min-height: 44px; padding: 0 11px; font-size: 11px; }
+  .career-page-wrapper .career-switcher { width: 100%; flex-wrap: wrap; }
+  .career-page-wrapper .career-switcher .tab-btn { flex: 1 1 100%; justify-content: flex-start; }
 }
 
 /* Clearer dashboard type and a balanced current/longest streak summary. */

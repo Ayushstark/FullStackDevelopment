@@ -18,7 +18,8 @@ import {
   Terminal,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { EmptyState } from "../../shared/components/EmptyState.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { streakMilestones } from "../../shared/data/sampleData.js";
 import { exportLogsAsCsv, exportLogsAsJson } from "./utils/exportLogs.js";
@@ -115,6 +116,16 @@ export function GrowthPage() {
 
   const [expandedPlatform, setExpandedPlatform] = useState(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+
+  // Close practice log modal on Escape key
+  useEffect(() => {
+    if (!isLogModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setIsLogModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isLogModalOpen]);
 
   // Practice History Filter & Search State
   const [logSearchQuery, setLogSearchQuery] = useState("");
@@ -954,6 +965,7 @@ export function GrowthPage() {
               <input
                 type="text"
                 placeholder="Search notes, topics..."
+                aria-label="Search practice logs by notes or topics"
                 value={logSearchQuery}
                 onChange={(e) => setLogSearchQuery(e.target.value)}
                 style={{
@@ -998,6 +1010,9 @@ export function GrowthPage() {
               <button
                 className="practice-export-trigger"
                 type="button"
+                aria-expanded={isExportMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Export practice report options"
                 onClick={() => setIsExportMenuOpen((prev) => !prev)}
                 style={{
                   display: "inline-flex",
@@ -1013,11 +1028,14 @@ export function GrowthPage() {
                   cursor: "pointer",
                 }}
               >
-                <Download size={13} /> Export Report
+                <Download size={13} aria-hidden="true" /> Export Report
               </button>
 
               {isExportMenuOpen && (
-                <div className="practice-export-menu"
+                <div
+                  className="practice-export-menu"
+                  role="menu"
+                  aria-label="Export formats"
                   style={{
                     position: "absolute",
                     right: 0,
@@ -1096,39 +1114,28 @@ export function GrowthPage() {
           }}
         >
           {filteredLogs.length === 0 ? (
-            <div className="practice-logs-empty"
-              style={{
-                textAlign: "center",
-                padding: "32px 16px",
-                background: "rgba(13, 17, 23, 0.5)",
-                border: "1px dashed rgba(255, 255, 255, 0.15)",
-                borderRadius: 12,
-                color: "#8da0aa",
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 13 }}>No practice logs match your search or filter criteria.</p>
-              {(logSearchQuery || logPlatformFilter !== "all") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLogSearchQuery("");
-                    setLogPlatformFilter("all");
-                  }}
-                  style={{
-                    marginTop: 10,
-                    background: "rgba(255, 255, 255, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    borderRadius: 6,
-                    padding: "4px 12px",
-                    color: "#f8fafc",
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  Reset Filters
-                </button>
-              )}
-            </div>
+            <EmptyState
+              compact
+              title="No practice logs found"
+              message={
+                logSearchQuery || logPlatformFilter !== "all"
+                  ? "No logs match your filter criteria. Reset filters or record a new session."
+                  : "No practice logs recorded yet. Start logging your coding sessions!"
+              }
+              actionLabel={
+                logSearchQuery || logPlatformFilter !== "all"
+                  ? "Reset Filters"
+                  : null
+              }
+              onAction={
+                logSearchQuery || logPlatformFilter !== "all"
+                  ? () => {
+                      setLogSearchQuery("");
+                      setLogPlatformFilter("all");
+                    }
+                  : null
+              }
+            />
           ) : (
             filteredLogs.map((log, index) => (
               <div
@@ -1210,11 +1217,17 @@ export function GrowthPage() {
 
       {/* PRACTICE LOGGING MODAL */}
       {isLogModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsLogModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsLogModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="practice-log-dialog-title"
+        >
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: 17, color: "var(--color-primary)" }}>
+                <h2 id="practice-log-dialog-title" style={{ margin: 0, fontSize: 17, color: "var(--color-primary)" }}>
                   Log Today's Practice Session
                 </h2>
                 <span style={{ fontSize: 12, color: "#8da0aa" }}>Record problems or commits to keep your streak live</span>
@@ -1223,8 +1236,9 @@ export function GrowthPage() {
                 className="close-btn"
                 onClick={() => setIsLogModalOpen(false)}
                 type="button"
+                aria-label="Close practice logging dialog"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
 

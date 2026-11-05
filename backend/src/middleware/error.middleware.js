@@ -3,7 +3,12 @@ import { ApiError } from "../utils/ApiError.js";
 /**
  * Global error handling middleware.
  */
-export function errorHandler(err, _req, res, _next) {
+export function errorHandler(err, req, res, _next) {
+  if (req?.headers?.origin) {
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
       error: err.message,

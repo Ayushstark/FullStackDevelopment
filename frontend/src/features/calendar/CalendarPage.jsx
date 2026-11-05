@@ -9,13 +9,15 @@ import {
   Globe,
   MapPin,
   Plus,
+  RotateCw,
   Search,
   Sparkles,
   Tag,
   Trophy,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { EmptyState } from "../../shared/components/EmptyState.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { initialCalendarEvents } from "../../shared/data/sampleData.js";
 import {
@@ -28,33 +30,54 @@ import {
 import "./calendar-page.css";
 
 export function CalendarPage() {
-  const { calendarEvents: contextEvents, toggleCalendarReminder, addCalendarEvent } = useAppContext();
+  const {
+    calendarEvents: contextEvents,
+    toggleCalendarReminder,
+    addCalendarEvent,
+    refreshLiveContests,
+    isContestsLoading,
+  } = useAppContext();
 
-  // Ensure initial seed events (e.g. November 1 test events) are always included alongside user additions
+  // Prefer live context events (from /api/contests). If empty, use initial seed events
   const calendarEvents = useMemo(() => {
-    if (!contextEvents || contextEvents.length <= 1) {
-      return initialCalendarEvents;
+    if (contextEvents && contextEvents.length > 0) {
+      return contextEvents;
     }
-    // Merge initial sample events with context events to prevent stale cache lock
-    const map = new Map();
-    for (const evt of initialCalendarEvents) {
-      map.set(evt.id, evt);
-    }
-    for (const evt of contextEvents) {
-      map.set(evt.id, evt);
-    }
-    return Array.from(map.values());
+    return initialCalendarEvents;
   }, [contextEvents]);
 
-  // Navigation state (defaults to Nov 2026 where events exist)
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(10); // 10 = November
-  const [selectedDate, setSelectedDate] = useState("2026-11-01");
+  const today = useMemo(() => new Date(), []);
+  const todayDateKey = useMemo(() => normalizeDateKey(today), [today]);
+
+  // Navigation state defaults to current real date
+  const [currentYear, setCurrentYear] = useState(() => today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => today.getMonth());
+  const [selectedDate, setSelectedDate] = useState(() => todayDateKey);
+
+  // Next upcoming event finder for fast navigation
+  const nextUpcomingEvent = useMemo(() => {
+    const todayStr = normalizeDateKey(new Date());
+    return (
+      calendarEvents
+        .filter((e) => e.date >= todayStr)
+        .sort((a, b) => a.date.localeCompare(b.date))[0] || calendarEvents[0]
+    );
+  }, [calendarEvents]);
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Close modal on Escape key for keyboard/screen reader users
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setIsAddModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAddModalOpen]);
 
   // Add event form state
   const [modalTitle, setModalTitle] = useState("");
@@ -267,6 +290,19 @@ export function CalendarPage() {
             <option value="Deadline">Application Deadlines</option>
           </select>
 
+          {/* Refresh Live Contests */}
+          <button
+            className="button button-secondary"
+            onClick={() => refreshLiveContests(true)}
+            type="button"
+            disabled={isContestsLoading}
+            style={{ padding: "6px 12px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+            title="Fetch real-time contests from Codeforces, LeetCode, CodeChef, Devpost & GFG"
+          >
+            <RotateCw size={13} className={isContestsLoading ? "spin-icon" : ""} />
+            {isContestsLoading ? "Syncing..." : "Sync Live Contests"}
+          </button>
+
           {/* Add Custom Event */}
           <button
             className="button button-primary"
@@ -343,6 +379,11 @@ export function CalendarPage() {
                   role="gridcell"
                   tabIndex={isSelected ? -1 : 0}
                   aria-selected={isSelected}
+                  aria-label={`${cell.dateKey}${cell.isToday ? ", today" : ""}${
+                    dayEvents.length > 0
+                      ? `, ${dayEvents.length} events: ${dayEvents.map((e) => e.title).join(", ")}`
+                      : ", no events"
+                  }`}
                   onKeyDown={(e) => {
                     if (!isSelected && (e.key === "Enter" || e.key === " ")) {
                       handleDateClick(cell.dateKey);
@@ -429,37 +470,29 @@ export function CalendarPage() {
           </div>
 
           {selectedDateEvents.length === 0 ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "36px 20px",
-                background: "rgba(13, 17, 23, 0.55)",
-                border: "1px dashed rgba(255, 255, 255, 0.12)",
-                borderRadius: 14,
-                color: "#94a3b8",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 260,
-              }}
-            >
-              <Trophy size={32} color="#333333" style={{ margin: "0 auto 10px" }} />
-              <h3 style={{ margin: "0 0 6px", fontSize: 15, color: "#111111", fontWeight: 700 }}>
-                No events scheduled for this day
-              </h3>
-              <p style={{ margin: "0 0 16px", fontSize: 13, color: "#5D5D5D", maxWidth: 320 }}>
-                Looks like a quiet day. Explore highlighted dates on the calendar or jump to upcoming rounds.
-              </p>
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() => setSelectedDate("2026-11-01")}
-                style={{ fontSize: 12, padding: "6px 14px" }}
-              >
-                Browse November 1 Events
-              </button>
-            </div>
+            <EmptyState
+              icon={Trophy}
+              title="No events scheduled for this day"
+              message="Looks like a quiet day. Explore highlighted dates on the calendar or jump to upcoming rounds."
+              actionLabel={
+                nextUpcomingEvent
+                  ? `Next Live Event (${nextUpcomingEvent.date}): ${nextUpcomingEvent.title.slice(0, 24)}...`
+                  : "Browse November 1 Events"
+              }
+              actionIcon={nextUpcomingEvent ? Sparkles : null}
+              onAction={
+                nextUpcomingEvent
+                  ? () => {
+                      setSelectedDate(nextUpcomingEvent.date);
+                      const parts = nextUpcomingEvent.date.split("-").map(Number);
+                      if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                        setCurrentYear(parts[0]);
+                        setCurrentMonth(parts[1] - 1);
+                      }
+                    }
+                  : () => setSelectedDate("2026-11-01")
+              }
+            />
           ) : (
             <div className="agenda-events-list">
               {selectedDateEvents.map((evt) => {
@@ -621,11 +654,17 @@ export function CalendarPage() {
 
       {/* ADD CUSTOM EVENT MODAL */}
       {isAddModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsAddModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-event-dialog-title"
+        >
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: 17, color: "var(--color-primary)" }}>
+                <h2 id="add-event-dialog-title" style={{ margin: 0, fontSize: 17, color: "var(--color-primary)" }}>
                   Add Custom Event
                 </h2>
                 <span style={{ fontSize: 12, color: "#64748b" }}>
@@ -636,8 +675,9 @@ export function CalendarPage() {
                 className="close-btn"
                 onClick={() => setIsAddModalOpen(false)}
                 type="button"
+                aria-label="Close add event dialog"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
 

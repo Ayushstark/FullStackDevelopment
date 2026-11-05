@@ -4,11 +4,13 @@ import {
   Calendar,
   Filter,
   MapPin,
+  RotateCw,
   Search,
   Sparkles,
   XCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { EmptyState } from "../../shared/components/EmptyState.jsx";
 import { useAppContext } from "../../shared/context/AppContext.jsx";
 import { parseNaturalLanguageQuery } from "../assistant/services/aiAssistantService.js";
 import { OpportunityDetailModal } from "./OpportunityDetailModal.jsx";
@@ -21,6 +23,8 @@ export function OpportunityPage() {
     profile,
     setSelectedOpportunityForAnalysis,
     setActivePage,
+    refreshOpportunities,
+    isOpportunitiesLoading,
   } = useAppContext();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,9 +114,10 @@ export function OpportunityPage() {
         }}
       >
         <div className="search-bar">
-          <Search size={19} />
+          <Search size={19} aria-hidden="true" />
           <input
             placeholder="Search keywords or try “paid ML internships for sophomore”..."
+            aria-label="Search opportunities by keyword or natural language"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -122,6 +127,7 @@ export function OpportunityPage() {
               onClick={() => setSearchQuery("")}
               className="text-button"
               style={{ color: "var(--color-text-muted)" }}
+              aria-label="Clear search input"
             >
               Clear
             </button>
@@ -133,20 +139,32 @@ export function OpportunityPage() {
       </form>
 
       {/* Tabs: All vs Saved */}
-      <div className="tab-bar">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+        <div className="tab-bar" style={{ margin: 0 }}>
+          <button
+            className={`tab-btn ${viewTab === "all" ? "active" : ""}`}
+            onClick={() => setViewTab("all")}
+            type="button"
+          >
+            All Opportunities ({opportunities.length})
+          </button>
+          <button
+            className={`tab-btn ${viewTab === "saved" ? "active" : ""}`}
+            onClick={() => setViewTab("saved")}
+            type="button"
+          >
+            Saved Roles ({savedOpportunityIds.length})
+          </button>
+        </div>
         <button
-          className={`tab-btn ${viewTab === "all" ? "active" : ""}`}
-          onClick={() => setViewTab("all")}
           type="button"
+          className="button button-secondary"
+          onClick={() => refreshOpportunities()}
+          disabled={isOpportunitiesLoading}
+          style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
         >
-          All Opportunities ({opportunities.length})
-        </button>
-        <button
-          className={`tab-btn ${viewTab === "saved" ? "active" : ""}`}
-          onClick={() => setViewTab("saved")}
-          type="button"
-        >
-          Saved Roles ({savedOpportunityIds.length})
+          <RotateCw size={12} className={isOpportunitiesLoading ? "spin-icon" : ""} />
+          {isOpportunitiesLoading ? "Refreshing..." : "Refresh Roles"}
         </button>
       </div>
 
@@ -165,6 +183,7 @@ export function OpportunityPage() {
             className="filter-select"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
+            aria-label="Filter opportunities by role type"
           >
             <option value="All">All Types</option>
             <option value="Internship">Internship</option>
@@ -178,6 +197,7 @@ export function OpportunityPage() {
             className="filter-select"
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
+            aria-label="Filter opportunities by location"
           >
             <option value="All">All Locations</option>
             <option value="Remote">Remote</option>
@@ -190,6 +210,7 @@ export function OpportunityPage() {
             className="filter-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
+            aria-label="Sort opportunities by"
           >
             <option value="deadline">Deadline (Earliest)</option>
             <option value="title">Role Title (A-Z)</option>
@@ -205,21 +226,17 @@ export function OpportunityPage() {
 
       {/* Opportunity Cards Grid */}
       {filteredOpportunities.length === 0 ? (
-        <div
-          className="panel"
-          style={{ textAlign: "center", padding: "48px 20px", color: "var(--color-text-muted)" }}
-        >
-          <XCircle size={40} style={{ margin: "0 auto 12px", opacity: 0.5 }} />
-          <h3 style={{ margin: "0 0 6px", color: "var(--color-primary)" }}>No matching opportunities</h3>
-          <p style={{ margin: "0 0 16px", fontSize: 13.5 }}>
-            {viewTab === "saved"
+        <EmptyState
+          icon={XCircle}
+          title="No matching opportunities"
+          message={
+            viewTab === "saved"
               ? "You haven't saved any opportunities matching this filter yet."
-              : "Try relaxing your search terms or clearing active filters."}
-          </p>
-          <button className="button button-secondary button-sm" onClick={clearFilters} type="button">
-            Clear all filters
-          </button>
-        </div>
+              : "Try relaxing your search terms or clearing active filters."
+          }
+          actionLabel="Clear all filters"
+          onAction={clearFilters}
+        />
       ) : (
         <div className="opportunity-cards">
           {filteredOpportunities.map((opportunity) => {
@@ -241,9 +258,10 @@ export function OpportunityPage() {
                     onClick={() => toggleSaveOpportunity(opportunity.id)}
                     title={isSaved ? "Remove from saved" : "Save opportunity"}
                     type="button"
-                    aria-label="Save opportunity"
+                    aria-label={isSaved ? `Remove ${opportunity.title} at ${opportunity.company} from saved` : `Save ${opportunity.title} at ${opportunity.company}`}
+                    aria-pressed={isSaved}
                   >
-                    <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
+                    <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} aria-hidden="true" />
                   </button>
                 </div>
 

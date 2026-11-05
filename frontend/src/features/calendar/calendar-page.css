@@ -550,7 +550,15 @@
 /* Responsive adjustments */
 @media (max-width: 960px) {
   .calendar-main-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .calendar-main-layout > *,
+  .agenda-section,
+  .agenda-events-list {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .agenda-events-list {
@@ -559,6 +567,11 @@
 }
 
 @media (max-width: 600px) {
+  .calendar-header-toolbar > div:first-child {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
   .calendar-glass-card {
     padding: 14px 10px;
   }
