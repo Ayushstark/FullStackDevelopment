@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { NODE_ENV, CLIENT_ORIGINS } from "./config/env.js";
+import { NODE_ENV } from "./config/env.js";
 import { connectDB } from "./config/db.js";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -13,21 +13,14 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Allowed origins
-const allowedOrigins = new Set(
-  [CLIENT_ORIGINS, ...(NODE_ENV === "production" ? [] : ["http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173"])]
-    .filter(Boolean)
-    .flatMap((origins) => origins.split(",").map((origin) => origin.trim()).filter(Boolean)),
-);
-
-// Middleware
+// Middleware: allow all caller origins dynamically with credentials
 app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
-    return callback(new Error("Origin is not allowed by CORS"));
-  },
+  origin: true,
   credentials: true,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
 }));
+app.options("*", cors());
 app.use(express.json({ limit: "256kb" }));
 
 // Ensure DB connection is initialized on API requests
