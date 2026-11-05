@@ -36,6 +36,7 @@ const defaultData = {
       ],
       resumeSummary:
         "Computer Science undergraduate with hands-on experience building fullstack and reactive web apps. Active competitive programmer with 300+ problems solved across LeetCode and Codeforces.",
+      profileImage: "",
       platformHandles: {
         leetcode: "alex_shah",
         codeforces: "alex_coder",
@@ -91,6 +92,7 @@ export const fallbackStore = {
       targetRoles: ["Software Engineer", "Full Stack Developer"],
       skills: ["React", "JavaScript", "HTML", "CSS", "Node.js", "MongoDB"],
       resumeSummary: "Aspiring software engineer eager to build modern scalable applications.",
+      profileImage: "",
       platformHandles: { leetcode: "", codeforces: "", codechef: "", geeksforgeeks: "", github: "" },
       ...userData,
     };
