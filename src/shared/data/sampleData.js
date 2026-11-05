@@ -234,15 +234,42 @@ export const initialApplications = [
   },
 ];
 
+function buildDefaultRollingActivity() {
+  const days = [];
+  const baseCounts = [3, 4, 5, 2, 4, 6, 4, 3, 4, 5, 3, 2, 4, 5, 3, 6, 4, 3, 2, 4, 5, 4, 3, 5, 4, 3, 4, 0];
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  for (let i = 27; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+    const count = baseCounts[27 - i] ?? 2;
+    const level = count >= 5 ? 3 : count >= 3 ? 2 : count >= 1 ? 1 : 0;
+    days.push({
+      date: dateStr,
+      day: dayName,
+      count,
+      problemCount: count,
+      level,
+    });
+  }
+  return days;
+}
+
+const defaultMonthlyActivity = buildDefaultRollingActivity();
+const defaultYesterday = defaultMonthlyActivity[26]?.date || "2026-11-04";
+
 export const initialGrowthStats = {
   currentStreak: 18,
-  longestStreak: 26,
-  lastActiveDate: "2026-10-28",
+  longestStreak: 28,
+  lastActiveDate: defaultYesterday,
   streakAtRisk: true,
   dailyGoal: 2, // Target problems or commits per day
   todayCompletedCount: 0,
   streakFreezesAvailable: 2,
-  totalProblemsSolved: 342,
+  totalProblemsSolved: 552,
   leetcode: {
     solved: 215,
     easy: 92,
@@ -292,46 +319,59 @@ export const initialGrowthStats = {
     repos: 14,
     streak: 18,
   },
-  weeklyActivity: [
-    { day: "Thu", count: 4, completed: true },
-    { day: "Fri", count: 3, completed: true },
-    { day: "Sat", count: 6, completed: true },
-    { day: "Sun", count: 5, completed: true },
-    { day: "Mon", count: 4, completed: true },
-    { day: "Tue", count: 3, completed: true },
-    { day: "Wed", count: 0, completed: false },
+  weeklyActivity: defaultMonthlyActivity.slice(21).map((item, idx) => ({
+    day: item.day,
+    count: item.count,
+    completed: idx < 6 ? item.count > 0 : false,
+  })),
+  monthlyActivity: defaultMonthlyActivity,
+  recentLogs: [
+    {
+      id: "log-1",
+      date: defaultYesterday,
+      platform: "LeetCode",
+      problemsSolved: 2,
+      difficulty: "Medium",
+      category: "Two Pointers",
+      notes: "Solved 3Sum and Container With Most Water",
+    },
+    {
+      id: "log-2",
+      date: defaultMonthlyActivity[25]?.date || "2026-11-03",
+      platform: "Codeforces",
+      problemsSolved: 2,
+      difficulty: "Medium",
+      category: "Contest Upsolving",
+      notes: "Upsolved Problem B & C from Codeforces Round 982",
+    },
+    {
+      id: "log-3",
+      date: defaultMonthlyActivity[24]?.date || "2026-11-02",
+      platform: "GeeksforGeeks",
+      problemsSolved: 1,
+      difficulty: "Medium",
+      category: "Graph Algorithms",
+      notes: "Solved Detect Cycle in an Undirected Graph",
+    },
+    {
+      id: "log-4",
+      date: defaultMonthlyActivity[23]?.date || "2026-11-01",
+      platform: "CodeChef",
+      problemsSolved: 2,
+      difficulty: "Hard",
+      category: "Dynamic Programming",
+      notes: "Starters 158 Division 2: Array Optimization",
+    },
+    {
+      id: "log-5",
+      date: defaultMonthlyActivity[22]?.date || "2026-10-31",
+      platform: "GitHub",
+      problemsSolved: 3,
+      difficulty: "Open Source",
+      category: "Full Stack",
+      notes: "Implement auth session verification and unit tests",
+    },
   ],
-  monthlyActivity: [
-    { date: "2026-10-01", day: "Thu", count: 3, level: 2 },
-    { date: "2026-10-02", day: "Fri", count: 4, level: 2 },
-    { date: "2026-10-03", day: "Sat", count: 6, level: 3 },
-    { date: "2026-10-04", day: "Sun", count: 2, level: 1 },
-    { date: "2026-10-05", day: "Mon", count: 3, level: 2 },
-    { date: "2026-10-06", day: "Tue", count: 5, level: 3 },
-    { date: "2026-10-07", day: "Wed", count: 4, level: 2 },
-    { date: "2026-10-08", day: "Thu", count: 2, level: 1 },
-    { date: "2026-10-09", day: "Fri", count: 3, level: 2 },
-    { date: "2026-10-10", day: "Sat", count: 5, level: 3 },
-    { date: "2026-10-11", day: "Sun", count: 4, level: 2 },
-    { date: "2026-10-12", day: "Mon", count: 3, level: 2 },
-    { date: "2026-10-13", day: "Tue", count: 2, level: 1 },
-    { date: "2026-10-14", day: "Wed", count: 4, level: 2 },
-    { date: "2026-10-15", day: "Thu", count: 5, level: 3 },
-    { date: "2026-10-16", day: "Fri", count: 3, level: 2 },
-    { date: "2026-10-17", day: "Sat", count: 7, level: 3 },
-    { date: "2026-10-18", day: "Sun", count: 4, level: 2 },
-    { date: "2026-10-19", day: "Mon", count: 2, level: 1 },
-    { date: "2026-10-20", day: "Tue", count: 3, level: 2 },
-    { date: "2026-10-21", day: "Wed", count: 5, level: 3 },
-    { date: "2026-10-22", day: "Thu", count: 4, level: 2 },
-    { date: "2026-10-23", day: "Fri", count: 3, level: 2 },
-    { date: "2026-10-24", day: "Sat", count: 6, level: 3 },
-    { date: "2026-10-25", day: "Sun", count: 5, level: 3 },
-    { date: "2026-10-26", day: "Mon", count: 4, level: 2 },
-    { date: "2026-10-27", day: "Tue", count: 3, level: 2 },
-    { date: "2026-10-28", day: "Wed", count: 0, level: 0 },
-  ],
-  recentLogs: [],
   autonomousProjects: [
     {
       id: "proj-1",

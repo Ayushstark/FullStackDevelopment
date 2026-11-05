@@ -131,7 +131,6 @@ export function AppProvider({ children }) {
   const [growthStats, setGrowthStats] = useState(() => {
     try {
       const loaded = loadFromStorage(STORAGE_KEYS.GROWTH, initialGrowthStats);
-      const status = calculateStreakStatus(loaded.lastActiveDate, loaded.currentStreak);
 
       // Clean out any legacy static mock entries saved in browser localStorage
       const legacyStaticNotes = [
@@ -143,13 +142,25 @@ export function AppProvider({ children }) {
         (log) => !legacyStaticNotes.includes(log.notes)
       );
 
+      // Reconcile stale cached dates so rolling analytics stay fresh and accurate
+      const latestActivityDate = loaded.monthlyActivity?.length
+        ? loaded.monthlyActivity[loaded.monthlyActivity.length - 1]?.date
+        : null;
+      const todayStr = new Date().toISOString().split("T")[0];
+      const isOutdated = !latestActivityDate || latestActivityDate < todayStr;
+      const activityToUse = isOutdated ? initialGrowthStats.monthlyActivity : loaded.monthlyActivity;
+      const lastActive = isOutdated ? initialGrowthStats.lastActiveDate : loaded.lastActiveDate;
+      const freshStatus = calculateStreakStatus(lastActive, loaded.currentStreak);
+
       return {
         ...loaded,
-        recentLogs: cleanedLogs,
+        lastActiveDate: lastActive,
+        monthlyActivity: activityToUse,
+        recentLogs: cleanedLogs.length > 0 ? cleanedLogs : initialGrowthStats.recentLogs,
         codechef: loaded.codechef || initialGrowthStats.codechef,
         gfg: loaded.gfg || initialGrowthStats.gfg,
-        streakAtRisk: status.streakAtRisk,
-        streakBroken: status.isBroken,
+        streakAtRisk: freshStatus.streakAtRisk,
+        streakBroken: freshStatus.isBroken,
         streakFreezesAvailable: loaded.streakFreezesAvailable ?? 2,
       };
     } catch (err) {
