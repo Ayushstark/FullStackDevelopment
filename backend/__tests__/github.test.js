@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidHandle, getGitHubProfile } from "./services/githubService.js";
+import { isValidHandle, getGitHubProfile } from "../src/services/githubService.js";
 
 describe("githubService", () => {
   describe("isValidHandle", () => {

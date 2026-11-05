@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidHandle, getGfgProfile } from "./services/gfgService.js";
+import { isValidHandle, getGfgProfile } from "../src/services/gfgService.js";
 
 describe("gfgService", () => {
   describe("isValidHandle", () => {
@@ -28,4 +28,3 @@ describe("gfgService", () => {
     });
   });
 });
-

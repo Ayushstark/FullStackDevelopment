@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidHandle, getCodeChefProfile } from "./services/codechefService.js";
+import { isValidHandle, getCodeChefProfile } from "../src/services/codechefService.js";
 
 describe("codechefService", () => {
   describe("isValidHandle", () => {
@@ -28,4 +28,3 @@ describe("codechefService", () => {
     });
   });
 });
-

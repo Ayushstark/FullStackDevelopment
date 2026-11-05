@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "./middleware/auth.js";
-import { fallbackStore } from "./fallbackStore.js";
+import { JWT_SECRET } from "../src/config/env.js";
+import { fallbackStore } from "../src/store/fallbackStore.js";
 
 describe("Backend Auth & Credential Storage", () => {
   it("hashes password with bcrypt and verifies correctly", async () => {
@@ -47,4 +47,3 @@ describe("Backend Auth & Credential Storage", () => {
     expect(await bcrypt.compare("securepass", retrieved.password)).toBe(true);
   });
 });
-

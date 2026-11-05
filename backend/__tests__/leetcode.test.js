@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidHandle, getLeetCodeProfile } from "./services/leetcodeService.js";
+import { isValidHandle, getLeetCodeProfile } from "../src/services/leetcodeService.js";
 
 describe("leetcodeService", () => {
   describe("isValidHandle", () => {

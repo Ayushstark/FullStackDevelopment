@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_FILE = path.join(__dirname, "local_db.json");
+const DATA_FILE = path.join(__dirname, "..", "..", "local_db.json");
 
 // Default initial user for instant testing: alex@university.edu / password123
 const DEFAULT_PASSWORD_HASH = bcrypt.hashSync("password123", 10);
@@ -129,4 +129,3 @@ export const fallbackStore = {
     return db.growthLogs.filter((log) => log.userId === userId);
   },
 };
-

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getGeeksforGeeksContests,
   getAllRealContests,
-} from "./services/contestService.js";
+} from "../src/services/contestService.js";
 
 describe("Contest Service", () => {
   it("generates next recurring GeeksforGeeks contests properly", () => {
@@ -27,4 +27,3 @@ describe("Contest Service", () => {
     expect(item).toHaveProperty("time");
   });
 });
-
