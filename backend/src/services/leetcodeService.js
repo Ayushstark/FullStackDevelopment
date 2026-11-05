@@ -197,3 +197,78 @@ export async function getLeetCodeProfile(handle, options = {}) {
     };
   }
 }
+
+const DAILY_CHALLENGE_QUERY = `
+  query questionOfToday {
+    activeDailyCodingChallengeQuestion {
+      date
+      link
+      question {
+        questionId
+        questionFrontendId
+        title
+        titleSlug
+        difficulty
+        topicTags {
+          name
+          slug
+        }
+      }
+    }
+  }
+`;
+
+let dailyChallengeCache = null;
+let dailyChallengeCacheTime = 0;
+const DAILY_CACHE_TTL = 30 * 60 * 1000; // 30 minutes in-memory cache
+
+/**
+ * Fetches the official dynamic Problem of the Day directly from LeetCode.
+ */
+export async function getLeetCodeDailyChallenge() {
+  const now = Date.now();
+  if (dailyChallengeCache && now - dailyChallengeCacheTime < DAILY_CACHE_TTL) {
+    return { success: true, data: dailyChallengeCache };
+  }
+
+  try {
+    const response = await fetch("https://leetcode.com/graphql", {
+      method: "POST",
+      headers: BROWSER_HEADERS,
+      body: JSON.stringify({ query: DAILY_CHALLENGE_QUERY }),
+      signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined,
+    });
+
+    const json = await response.json();
+    const daily = json.data?.activeDailyCodingChallengeQuestion;
+    if (!daily || !daily.question) {
+      return { success: false, error: "Failed to parse daily coding challenge from LeetCode" };
+    }
+
+    const q = daily.question;
+    const tags = Array.isArray(q.topicTags) ? q.topicTags.map((t) => t.name) : [];
+    const category = tags[0] || "Algorithms";
+    const link = daily.link?.startsWith("http")
+      ? daily.link
+      : `https://leetcode.com${daily.link || `/problems/${q.titleSlug}/`}`;
+
+    const challengeData = {
+      id: `lc-daily-${daily.date || new Date().toISOString().slice(0, 10)}`,
+      title: q.title,
+      platform: "LeetCode",
+      difficulty: q.difficulty || "Medium",
+      category,
+      tags,
+      link,
+      date: daily.date,
+      frontendQuestionId: q.questionFrontendId,
+    };
+
+    dailyChallengeCache = challengeData;
+    dailyChallengeCacheTime = now;
+
+    return { success: true, data: challengeData };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   initialApplications,
   initialCalendarEvents,
@@ -20,7 +20,7 @@ import {
 } from "../services/authService.js";
 import { fetchLiveCodeChefStats } from "../services/codechefService.js";
 import { fetchLiveGfgStats } from "../services/gfgService.js";
-import { fetchLiveLeetCodeStats } from "../services/leetcodeService.js";
+import { fetchLiveLeetCodeStats, fetchDailyChallenge } from "../services/leetcodeService.js";
 import { fetchLiveGitHubStats } from "../services/githubService.js";
 import { fetchLiveCodeforcesStats } from "../services/codeforcesService.js";
 import { fetchLiveContests } from "../services/contestClientService.js";
@@ -142,6 +142,7 @@ export function AppProvider({ children }) {
 
   // Authentication State
   const [user, setUser] = useState(() => getStoredUser());
+  const syncAllPlatformsRef = useRef(null);
   const [authReturnPage, setAuthReturnPage] = useState("overview");
   const openAuthPage = () => {
     setAuthReturnPage(activePage === "auth" ? "overview" : activePage);
@@ -176,9 +177,12 @@ export function AppProvider({ children }) {
     loadFromStorage(STORAGE_KEYS.SAVED_IDS, ["stripe-swe-intern", "cred-frontend-intern", "google-swe-intern"]),
   );
 
-  const [applications, setApplications] = useState(() =>
-    loadFromStorage(STORAGE_KEYS.APPLICATIONS, initialApplications),
-  );
+  const [applications, setApplications] = useState(() => {
+    const loaded = loadFromStorage(STORAGE_KEYS.APPLICATIONS, initialApplications);
+    return Array.isArray(loaded)
+      ? loaded.map((app) => ({ ...app, id: String(app.id || app._id) }))
+      : initialApplications;
+  });
 
   const [isContestsLoading, setIsContestsLoading] = useState(false);
   const [isOpportunitiesLoading, setIsOpportunitiesLoading] = useState(false);
@@ -212,6 +216,7 @@ export function AppProvider({ children }) {
         ...loaded,
         lastActiveDate: lastActive,
         monthlyActivity: activityToUse,
+        annualActivity: loaded.annualActivity || initialGrowthStats.annualActivity,
         recentLogs: cleanedLogs.length > 0 ? cleanedLogs : initialGrowthStats.recentLogs,
         codechef: loaded.codechef || initialGrowthStats.codechef,
         gfg: loaded.gfg || initialGrowthStats.gfg,
@@ -271,7 +276,12 @@ export function AppProvider({ children }) {
     try {
       const res = await fetchApplications();
       if (res.success && Array.isArray(res.applications) && res.applications.length > 0) {
-        setApplications(res.applications);
+        setApplications(
+          res.applications.map((app) => ({
+            ...app,
+            id: String(app.id || app._id),
+          })),
+        );
       }
     } catch (err) {
       console.warn("Failed to fetch applications:", err);
@@ -315,6 +325,19 @@ export function AppProvider({ children }) {
         refreshLiveContests();
         refreshOpportunities();
         refreshApplications();
+        fetchDailyChallenge()
+          .then((res) => {
+            if (!cancelled && res.success && res.data) {
+              setDailyChallenge((prev) => {
+                const isSameDay = prev?.date === res.data.date;
+                return {
+                  ...res.data,
+                  completed: isSameDay ? Boolean(prev?.completed) : false,
+                };
+              });
+            }
+          })
+          .catch(() => {});
       }
     };
     loadInitialData();
@@ -416,10 +439,17 @@ export function AppProvider({ children }) {
       setProfile((prev) => ({ ...prev, ...next, ...data.user }));
       setUser(data.user);
       saveSession(token, data.user);
+      const handles = updated.platformHandles || data.user?.platformHandles;
+      if (handles && Object.values(handles).some(Boolean)) {
+        syncAllPlatformsRef.current?.(handles)?.catch(() => {});
+      }
       return data.user;
     }
 
     setProfile(next);
+    if (updated.platformHandles && Object.values(updated.platformHandles).some(Boolean)) {
+      syncAllPlatformsRef.current?.(updated.platformHandles)?.catch(() => {});
+    }
     return next;
   };
 
@@ -484,8 +514,12 @@ export function AppProvider({ children }) {
   };
 
   const updateApplicationStatus = (id, status) => {
+    if (!id || String(id) === "undefined") return;
     setApplications((prev) =>
-      prev.map((app) => (app.id === id || app._id === id ? { ...app, status } : app)),
+      prev.map((app) => {
+        const appId = String(app.id || app._id);
+        return appId === String(id) ? { ...app, status, id: appId } : app;
+      }),
     );
     updateRemoteApplication(id, { status }).catch((err) => {
       console.warn("Offline application status update:", err);
@@ -494,7 +528,9 @@ export function AppProvider({ children }) {
 
   const updateApplicationNotes = (id, notes) => {
     setApplications((prev) =>
-      prev.map((app) => (app.id === id || app._id === id ? { ...app, notes } : app)),
+      prev.map((app) =>
+        String(app.id) === String(id) || String(app._id) === String(id) ? { ...app, notes } : app,
+      ),
     );
     updateRemoteApplication(id, { notes }).catch((err) => {
       console.warn("Offline application notes update:", err);
@@ -502,7 +538,9 @@ export function AppProvider({ children }) {
   };
 
   const deleteApplication = (id) => {
-    setApplications((prev) => prev.filter((app) => app.id !== id && app._id !== id));
+    setApplications((prev) =>
+      prev.filter((app) => String(app.id) !== String(id) && String(app._id) !== String(id)),
+    );
     deleteRemoteApplication(id).catch((err) => {
       console.warn("Offline application delete:", err);
     });
@@ -707,7 +745,82 @@ export function AppProvider({ children }) {
     }
   };
 
-  // Rekindle broken streak
+  // Helper to merge live platform submissions and activity events into rolling monthlyActivity
+function mergeLiveEventsIntoMonthlyActivity(currentMonthly = [], incomingEvents = []) {
+  const today = new Date().toISOString().split("T")[0];
+  const activityByDate = new Map(
+    (currentMonthly || []).map((day) => [day.date, {
+      count: Number(day.count) || 0,
+      problemCount: Number(day.problemCount ?? day.count) || 0,
+    }]),
+  );
+
+  for (const event of incomingEvents) {
+    if (!event || !event.date) continue;
+    const dateKey = String(event.date).slice(0, 10);
+    const count = Number(event.problemsSolved) || 1;
+    const existing = activityByDate.get(dateKey) || { count: 0, problemCount: 0 };
+    existing.count += count;
+    if (event.platform !== "GitHub") {
+      existing.problemCount += count;
+    }
+    activityByDate.set(dateKey, existing);
+  }
+
+  return Array.from({ length: 30 }, (_, index) => {
+    const date = new Date(`${today}T00:00:00.000Z`);
+    date.setUTCDate(date.getUTCDate() - (29 - index));
+    const dateKey = date.toISOString().slice(0, 10);
+    const dayData = activityByDate.get(dateKey) || { count: 0, problemCount: 0 };
+    const level = dayData.count >= 5 ? 3 : dayData.count >= 3 ? 2 : dayData.count >= 1 ? 1 : 0;
+    return {
+      date: dateKey,
+      day: new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(date),
+      count: dayData.count,
+      problemCount: dayData.problemCount,
+      level,
+    };
+  });
+}
+
+function mergeLiveEventsIntoAnnualActivity(currentAnnual = [], incomingEvents = []) {
+  const today = new Date().toISOString().split("T")[0];
+  const activityByDate = new Map(
+    (currentAnnual || []).map((day) => [day.date, {
+      count: Number(day.count) || 0,
+      problemCount: Number(day.problemCount ?? day.count) || 0,
+    }]),
+  );
+
+  for (const event of incomingEvents) {
+    if (!event || !event.date) continue;
+    const dateKey = String(event.date).slice(0, 10);
+    const count = Number(event.problemsSolved) || 1;
+    const existing = activityByDate.get(dateKey) || { count: 0, problemCount: 0 };
+    existing.count += count;
+    if (event.platform !== "GitHub") {
+      existing.problemCount += count;
+    }
+    activityByDate.set(dateKey, existing);
+  }
+
+  return Array.from({ length: 365 }, (_, index) => {
+    const date = new Date(`${today}T00:00:00.000Z`);
+    date.setUTCDate(date.getUTCDate() - (364 - index));
+    const dateKey = date.toISOString().slice(0, 10);
+    const dayData = activityByDate.get(dateKey) || { count: 0, problemCount: 0 };
+    const level = dayData.count >= 5 ? 3 : dayData.count >= 3 ? 2 : dayData.count >= 1 ? 1 : 0;
+    return {
+      date: dateKey,
+      day: new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(date),
+      count: dayData.count,
+      problemCount: dayData.problemCount,
+      level,
+    };
+  });
+}
+
+// Rekindle broken streak
   const rekindleStreak = () => {
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -748,13 +861,15 @@ export function AppProvider({ children }) {
         const prevSolved = currentCodeChef.solved ?? 0;
         const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentCodeChef.solved ?? null);
         const diffSolved = liveSolved == null ? 0 : liveSolved - prevSolved;
+        const isFirstSync = !currentCodeChef.solved;
+        const incrementalDaily = isFirstSync ? 1 : Math.min(Math.max(0, diffSolved), 5);
 
         // Record live CodeChef sync activity entry
         const currentLogs = prev.recentLogs || [];
         const ccLog = {
           date: new Date().toISOString().split("T")[0],
           platform: "CodeChef",
-          problemsSolved: Math.max(0, diffSolved),
+          problemsSolved: incrementalDaily,
           difficulty: live.division || "Medium",
           category: "Contest Division",
             notes: `Synced CodeChef rating ${live.rating ?? "—"} (${live.stars || "—"}, ${live.division || "—"})`,
@@ -763,9 +878,20 @@ export function AppProvider({ children }) {
           ? []
           : [ccLog];
 
+        const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, incomingLogs);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, incomingLogs);
+        const nextSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentCodeChef.solved ?? 0);
+        const totalSolved =
+          (Number(prev.leetcode?.solved) || 0) +
+          (Number(prev.codeforces?.solved) || 0) +
+          (Number(nextSolved) || 0) +
+          (Number(prev.geeksforgeeks?.solved || prev.gfg?.solved) || 0);
+
         return {
           ...prev,
-          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          totalProblemsSolved: totalSolved,
+          monthlyActivity: updatedMonthly,
+          annualActivity: updatedAnnual,
           codechef: {
             ...currentCodeChef,
             handle: live.handle || handle,
@@ -828,9 +954,7 @@ export function AppProvider({ children }) {
       setGrowthStats((prev) => {
         const storedGfg = prev.geeksforgeeks || prev.gfg;
         const currentGfg = storedGfg?.handle?.toLowerCase() === handle.toLowerCase() ? storedGfg : {};
-        const prevSolved = currentGfg.solved ?? 0;
         const liveSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentGfg.solved ?? null);
-        const diffSolved = liveSolved == null ? 0 : liveSolved - prevSolved;
         const updatedGfg = {
           ...currentGfg,
           handle: live.handle || handle,
@@ -863,9 +987,20 @@ export function AppProvider({ children }) {
           return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
         });
 
+        const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, incomingLogs);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, incomingLogs);
+        const nextSolved = typeof live.problemsSolved === "number" ? live.problemsSolved : (currentGfg.solved ?? 0);
+        const totalSolved =
+          (Number(prev.leetcode?.solved) || 0) +
+          (Number(prev.codeforces?.solved) || 0) +
+          (Number(prev.codechef?.solved) || 0) +
+          (Number(nextSolved) || 0);
+
         return {
           ...prev,
-          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          totalProblemsSolved: totalSolved,
+          monthlyActivity: updatedMonthly,
+          annualActivity: updatedAnnual,
           gfg: updatedGfg,
           geeksforgeeks: updatedGfg,
           recentLogs: [...incomingLogs, ...currentLogs].slice(0, 20),
@@ -913,9 +1048,7 @@ export function AppProvider({ children }) {
       const live = result.data;
       setGrowthStats((prev) => {
         const currentLC = prev.leetcode?.handle?.toLowerCase() === handle.toLowerCase() ? prev.leetcode : {};
-        const prevSolved = currentLC.solved ?? 0;
-        const liveSolved = typeof live.solved === "number" ? live.solved : prevSolved;
-        const diffSolved = liveSolved - prevSolved;
+        const liveSolved = typeof live.solved === "number" ? live.solved : (currentLC.solved ?? 0);
 
         const updatedLC = {
           ...currentLC,
@@ -941,9 +1074,19 @@ export function AppProvider({ children }) {
           return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
         });
 
+        const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, live.recentSubmissions || []);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, live.recentSubmissions || []);
+        const totalSolved =
+          (Number(liveSolved) || 0) +
+          (Number(prev.codeforces?.solved) || 0) +
+          (Number(prev.codechef?.solved) || 0) +
+          (Number(prev.geeksforgeeks?.solved || prev.gfg?.solved) || 0);
+
         return {
           ...prev,
-          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          totalProblemsSolved: totalSolved,
+          monthlyActivity: updatedMonthly,
+          annualActivity: updatedAnnual,
           leetcode: updatedLC,
           recentLogs: [...incomingLogs, ...currentLogs].slice(0, 15),
         };
@@ -1006,8 +1149,13 @@ export function AppProvider({ children }) {
           return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
         });
 
+        const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, incomingLogs);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, incomingLogs);
+
         return {
           ...prev,
+          monthlyActivity: updatedMonthly,
+          annualActivity: updatedAnnual,
           github: updatedGH,
           recentLogs: [...incomingLogs, ...currentLogs].slice(0, 15),
         };
@@ -1048,9 +1196,7 @@ export function AppProvider({ children }) {
       const live = result.data;
       setGrowthStats((prev) => {
         const currentCF = prev.codeforces?.handle?.toLowerCase() === handle.toLowerCase() ? prev.codeforces : {};
-        const prevSolved = currentCF.solved ?? 0;
-        const liveSolved = typeof live.solved === "number" ? live.solved : prevSolved;
-        const diffSolved = liveSolved - prevSolved;
+        const liveSolved = typeof live.solved === "number" ? live.solved : (currentCF.solved ?? 0);
 
         const updatedCF = {
           ...currentCF,
@@ -1071,9 +1217,19 @@ export function AppProvider({ children }) {
           return !currentLogs.some((exist) => exist.notes === inc.notes && exist.date === inc.date);
         });
 
+        const updatedMonthly = mergeLiveEventsIntoMonthlyActivity(prev.monthlyActivity, live.recentSubmissions || []);
+        const updatedAnnual = mergeLiveEventsIntoAnnualActivity(prev.annualActivity || initialGrowthStats.annualActivity, live.recentSubmissions || []);
+        const totalSolved =
+          (Number(prev.leetcode?.solved) || 0) +
+          (Number(liveSolved) || 0) +
+          (Number(prev.codechef?.solved) || 0) +
+          (Number(prev.geeksforgeeks?.solved || prev.gfg?.solved) || 0);
+
         return {
           ...prev,
-          totalProblemsSolved: Math.max(0, (prev.totalProblemsSolved || 0) + diffSolved),
+          totalProblemsSolved: totalSolved,
+          monthlyActivity: updatedMonthly,
+          annualActivity: updatedAnnual,
           codeforces: updatedCF,
           recentLogs: [...incomingLogs, ...currentLogs].slice(0, 15),
         };
@@ -1094,14 +1250,31 @@ export function AppProvider({ children }) {
 
   const syncAllPlatforms = async (handlesToUse = null) => {
     const handles = handlesToUse || profile.platformHandles || {};
-    return Promise.allSettled([
-      handles.leetcode ? syncLeetCodeData(handles.leetcode) : Promise.resolve(),
-      handles.codeforces ? syncCodeforcesData(handles.codeforces) : Promise.resolve(),
-      handles.codechef ? syncCodeChefData(handles.codechef) : Promise.resolve(),
-      handles.gfg || handles.geeksforgeeks ? syncGfgData(handles.gfg || handles.geeksforgeeks) : Promise.resolve(),
-      handles.github ? syncGitHubData(handles.github) : Promise.resolve(),
-    ]);
+    const results = [];
+    if (handles.leetcode) {
+      results.push(await syncLeetCodeData(handles.leetcode, { force: false }));
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    if (handles.codeforces) {
+      results.push(await syncCodeforcesData(handles.codeforces, { force: false }));
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    if (handles.codechef) {
+      results.push(await syncCodeChefData(handles.codechef, { force: false }));
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    if (handles.gfg || handles.geeksforgeeks) {
+      results.push(await syncGfgData(handles.gfg || handles.geeksforgeeks, { force: false }));
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    if (handles.github) {
+      results.push(await syncGitHubData(handles.github, { force: false }));
+    }
+    return results;
   };
+  useEffect(() => {
+    syncAllPlatformsRef.current = syncAllPlatforms;
+  });
 
   // Calendar actions
   const toggleCalendarReminder = (id) => {

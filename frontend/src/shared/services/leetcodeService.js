@@ -55,3 +55,22 @@ export async function fetchLiveLeetCodeStats(handle, options = {}) {
     };
   }
 }
+
+/**
+ * Fetches the official real-time Problem of the Day from LeetCode.
+ */
+export async function fetchDailyChallenge() {
+  const url = `${API_BASE}/api/platforms/daily-challenge`;
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined,
+    });
+    const data = await response.json();
+    if (response.ok && data.success && data.data) {
+      return { success: true, data: data.data };
+    }
+    return { success: false, error: data.error || "Failed to fetch daily challenge" };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}

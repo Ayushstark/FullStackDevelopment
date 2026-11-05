@@ -6,7 +6,8 @@
   gap: 14px;
   overflow-x: auto;
   padding-bottom: 24px;
-  align-items: start;
+  align-items: stretch;
+  min-height: 560px;
 }
 
 .applications-heading-actions {
@@ -82,7 +83,7 @@
   }
 }
 
-/* Category Columns with dynamic height based on content */
+/* Category Columns with consistent drop zone height */
 .tracker-column.application-column {
   background: #f0f0ed !important;
   border: 1px solid #dededb !important;
@@ -91,8 +92,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: auto !important;
-  height: fit-content !important;
+  min-height: 520px !important;
+  height: 100% !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
@@ -118,12 +119,9 @@ body.dark-mode .tracker-column.application-column {
 .tracker-column.col-offer { border-top: 3px solid #10b981 !important; }
 .tracker-column.col-rejected { border-top: 3px solid #94a3b8 !important; }
 
-/* Prevent child elements inside columns from capturing drag pointer events and causing flicker */
-.tracker-column.is-drag-over * {
+/* Ensure placeholder slot does not intercept pointer events during drag hover */
+.drag-placeholder-slot {
   pointer-events: none;
-}
-.tracker-column.is-drag-over .drag-placeholder-slot {
-  pointer-events: auto;
 }
 
 /* Column Header with Scratch block styling */
@@ -225,8 +223,19 @@ body.dark-mode .empty-column-zone {
   gap: 10px;
   cursor: grab;
   user-select: none;
+  -webkit-user-select: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.scratch-block-card * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.scratch-block-card textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 :root[data-theme="dark"] .scratch-block-card,

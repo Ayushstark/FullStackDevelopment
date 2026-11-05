@@ -83,76 +83,65 @@ export function ApplicationsPage() {
   };
 
   // Drag and drop event handlers
-  const dragLeaveTimeoutRef = useRef(null);
+  const dragCounterRef = useRef({});
+  const draggedAppIdRef = useRef(null);
 
   const handleDragStart = (e, appId) => {
-    setDraggedAppId(appId);
+    e.stopPropagation();
+    if (!appId) return;
+    draggedAppIdRef.current = String(appId);
+    setDraggedAppId(String(appId));
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", appId);
-
-    // Set custom clean drag image preview so the browser doesn't snapshot a glitchy rotated card
-    const target = e.currentTarget;
-    if (e.dataTransfer.setDragImage) {
-      const rect = target.getBoundingClientRect();
-      const clone = target.cloneNode(true);
-      clone.style.width = `${rect.width}px`;
-      clone.style.position = "absolute";
-      clone.style.top = "-9999px";
-      clone.style.left = "-9999px";
-      clone.style.pointerEvents = "none";
-      clone.style.opacity = "0.95";
-      clone.style.transform = "rotate(2deg) scale(1.02)";
-      clone.style.boxShadow = "0 14px 28px rgba(0, 0, 0, 0.22), 0 0 16px rgba(2, 132, 199, 0.25)";
-      document.body.appendChild(clone);
-      e.dataTransfer.setDragImage(clone, rect.width / 2, 24);
-      setTimeout(() => {
-        if (document.body.contains(clone)) {
-          document.body.removeChild(clone);
-        }
-      }, 0);
+    e.dataTransfer.setData("text/plain", String(appId));
+    try {
+      e.dataTransfer.setData("application/x-devrhythm-app", String(appId));
+    } catch {
+      // Ignore
     }
   };
 
   const handleDragEnd = () => {
-    if (dragLeaveTimeoutRef.current) {
-      clearTimeout(dragLeaveTimeoutRef.current);
-    }
+    dragCounterRef.current = {};
+    draggedAppIdRef.current = null;
     setDraggedAppId(null);
     setDragOverColumn(null);
+  };
+
+  const handleDragEnter = (e, columnKey) => {
+    e.preventDefault();
+    dragCounterRef.current[columnKey] = (dragCounterRef.current[columnKey] || 0) + 1;
+    setDragOverColumn(columnKey);
   };
 
   const handleDragOver = (e, columnKey) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    if (dragLeaveTimeoutRef.current) {
-      clearTimeout(dragLeaveTimeoutRef.current);
-      dragLeaveTimeoutRef.current = null;
-    }
     if (dragOverColumn !== columnKey) {
       setDragOverColumn(columnKey);
     }
   };
 
   const handleDragLeave = (e, columnKey) => {
-    // Only clear if actually leaving the column container to prevent jitter from child elements
-    const related = e.relatedTarget;
-    if (e.currentTarget && e.currentTarget.contains(related)) {
-      return;
-    }
-    dragLeaveTimeoutRef.current = setTimeout(() => {
+    e.preventDefault();
+    dragCounterRef.current[columnKey] = Math.max(0, (dragCounterRef.current[columnKey] || 1) - 1);
+    if (dragCounterRef.current[columnKey] === 0) {
       setDragOverColumn((current) => (current === columnKey ? null : current));
-    }, 40);
+    }
   };
 
   const handleDrop = (e, targetStatus) => {
     e.preventDefault();
-    if (dragLeaveTimeoutRef.current) {
-      clearTimeout(dragLeaveTimeoutRef.current);
-    }
-    const appId = e.dataTransfer.getData("text/plain") || draggedAppId;
+    e.stopPropagation();
+    dragCounterRef.current = {};
+    const appId =
+      e.dataTransfer.getData("application/x-devrhythm-app") ||
+      e.dataTransfer.getData("text/plain") ||
+      draggedAppIdRef.current ||
+      draggedAppId;
     if (appId) {
       updateApplicationStatus(appId, targetStatus);
     }
+    draggedAppIdRef.current = null;
     setDraggedAppId(null);
     setDragOverColumn(null);
   };
@@ -189,6 +178,7 @@ export function ApplicationsPage() {
             <div
               className={`tracker-column application-column ${column.colClass} ${isDragOver ? "is-drag-over" : ""}`}
               key={column.key}
+              onDragEnter={(e) => handleDragEnter(e, column.key)}
               onDragOver={(e) => handleDragOver(e, column.key)}
               onDragLeave={(e) => handleDragLeave(e, column.key)}
               onDrop={(e) => handleDrop(e, column.key)}
@@ -218,12 +208,27 @@ export function ApplicationsPage() {
               )}
 
               {colApps.length === 0 ? (
-                <div className="empty-column-zone">
+                <div
+                  className="empty-column-zone"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    if (dragOverColumn !== column.key) {
+                      setDragOverColumn(column.key);
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDrop(e, column.key);
+                  }}
+                >
                   <span>Drop block here</span>
                 </div>
               ) : (
                 colApps.map((app) => {
-                  const isDraggingThis = draggedAppId === app.id;
+                  const appId = String(app.id || app._id || "");
+                  const isDraggingThis = Boolean(draggedAppId && String(draggedAppId) === appId);
                   const cardClass =
                     app.status === "Saved"
                       ? "card-saved"
@@ -238,10 +243,22 @@ export function ApplicationsPage() {
                   return (
                     <article
                       className={`scratch-block-card tracker-card application-card ${cardClass} ${isDraggingThis ? "is-dragging" : ""}`}
-                      key={app.id}
-                      draggable={editingNotesId !== app.id}
-                      onDragStart={(e) => handleDragStart(e, app.id)}
+                      key={appId}
+                      draggable={editingNotesId !== appId}
+                      onDragStart={(e) => handleDragStart(e, appId)}
                       onDragEnd={handleDragEnd}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        if (dragOverColumn !== column.key) {
+                          setDragOverColumn(column.key);
+                        }
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDrop(e, column.key);
+                      }}
                     >
                       <div className="scratch-block-top">
                         <strong className="scratch-role-title">{app.role}</strong>
@@ -251,7 +268,7 @@ export function ApplicationsPage() {
                           </span>
                           <button
                             className="text-button"
-                            onClick={() => deleteApplication(app.id)}
+                            onClick={() => deleteApplication(appId)}
                             title="Remove application"
                             aria-label={`Delete application for ${app.role} at ${app.company}`}
                             style={{ color: "#94a3b8", padding: 2 }}
@@ -275,7 +292,7 @@ export function ApplicationsPage() {
                       </div>
 
                       {/* Notes preview or edit */}
-                      {editingNotesId === app.id ? (
+                      {editingNotesId === appId ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
                           <textarea
                             className="form-textarea"
@@ -286,7 +303,7 @@ export function ApplicationsPage() {
                           <div style={{ display: "flex", gap: 6 }}>
                             <button
                               className="button button-primary button-sm"
-                              onClick={() => handleSaveNotes(app.id)}
+                              onClick={() => handleSaveNotes(appId)}
                               type="button"
                             >
                               Save
@@ -304,7 +321,7 @@ export function ApplicationsPage() {
                         <div
                           className="scratch-notes-box"
                           onClick={() => {
-                            setEditingNotesId(app.id);
+                            setEditingNotesId(appId);
                             setTempNotes(app.notes);
                           }}
                           title="Click to edit notes"
@@ -319,7 +336,7 @@ export function ApplicationsPage() {
                           className="scratch-stage-select"
                           value={app.status}
                           onChange={(e) =>
-                            updateApplicationStatus(app.id, e.target.value)
+                            updateApplicationStatus(appId, e.target.value)
                           }
                           aria-label="Move application stage"
                         >

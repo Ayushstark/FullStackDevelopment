@@ -259,7 +259,45 @@ function buildDefaultRollingActivity() {
   return days;
 }
 
+function buildDefaultAnnualActivity() {
+  const days = [];
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  let seed = 42;
+  const rand = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+
+  for (let i = 364; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dayOfWeek = d.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    const p = rand();
+    let count = 0;
+    let problemCount = 0;
+    if (p > (isWeekend ? 0.45 : 0.28)) {
+      count = 1 + Math.floor(rand() * 4);
+      if (rand() > 0.8) count += Math.floor(rand() * 4);
+      problemCount = Math.max(1, count - (rand() > 0.5 ? 1 : 0));
+    }
+
+    days.push({
+      date: dateStr,
+      count,
+      problemCount,
+      level: count >= 5 ? 3 : count >= 3 ? 2 : count >= 1 ? 1 : 0,
+    });
+  }
+  return days;
+}
+
 const defaultMonthlyActivity = buildDefaultRollingActivity();
+const defaultAnnualActivity = buildDefaultAnnualActivity();
 const defaultYesterday = defaultMonthlyActivity[26]?.date || "2026-11-04";
 
 export const initialGrowthStats = {
@@ -326,6 +364,7 @@ export const initialGrowthStats = {
     completed: idx < 6 ? item.count > 0 : false,
   })),
   monthlyActivity: defaultMonthlyActivity,
+  annualActivity: defaultAnnualActivity,
   recentLogs: [
     {
       id: "log-1",

@@ -949,6 +949,58 @@
   color: #70706a;
 }
 
+.platform-handle-clickable {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  transition: color 0.15s ease;
+}
+
+.platform-handle-clickable:hover {
+  color: #171717;
+}
+
+.platform-handle-editor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.platform-handle-input {
+  font-size: 11px;
+  padding: 3px 6px;
+  border: 1px solid #d1d1cd;
+  border-radius: 4px;
+  width: 105px;
+  background: #ffffff;
+  color: #171717;
+}
+
+.platform-handle-save-btn {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #171717;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+
+.platform-handle-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.platform-handle-cancel-btn {
+  font-size: 11px;
+  padding: 2px 4px;
+  background: transparent;
+  border: none;
+  color: #70706a;
+  cursor: pointer;
+}
+
 .platform-sync-btn {
   display: inline-flex;
   align-items: center;

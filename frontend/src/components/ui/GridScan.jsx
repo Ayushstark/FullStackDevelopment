@@ -800,7 +800,6 @@ export const GridScan = ({
         pings.length > 0 ||
         settling ||
         hover.strength > 0.002 ||
-        (!reduce && s.parallax > 0 && !look.held) ||
         (s.points && !reduce && scan.alpha > 0);
       if (busy) raf = requestAnimationFrame(frame);
       else last = 0;
@@ -887,6 +886,9 @@ export const GridScan = ({
       if (visible) {
         last = 0;
         wake();
+      } else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
       }
     });
     intersection.observe(container);

@@ -1,6 +1,6 @@
 import { getCodeChefProfile } from "../services/codechefService.js";
 import { getGfgProfile } from "../services/gfgService.js";
-import { getLeetCodeProfile } from "../services/leetcodeService.js";
+import { getLeetCodeProfile, getLeetCodeDailyChallenge } from "../services/leetcodeService.js";
 import { getGitHubProfile } from "../services/githubService.js";
 import { getCodeforcesProfile } from "../services/codeforcesService.js";
 
@@ -42,3 +42,16 @@ export const getGitHub = createPlatformHandler(getGitHubProfile, "GitHub");
 
 /** GET /api/platforms/codeforces/:handle */
 export const getCodeforces = createPlatformHandler(getCodeforcesProfile, "Codeforces");
+
+/** GET /api/platforms/daily-challenge */
+export const getDailyChallenge = async (_req, res) => {
+  try {
+    const result = await getLeetCodeDailyChallenge();
+    if (!result.success) {
+      return res.status(502).json(result);
+    }
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
