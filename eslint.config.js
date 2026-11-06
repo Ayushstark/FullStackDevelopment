@@ -4,7 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
-  { ignores: ["dist", "coverage"] },
+  { ignores: ["dist/**", "**/dist/**", "coverage/**", "**/node_modules/**", "vite.config.js.timestamp-*"] },
   js.configs.recommended,
   {
     files: ["**/*.{js,jsx}"],
@@ -36,6 +36,12 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "no-var": "error",
+      "prefer-const": "error",
+      eqeqeq: ["error", "always", { null: "ignore" }],
+      "no-debugger": "error",
+      "no-console": ["error", { allow: ["error", "info", "warn"] }],
+      "object-shorthand": ["error", "always"],
     },
   },
 ];

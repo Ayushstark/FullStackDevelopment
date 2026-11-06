@@ -1,0 +1,79 @@
+.flow-button {
+  --flow-ink: #d6e5eb;
+  --flow-fill: #7dd3fc;
+  position: relative;
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 32px;
+  border: 1.5px solid rgba(170, 203, 216, 0.34);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--flow-ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  isolation: isolate;
+  transition:
+    border-color 600ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 600ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-radius 600ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 180ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.flow-button:hover {
+  border-color: transparent;
+  border-radius: 12px;
+  color: #06202b;
+}
+.flow-button:active { transform: scale(0.96); }
+.flow-button:focus-visible { outline: 2px solid rgba(125, 211, 252, 0.85); outline-offset: 4px; }
+.flow-button-label {
+  position: relative;
+  z-index: 1;
+  transform: translateX(-12px);
+  transition: transform 800ms ease-out;
+}
+.flow-button:hover .flow-button-label { transform: translateX(12px); }
+.flow-button-arrow {
+  position: absolute;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  transition:
+    left 800ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    right 800ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 250ms ease;
+}
+.flow-button-arrow-left { left: -25%; color: var(--flow-ink); }
+.flow-button:hover .flow-button-arrow-left { left: 15px; color: #06202b; }
+.flow-button-arrow-right { right: 15px; color: var(--flow-ink); }
+.flow-button:hover .flow-button-arrow-right { right: -25%; color: #06202b; }
+.flow-button-circle {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--flow-fill);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition:
+    width 800ms cubic-bezier(0.19, 1, 0.22, 1),
+    height 800ms cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 800ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+.flow-button:hover .flow-button-circle { width: 220px; height: 220px; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-button, .flow-button-label, .flow-button-arrow, .flow-button-circle { transition-duration: 0.01ms; }
+}

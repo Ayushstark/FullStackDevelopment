@@ -10,6 +10,6 @@ Include affected versions or commits, reproduction steps, impact, and a suggeste
 
 - Keep secrets server-side and use least-privilege tokens.
 - Validate all external data at integration boundaries.
-- Do not send resumes or personal information to an AI provider without explicit user consent.
-- Preserve source attribution and avoid presenting generated content as verified fact.
-- Dependency review, CodeQL, linting, type checking, tests, and production builds run in CI.
+- Keep platform credentials and access tokens secret and server-side.
+- Preserve source attribution and do not present derived streak calculations as platform-reported facts.
+- Dependency review, CodeQL, linting, tests, and production builds run in CI.

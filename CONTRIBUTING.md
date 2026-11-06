@@ -1,13 +1,14 @@
-# Contributing to OpportunityOS
+# Contributing to DevRhythm
 
 ## Development flow
 
-1. Select or create an issue with a milestone, owner, and acceptance criteria.
-2. Create a focused branch from `dev`: `feat/<issue>-short-name`, `fix/<issue>-short-name`, or `chore/<issue>-short-name`.
-3. Open a pull request into `dev` for integration testing.
-4. Keep changes small, typed, tested, and documented at the boundary they change.
-5. Promote a tested `dev` release to `main` through a reviewed release pull request.
-6. Address review feedback and merge only after required checks pass.
+1. Read [Engineering Standards](docs/ENGINEERING_STANDARDS.md) before making changes.
+2. Select or create an issue with a milestone, owner, and acceptance criteria.
+3. Create a focused branch from `dev`: `feat/<issue>-short-name`, `fix/<issue>-short-name`, or `chore/<issue>-short-name`.
+4. Open a pull request into `dev` for integration testing.
+5. Keep changes small, linted, tested, and documented at the boundary they change. Use JavaScript and JSX; do not introduce TypeScript.
+6. Promote a tested `dev` release to `main` through a reviewed release pull request.
+7. Address review feedback and merge only after required checks pass.
 
 ## Branch environments
 
@@ -20,7 +21,6 @@
 ```bash
 npm ci
 npm run lint
-npm run typecheck
 npm test
 npm run build
 ```
@@ -29,4 +29,8 @@ Do not commit `node_modules`, build artifacts, credentials, or `.env` files. API
 
 ## Review standard
 
-Reviewers should verify behavior, failure states, accessibility, data-source attribution, security boundaries, tests, and operational impact. A feature is not complete when only the happy path works.
+Reviewers should verify behavior, failure states, accessibility, platform-data attribution, security boundaries, tests, and operational impact. A feature is not complete when only the happy path works.
+
+Follow the [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript) for JavaScript conventions. The repository's ESLint configuration is the executable baseline; use it to resolve style questions consistently.
+
+All contributions must follow the [DevRhythm Engineering Standards](docs/ENGINEERING_STANDARDS.md).

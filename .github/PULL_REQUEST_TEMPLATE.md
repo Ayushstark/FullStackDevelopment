@@ -16,9 +16,12 @@
 <!-- List exact commands, screenshots, manual checks, or explain why validation was not applicable. -->
 
 - [ ] `npm run lint`
-- [ ] `npm run typecheck`
 - [ ] `npm test`
 - [ ] `npm run build`
+
+## Contributor standards
+
+- [ ] I read and followed [DevRhythm Engineering Standards](../docs/ENGINEERING_STANDARDS.md).
 
 ## Product and operational checks
 

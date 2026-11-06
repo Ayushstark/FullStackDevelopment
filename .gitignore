@@ -2,8 +2,11 @@ node_modules/
 dist/
 coverage/
 .vite/
-*.tsbuildinfo
 .DS_Store
 .env
 .env.*.local
+*.download
+env.download
 server/local_db.json
+backend/local_db.json
+frontend/dist/

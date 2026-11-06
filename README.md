@@ -1,244 +1,268 @@
-# OpportunityOS
-### An AI-Powered Career and Developer Growth Platform for Students
+# DevRhythm
 
-**Discover opportunities. Prepare intelligently. Track your growth.**
+**Your coding practice, in full view.**
 
-## 1. Project Overview
+DevRhythm brings coding activity, practice streaks, contest schedules, and application tracking into one developer dashboard. Connect public profiles from coding platforms, inspect practice trends, and keep your career pipeline alongside your progress.
 
-OpportunityOS is a student-focused platform designed to simplify internship discovery, research applications, placement preparation, and consistent technical growth.
+**Live demo:** https://full-stack-development-sigma-two.vercel.app
 
-Students often struggle to manage multiple activities simultaneously: searching for internships across different websites, finding research opportunities, preparing resumes, writing cold emails, solving coding problems, tracking contests, and meeting application deadlines.
+![DevRhythm overview dashboard](docs/screenshots/overview-headless.png)
 
-These activities are usually scattered across separate platforms, making it difficult to maintain a clear view of career opportunities and personal progress.
+## What you can do
 
-**OpportunityOS aims to bring opportunity discovery, AI-assisted application preparation, coding progress, and upcoming technical events into one unified platform.**
+- **See your practice at a glance.** Review solved-problem totals, daily cadence, active days, recent activity, and streak health.
+- **Dynamic Daily Coding Challenge.** Syncs the live, official Problem of the Day directly from LeetCode GraphQL with difficulty badges, topic tags, and quick-completion logging.
+- **Custom Daily Targets & Steppers.** Adjust your daily problem targets with `-` and `+` steppers or click to type a custom goal with automatic progress recalculation.
+- **Bring platform profiles together.** Look up public profiles on LeetCode, Codeforces, CodeChef, GeeksforGeeks, and GitHub.
+- **Explore your activity.** Inspect platform metrics, practice trends, 365-day Skyline visualization, and streak health in the dashboard.
+- **Keep up with events.** Browse coding contests, hackathons, workshops, and deadlines in the calendar.
+- **Organize your career search.** Track applications through their stages and maintain a profile with your skills and platform handles.
+- **Log practice.** Record activity against a supported platform and follow your consistency over time.
 
-The project combines an AI-powered opportunity discovery system with an integrated developer-growth dashboard, building on our existing Streak project.
+> **Data note:** Platform and contest information depends on each provider's public endpoints and availability. The interface also includes sample data so that the product can be explored without connecting every service. Treat retrieved metrics as provider data, not as a guarantee of identical coverage across platforms.
 
-## 2. The Problem We Want to Solve
+## Screenshots
 
-Students preparing for internships and placements face four major challenges:
+| Overview |
+|---|
+| ![Overview dashboard](docs/screenshots/overview-headless.png) |
 
-- **Fragmented opportunity discovery:** Internships, research positions, hackathons, and coding contests are announced across many websites and platforms.
-- **Time-consuming applications:** Students must manually interpret job descriptions, assess eligibility, tailor resumes, and write personalized outreach emails.
-- **Inconsistent preparation:** Coding activity and problem-solving progress can be spread across multiple coding platforms, making progress difficult to monitor.
-- **Missed deadlines and activities:** Application deadlines, upcoming contests, hackathons, and threatened coding streaks are easy to overlook.
-
-Existing tools often address only one part of this journey. Our goal is to connect these activities into a single, practical student productivity platform.
-
-## 3. Our Solution
-
-OpportunityOS will provide two interconnected modules.
-
-### Module A: AI Opportunity Hub
-
-A centralized system for discovering, evaluating, and preparing applications for internships, research opportunities, and placements.
-
-**Planned features**
-
-- **Natural-language search:** Students describe their goals in ordinary language, such as finding paid machine learning internships suitable for second-year CSE students.
-- **Intelligent query generation:** An LLM converts the request into structured filters and relevant search queries.
-- **Opportunity aggregation:** Retrieve listings from supported APIs and permitted web sources.
-- **Information extraction:** Organize job descriptions into structured information, including role, eligibility, skills, location, compensation, deadline, and application link.
-- **Deduplication and freshness checks:** Reduce duplicate listings and flag potentially outdated opportunities.
-- **Resume–JD matching:** Compare a student's resume with a job description, identify relevant experience, and highlight missing skills.
-- **AI-assisted resume improvement:** Suggest role-specific improvements without inventing qualifications or achievements.
-- **Personalized cold-email drafting:** Generate editable outreach emails for recruiters, professors, and research teams.
-- **Application tracking:** Save opportunities and track application stages, deadlines, and follow-ups.
-
-### Module B: Streak & Developer Growth Hub
-
-An integrated version of our existing [Streak project](https://github.com/DARK-1926/streak), designed to help students monitor coding consistency and discover technical events.
-
-**Planned features**
-
-- **Coding activity dashboard:** View coding streaks and available problem-solving statistics across supported platforms.
-- **Problem-solving progress:** Monitor available counts and activity history where the underlying platform provides reliable data.
-- **Streak-risk alerts:** Send email notifications when a coding streak is at risk, where activity and platform data allow the risk to be determined.
-- **Contest calendar:** Aggregate upcoming coding contests from supported platforms.
-- **Hackathon discovery:** Collect and organize hackathons from supported event sources.
-- **Unified event view:** Browse contests, hackathons, internships, and research opportunities from a central dashboard.
-
-The existing Streak project will be evaluated for reuse and integrated as a module rather than unnecessarily rebuilt from scratch.
-
-## 4. AI and Analytics
-
-AI will support specific tasks instead of serving only as a conversational chatbot.
-
-### Planned AI capabilities
-
-1. **Prompt-to-search conversion:** Transform natural-language requests into structured search criteria.
-2. **Job description parsing:** Extract skills, qualifications, eligibility conditions, and deadlines from unstructured descriptions.
-3. **Resume–JD analysis:** Identify matching evidence, skill gaps, and areas for improvement.
-4. **Personalized application assistance:** Draft resume suggestions and outreach emails based on verified user information.
-5. **Opportunity ranking:** Prioritize opportunities using eligibility, preferences, and relevant skills.
-6. **Preparation insights:** Relate skills frequently requested by saved opportunities to the student's coding activity and projects.
-
-### Planned analytics
-
-- Opportunities discovered, saved, and applied to.
-- Applications grouped by status, source, role, and location.
-- Upcoming deadlines and completed follow-ups.
-- Coding activity, streak history, and available problem-solving statistics.
-- Upcoming contests and hackathons.
-- Frequently requested skills across collected job descriptions.
-
-The platform will distinguish source-backed facts from AI-generated recommendations. Match scores will be explainable indicators of relevance, not predictions of selection.
-
-## 5. Proposed Technology Stack
-
-| Component | Technology |
+| Contests and events | Career pipeline |
 |---|---|
-| Frontend | React |
-| Language | JavaScript or TypeScript |
-| Styling | CSS or Tailwind CSS |
-| Charts | Recharts or Chart.js |
-| Backend | Minimal API layer or serverless functions |
-| Database and authentication | Supabase or a suitable managed alternative |
-| AI integration | LLM API |
-| Opportunity discovery | Public APIs and permitted web extraction |
-| Notifications | Scheduled serverless jobs and an email service |
-| Version control | Git and GitHub |
-| Deployment | Vercel or a suitable hosting platform |
+| ![Contests and events calendar](docs/screenshots/calendar-headless.png) | ![Applications pipeline](docs/screenshots/career-headless.png) |
 
-### Architecture principle
+| Profile | Sign in |
+|---|---|
+| ![Profile page with coding accounts](docs/screenshots/profile-headless.png) | ![Sign-in page](docs/screenshots/sign-in-headless.png) |
 
-The project will follow a **frontend-first, minimal-backend architecture**.
+## Architecture
 
-React will handle the primary user interface and interactive dashboards. Managed services will be used where appropriate for authentication and persistence, while a small server-side layer will handle protected API calls, AI requests, scheduled processing, and email notifications.
+The client is a React single-page application. In development, Vite proxies `/api` requests to Express. The API routes requests through controllers to MongoDB-backed models or the local JSON fallback store; platform adapters fetch public profile and event data from their providers.
 
-API keys and secrets will never be exposed in client-side code.
+```mermaid
+flowchart LR
+  subgraph Browser["Browser"]
+    UI["React pages and components"]
+    State["AppContext and local storage"]
+    Client["Frontend service clients"]
+    UI <--> State
+    UI --> Client
+  end
 
-## 6. High-Level Workflow
+  Proxy["Vite /api proxy (development)"]
+  API["Express API"]
+  Routes["Route modules and middleware"]
+  Controllers["Controllers"]
+  Adapters["Platform and contest adapters"]
+  Mongo[("MongoDB / Mongoose")]
+  Fallback[("Local JSON fallback")]
+  Providers["Public platform and event providers"]
 
-1. The student enters preferences and a natural-language opportunity search.
-2. The system converts the request into structured filters and queries.
-3. Supported sources provide opportunity listings.
-4. Retrieved data is normalized, deduplicated, and checked for freshness.
-5. The student reviews ranked opportunities and their original sources.
-6. The student compares a resume against a selected job description.
-7. AI generates editable suggestions for resume improvements and outreach emails.
-8. The student saves opportunities and tracks application progress.
-9. The Streak module displays available coding activity and upcoming contests and hackathons.
-10. Analytics help the student understand progress and plan next actions.
+  Client --> Proxy --> API --> Routes --> Controllers
+  Controllers --> Mongo
+  Controllers --> Fallback
+  Controllers --> Adapters --> Providers
+  Adapters --> Controllers
+  Controllers --> API --> Client
+```
 
-## 7. Development Roadmap
+### Main workflows
 
-### Phase 1 — Foundation
-- Establish the React application and navigation.
-- Design the dashboard and shared UI components.
-- Create the initial data model and sample opportunity dataset.
-- Set up GitHub Issues, branches, pull requests, and code reviews.
+**Platform sync and analytics**
 
-### Phase 2 — Opportunity Discovery
-- Implement natural-language search input and structured filters.
-- Integrate a limited set of real opportunity sources.
-- Normalize listings and handle duplicates.
-- Display source links, relevant details, and retrieval timestamps.
+```mermaid
+flowchart LR
+  User["User opens dashboard"] --> Page["Overview and analytics sections"]
+  Page --> Context["AppContext"]
+  Context --> Client["Platform service client"]
+  Client --> API["GET /api/platforms/:platform/:handle"]
+  API --> Adapter["Platform adapter"]
+  Adapter --> Provider["Public platform endpoint"]
+  Provider --> Adapter --> API --> Context
+  Context --> View["Dashboard metrics and activity views"]
+```
 
-### Phase 3 — AI-Assisted Applications
-- Integrate an LLM through a protected server-side endpoint.
-- Parse job descriptions.
-- Implement resume–JD matching and skill-gap analysis.
-- Generate editable, personalized outreach drafts.
+**Authentication**
 
-### Phase 4 — Streak Integration
-- Evaluate the existing Streak repository and reuse suitable components.
-- Integrate coding activity and problem-solving statistics from supported platforms.
-- Display contest and hackathon listings.
-- Implement scheduled streak-risk email notifications where supported.
+```mermaid
+sequenceDiagram
+  actor User
+  participant UI as React auth page
+  participant API as Express API
+  participant Auth as Auth controller
+  participant Store as MongoDB or fallback store
 
-### Phase 5 — Analytics and Deployment
-- Implement the application tracker and progress dashboards.
-- Add tests for core workflows and data processing.
-- Configure automated checks and deployment.
-- Validate the application with realistic user scenarios.
+  User->>UI: Register or sign in
+  UI->>API: POST /api/auth/register or /login
+  API->>Auth: Validate request
+  Auth->>Store: Find or persist user
+  Store-->>Auth: User record
+  Auth-->>UI: JWT and sanitized user
+  UI->>API: GET /api/auth/me (authenticated)
+  API-->>UI: Verified user profile
+```
 
-## 8. Team Collaboration
+**Data model**
 
-The project will be developed by a team of four.
+```mermaid
+erDiagram
+  USER ||--o{ GROWTH_LOG : records
+  USER ||--o{ APPLICATION : tracks
+  OPPORTUNITY {
+    string title
+    string company
+    string deadline
+    string sourceUrl
+  }
+  USER {
+    string name
+    string email
+    string profileImage
+    string platformHandles
+  }
+  GROWTH_LOG {
+    string date
+    string platform
+    number problemsSolved
+  }
+  APPLICATION {
+    string role
+    string company
+    string status
+    string opportunityId
+  }
+```
 
-Suggested ownership areas:
+`Application.opportunityId` is stored as a string; it is not a MongoDB reference to `Opportunity`. See the editable [architecture](docs/diagrams/architecture.md), [workflow](docs/diagrams/workflow.md), [data-flow](docs/diagrams/data-flow.md), [module-interaction](docs/diagrams/module-interaction.md), [authentication](docs/diagrams/authentication.md), and [database ER](docs/diagrams/database-er.md) diagrams.
 
-- **Member 1:** React frontend and user experience.
-- **Member 2:** Opportunity retrieval, extraction, and data processing.
-- **Member 3:** Backend, database, authentication, and integrations.
-- **Member 4:** LLM workflows, resume matching, analytics, and testing.
+## Tech stack
 
-These roles define primary ownership, not isolated responsibilities. All members will participate in code reviews, integration, and testing.
+| Layer | Technologies |
+|---|---|
+| Frontend | React 18, Vite, Lucide icons, native CSS variables |
+| Backend | Node.js, Express, rate limiting, CORS |
+| Persistence | MongoDB (Mongoose) with a local JSON fallback store |
+| Authentication | JSON Web Tokens (JWT), bcryptjs password hashing |
+| Testing & QA | Vitest, ESLint (recommended + React Hooks rules) |
 
-GitHub Projects will manage tasks and progress. Feature branches and pull requests will support collaborative development and reviewed changes.
+## Run locally
 
-## 9. Expected Outcome
-
-Our goal is to deliver a functional prototype that demonstrates:
-
-- A React-based full-stack application.
-- Real opportunity discovery from supported sources.
-- Practical and explainable LLM integration.
-- Resume–JD analysis and personalized application assistance.
-- An integrated coding-progress and technical-event dashboard.
-- Useful analytics and application tracking.
-- Collaborative development practices using GitHub.
-
-The project will prioritize working features, data reliability, usability, and responsible AI integration over unnecessary architectural complexity.
-
-## 10. Scope and Limitations
-
-- Source coverage will depend on available APIs, access permissions, and website terms.
-- Listings may change or become unavailable after retrieval.
-- Eligibility, deadlines, and compensation will be marked uncertain when they cannot be verified.
-- Coding statistics and streak calculations will depend on the supported platforms and accessible data.
-- AI-generated suggestions will require user review.
-- The platform will assist with preparing applications rather than automatically submitting them without user approval.
-
----
-streak repo of mine:https://github.com/DARK-1926/Streak
-**OpportunityOS — One platform to discover opportunities, prepare smarter, and track your growth.**
-
-## Starter setup
-
-The project now includes a Vite + React + TypeScript starter with a responsive dashboard, opportunity hub, shared application shell, typed sample data, and a CI/CD baseline.
+Requirements: Node.js 20 or later and npm.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-For production, configure `CLIENT_ORIGINS` on the backend as a comma-separated list of exact frontend origins (for example, `https://opportunity.example.com`). Local Vite origins are enabled only outside production. Authentication endpoints are limited to 10 requests per IP per 15 minutes; other account endpoints are limited to 100 requests per IP per 15 minutes.
+The development command starts the frontend at `http://localhost:5173` and the API at `http://localhost:5000`. The API health endpoint is `http://localhost:5000/api/health`. Vite proxies `/api` requests to the local API.
 
-Quality checks:
+MongoDB is optional for local startup. When it is unavailable, account routes use the development fallback store, which writes ignored local state to `backend/local_db.json`. Do not use production credentials or data for local development.
+
+Run only one process with `npm run dev:client` (or `npm run dev:frontend`) and `npm run server` (or `npm run dev:backend`) in separate terminals.
+
+## API surface
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/auth/register` | Public | Create an account |
+| `POST` | `/auth/login` | Public | Sign in and receive a JWT |
+| `GET` | `/auth/me` | JWT | Retrieve the authenticated profile |
+| `PUT` | `/user/profile` | JWT | Update profile details |
+| `POST` | `/growth/log` | JWT | Record a coding activity log |
+| `GET` | `/growth/logs` | JWT | Retrieve the user's recent activity logs |
+| `GET` | `/platforms/daily-challenge` | Public | Fetch official real-time LeetCode Problem of the Day |
+| `GET` | `/platforms/leetcode/:handle` | Public | Fetch a LeetCode profile |
+| `GET` | `/platforms/codeforces/:handle` | Public | Fetch a Codeforces profile |
+| `GET` | `/platforms/codechef/:handle` | Public | Fetch a CodeChef profile |
+| `GET` | `/platforms/gfg/:handle` | Public | Fetch a GeeksforGeeks profile |
+| `GET` | `/platforms/github/:handle` | Public | Fetch a GitHub profile |
+| `GET` | `/contests` | Public | Retrieve contest and event data |
+| `GET` | `/opportunities` | Public | List opportunities |
+| `GET` | `/opportunities/:id` | Public | Retrieve an opportunity |
+| `GET` | `/applications` | JWT | List your applications |
+| `POST` | `/applications` | JWT | Create an application (input is validated) |
+| `PATCH`, `PUT` | `/applications/:id` | JWT | Update one of your applications |
+| `DELETE` | `/applications/:id` | JWT | Delete one of your applications |
+| `GET` | `/health` | Public | Check API and database status |
+
+Platform profile endpoints accept `?force=true` to bypass a fresh in-memory cache entry when supported by the adapter. External providers may impose their own limits or change availability.
+
+## Data and persistence
+
+- **User** stores account credentials (hashed), profile details, and public platform handles.
+- **GrowthLog** records a user's activity date, platform, count, and optional notes.
+- **Opportunity** stores role and event listing details.
+- **Application** stores a user's role-tracking entry, status, dates, and notes.
+- **MongoDB** is the persistent store when configured and reachable. The local JSON fallback supports local development when it is not.
+- The frontend also keeps selected dashboard and career state in browser `localStorage`.
+
+The file-backed fallback is not a substitute for a production database. In serverless environments where the filesystem is not writable, fallback state may only live in memory for the lifetime of a warm process.
+
+## Tests and quality checks
+
+Run the same checks used by the repository's CI workflow:
 
 ```bash
 npm run lint
-npm run typecheck
 npm test
+npm run audit:production
 npm run build
 ```
 
-## Repository structure
+Vitest runs the test suites, ESLint checks the JavaScript/JSX, and the production audit checks installed production dependencies. The CI workflow runs these checks on pull requests and pushes to `dev` or `main` using Node.js 20.
+
+## Deployment
+
+- **GitHub Pages:** `.github/workflows/deploy.yml` builds and publishes the static frontend from pushes to `main`. GitHub Pages does not run the Express API; configure a separate API host if the deployed frontend needs backend functionality.
+- **Vercel:** `vercel.json` builds the frontend into `dist` and rewrites `/api/*` requests to `api/index.js`, which passes requests to Express. Configure `MONGODB_URI` and a strong `JWT_SECRET` in the deployment environment for persistent, signed-in accounts.
+
+The local JSON fallback is not durable across serverless instances. Use MongoDB or another persistent database for deployed user data.
+
+## Repository map
 
 ```text
-src/
-  app/                 # Application composition and navigation
-  features/            # Product modules (dashboard, opportunities, growth, calendar)
-  shared/
-    components/        # Reusable UI primitives and shell
-    data/              # Temporary fixtures and seed data
-    types/             # Shared domain and UI types
-  styles/              # Global design tokens and responsive styles
-docs/                  # Product and engineering plans
-.github/workflows/     # Pull request quality gates and production deployment
+api/
+  index.js                 Vercel serverless API entry point
+backend/
+  src/
+    config/                Environment and MongoDB connection
+    controllers/           Authentication, growth, platform, and career handlers
+    middleware/            Authentication, rate limiting, and error handling
+    models/                Mongoose schemas
+    routes/                Express route modules
+    services/              Platform and contest integrations
+    store/                 Local JSON fallback store
+frontend/
+  src/
+    app/                   Application composition and navigation
+    features/              Dashboard, calendar, applications, profile, auth
+    shared/
+      components/          Reusable UI and application shell
+      context/             Shared state and lifecycle
+      data/                Sample data
+      services/            Frontend API clients
+    styles/                Global styling
+docs/
+  diagrams/                Editable Mermaid diagrams
+  screenshots/             Product screenshots
+.github/workflows/          CI and GitHub Pages deployment
 ```
 
-See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the phased delivery plan, architecture guardrails, and definition of done. Pull requests run lint, type checking, tests, and a production build. Pushes to `main` deploy the frontend to GitHub Pages.
+## Project documentation
 
-## Engineering handbook
+- [Architecture notes](docs/ARCHITECTURE.md)
+- [Engineering standards](docs/ENGINEERING_STANDARDS.md)
+- [Operations guide](docs/OPERATIONS.md)
+- [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Contributing guide](CONTRIBUTING.md)
 
-- [Delivery roadmap](docs/ROADMAP.md) — issue-to-milestone plan and enterprise controls.
-- [Architecture](docs/ARCHITECTURE.md) — repository map and target service boundaries.
-- [Operations](docs/OPERATIONS.md) — environments, releases, incidents, and production readiness.
-- [Contributing](CONTRIBUTING.md) — branch, review, and local quality standards.
-- [Security policy](SECURITY.md) — private reporting and security boundaries.
+## Credits
 
-The repository includes pull-request and issue templates, CODEOWNERS, Dependabot, production dependency auditing, CodeQL, CI quality gates, and Pages deployment automation. CI and CodeQL run on both `dev` and `main`; only `main` deploys production. GitHub repository settings should require CI and CodeQL, require a CODEOWNERS review, disable force pushes, and enable environment protection for production. GitHub Pages must be enabled with “GitHub Actions” as its source for the production deployment workflow.
+Some of the animated UI components in `frontend/src/components/ui` (such as GridScan and PillNav) are adapted from [React Bits](https://reactbits.dev).
+
+## Responsible use
+
+Platform integrations retrieve public profile information. Use them in accordance with each provider's terms and access policies, and avoid sending private credentials to third-party platforms. Keep secrets server-side and distinguish live provider responses from sample or locally stored data.
+
+No `LICENSE` file is currently included in this repository.

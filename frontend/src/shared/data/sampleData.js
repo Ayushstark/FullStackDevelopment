@@ -1,0 +1,596 @@
+export const initialOpportunities = [
+  {
+    id: "stripe-swe",
+    title: "Software Engineering Intern",
+    company: "Stripe",
+    location: "Bengaluru · Hybrid",
+    locationType: "Hybrid",
+    type: "Internship",
+    deadline: "Nov 12, 2026",
+    deadlineDate: "2026-11-12",
+    stipend: "₹1,25,000 / month",
+    experience: "Sophomore",
+    description:
+      "Join the Payments Infrastructure team to build resilient, distributed systems powering global internet commerce. You will contribute to core API services, improve latency, and write reliable automated tests.",
+    requirements: [
+      "Proficiency in React, TypeScript, or modern backend languages (Java/Go/Ruby)",
+      "Strong foundation in algorithms, data structures, and system design basics",
+      "Prior project or open-source contribution experience",
+    ],
+    skills: ["React", "TypeScript", "Data Structures", "APIs", "System Design"],
+    source: "Stripe Careers API",
+    sourceUrl: "https://stripe.com/jobs",
+    retrievedAt: "2026-10-27T09:30:00Z",
+    verified: true,
+  },
+  {
+    id: "microsoft-ai",
+    title: "AI & Machine Learning Research Fellowship",
+    company: "Microsoft Research",
+    location: "Bengaluru / Remote",
+    locationType: "Remote",
+    type: "Research",
+    deadline: "Nov 18, 2026",
+    deadlineDate: "2026-11-18",
+    stipend: "₹95,000 / month",
+    experience: "Junior",
+    description:
+      "Conduct fundamental research in applied deep learning, multimodal language models, and agentic reasoning alongside world-class scientists. Selected fellows will co-author publications at top-tier conferences.",
+    requirements: [
+      "Deep understanding of PyTorch or TensorFlow and transformer architectures",
+      "Strong linear algebra, calculus, and probability foundation",
+      "Demonstrated research interest or published workshop papers are a plus",
+    ],
+    skills: ["Python", "PyTorch", "Machine Learning", "Transformers", "Data Analysis"],
+    source: "Microsoft Research Portal",
+    sourceUrl: "https://www.microsoft.com/en-us/research/careers",
+    retrievedAt: "2026-10-26T14:15:00Z",
+    verified: true,
+  },
+  {
+    id: "hacktoberfest",
+    title: "Global Open Source Hackathon 2026",
+    company: "GitHub & Community",
+    location: "Online / Global",
+    locationType: "Remote",
+    type: "Hackathon",
+    deadline: "Nov 24, 2026",
+    deadlineDate: "2026-11-24",
+    stipend: "$5,000 Prize Pool & Swag",
+    experience: "Any",
+    description:
+      "A month-long celebration of open-source development. Complete 4 verified pull requests to designated repositories, build innovative developer tools, and connect with global maintainers.",
+    requirements: [
+      "Familiarity with Git, GitHub workflows, and documentation",
+      "Ability to write clean, tested code in JS/TS/Python",
+      "Willingness to collaborate and receive peer code reviews",
+    ],
+    skills: ["Git", "GitHub", "JavaScript", "TypeScript", "Open Source"],
+    source: "Devpost & GitHub",
+    sourceUrl: "https://hacktoberfest.com",
+    retrievedAt: "2026-10-25T11:00:00Z",
+    verified: true,
+  },
+  {
+    id: "google-step",
+    title: "Student Training in Engineering Program (STEP) Intern",
+    company: "Google",
+    location: "Hyderabad · Onsite",
+    locationType: "Onsite",
+    type: "Internship",
+    deadline: "Dec 05, 2026",
+    deadlineDate: "2026-12-05",
+    stipend: "₹1,10,000 / month",
+    experience: "Sophomore",
+    description:
+      "STEP is a developmental internship for first- and second-year undergraduate students with a passion for technology. Work on real software projects with a team of Google engineers and receive 1:1 mentorship.",
+    requirements: [
+      "Completed foundational coursework in computer science",
+      "Programming experience in C++, Java, or Python",
+      "Problem solving and collaborative communication skills",
+    ],
+    skills: ["Data Structures", "Algorithms", "Python", "C++", "Problem Solving"],
+    source: "Google Careers",
+    sourceUrl: "https://careers.google.com/students",
+    retrievedAt: "2026-10-28T08:00:00Z",
+    verified: true,
+  },
+  {
+    id: "cred-frontend",
+    title: "Frontend Engineering Intern (Web & Mobile)",
+    company: "CRED",
+    location: "Bengaluru · Onsite",
+    locationType: "Onsite",
+    type: "Internship",
+    deadline: "Nov 30, 2026",
+    deadlineDate: "2026-11-30",
+    stipend: "₹1,00,000 / month",
+    experience: "Junior",
+    description:
+      "Help craft high-octane user interfaces and design systems. Work with React, TypeScript, and high-performance WebGL animations to create buttery-smooth member experiences.",
+    requirements: [
+      "Exceptional command of modern CSS, React, and component lifecycle",
+      "Eye for high design fidelity and micro-interactions",
+      "Solid understanding of browser rendering and state management",
+    ],
+    skills: ["React", "CSS", "TypeScript", "Design Systems", "Web Performance"],
+    source: "CRED Careers",
+    sourceUrl: "https://cred.club/careers",
+    retrievedAt: "2026-10-27T16:45:00Z",
+    verified: true,
+  },
+  {
+    id: "sih-2026",
+    title: "Smart India Hackathon (SIH 2026 - Student Edition)",
+    company: "Ministry of Education & AICTE",
+    location: "Pan-India / Hybrid",
+    locationType: "Hybrid",
+    type: "Hackathon",
+    deadline: "Dec 15, 2026",
+    deadlineDate: "2026-12-15",
+    stipend: "₹1,00,000 Cash Prize per problem",
+    experience: "Any",
+    description:
+      "Nationwide competition providing students a platform to solve pressing problems faced by daily life, government ministries, and leading industry departments.",
+    requirements: [
+      "Teams of 6 students from recognized academic institutions",
+      "Working prototype matching the stated problem statement",
+      "Final round 36-hour non-stop hackathon presentation",
+    ],
+    skills: ["Full Stack", "Problem Solving", "Prototyping", "Teamwork"],
+    source: "AICTE Portal",
+    sourceUrl: "https://sih.gov.in",
+    retrievedAt: "2026-10-24T18:00:00Z",
+    verified: true,
+  },
+];
+
+
+export const upcomingOpportunities = initialOpportunities;
+
+export const initialProfile = {
+  name: "Alex Shah",
+  email: "alex.shah@university.edu",
+  profileImage: "",
+  university: "National Institute of Technology",
+  degree: "B.Tech in Computer Science & Engineering",
+  gradYear: "2027",
+  targetRoles: ["Frontend Engineer", "Full Stack Developer", "Software Engineering Intern"],
+  skills: [
+    "React",
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "Data Structures",
+    "Algorithms",
+    "Git",
+    "GitHub",
+    "Python",
+    "APIs",
+  ],
+  resumeSummary:
+    "Second-year Computer Science undergraduate with hands-on experience building reactive web apps using React, JavaScript, and modern CSS. Active competitive programmer with 300+ problems solved across LeetCode and Codeforces.",
+  platformHandles: {
+    leetcode: "tourist",
+    codeforces: "tourist",
+    codechef: "gennady.korotkevich",
+    geeksforgeeks: "tourist",
+    gfg: "tourist",
+    github: "torvalds",
+  },
+};
+
+export const initialApplications = [
+  {
+    id: "app-1",
+    opportunityId: "stripe-swe",
+    role: "Software Engineering Intern",
+    company: "Stripe",
+    location: "Bengaluru · Hybrid",
+    status: "Interviewing",
+    appliedDate: "2026-10-15",
+    deadline: "Nov 12, 2026",
+    notes: "Passed technical screening round. System design and coding interview scheduled for Nov 3.",
+    matchScore: 92,
+    sourceUrl: "https://stripe.com/jobs",
+  },
+  {
+    id: "app-2",
+    opportunityId: "microsoft-ai",
+    role: "AI Research Fellowship",
+    company: "Microsoft Research",
+    location: "Bengaluru / Remote",
+    status: "Applied",
+    appliedDate: "2026-10-22",
+    deadline: "Nov 18, 2026",
+    notes: "Submitted research proposal and statement of purpose with professor endorsement.",
+    matchScore: 78,
+    sourceUrl: "https://www.microsoft.com/en-us/research/careers",
+  },
+  {
+    id: "app-3",
+    opportunityId: "google-step",
+    role: "STEP Engineering Intern",
+    company: "Google",
+    location: "Hyderabad · Onsite",
+    status: "Saved",
+    appliedDate: "-",
+    deadline: "Dec 05, 2026",
+    notes: "Tailoring resume to emphasize coursework in Data Structures and open-source contributions.",
+    matchScore: 88,
+    sourceUrl: "https://careers.google.com/students",
+  },
+  {
+    id: "app-4",
+    opportunityId: "cred-frontend",
+    role: "Frontend Engineering Intern",
+    company: "CRED",
+    location: "Bengaluru · Onsite",
+    status: "Applied",
+    appliedDate: "2026-10-24",
+    deadline: "Nov 30, 2026",
+    notes: "Submitted portfolio with component showcase and GitHub projects.",
+    matchScore: 95,
+    sourceUrl: "https://cred.club/careers",
+  },
+];
+
+function buildDefaultRollingActivity() {
+  const days = [];
+  const baseCounts = [3, 4, 5, 2, 4, 6, 4, 3, 4, 5, 3, 2, 4, 5, 3, 6, 4, 3, 2, 4, 5, 4, 3, 5, 4, 3, 4, 0];
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  for (let i = 27; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+    const count = baseCounts[27 - i] ?? 2;
+    const level = count >= 5 ? 3 : count >= 3 ? 2 : count >= 1 ? 1 : 0;
+    days.push({
+      date: dateStr,
+      day: dayName,
+      count,
+      problemCount: count,
+      level,
+    });
+  }
+  return days;
+}
+
+function buildDefaultAnnualActivity() {
+  const days = [];
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  let seed = 42;
+  const rand = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+
+  for (let i = 364; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dayOfWeek = d.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    const p = rand();
+    let count = 0;
+    let problemCount = 0;
+    if (p > (isWeekend ? 0.45 : 0.28)) {
+      count = 1 + Math.floor(rand() * 4);
+      if (rand() > 0.8) count += Math.floor(rand() * 4);
+      problemCount = Math.max(1, count - (rand() > 0.5 ? 1 : 0));
+    }
+
+    days.push({
+      date: dateStr,
+      count,
+      problemCount,
+      level: count >= 5 ? 3 : count >= 3 ? 2 : count >= 1 ? 1 : 0,
+    });
+  }
+  return days;
+}
+
+const defaultMonthlyActivity = buildDefaultRollingActivity();
+const defaultAnnualActivity = buildDefaultAnnualActivity();
+const defaultYesterday = defaultMonthlyActivity[26]?.date || "2026-11-04";
+
+export const initialGrowthStats = {
+  currentStreak: 18,
+  longestStreak: 28,
+  lastActiveDate: defaultYesterday,
+  streakAtRisk: true,
+  dailyGoal: 2,
+  todayCompletedCount: 0,
+  streakFreezesAvailable: 2,
+  totalProblemsSolved: 552,
+  leetcode: {
+    solved: 215,
+    easy: 92,
+    medium: 104,
+    hard: 19,
+    ranking: 42150,
+  },
+  codeforces: {
+    rating: 1340,
+    rank: "Pupil",
+    solved: 75,
+    contests: 12,
+  },
+  codechef: {
+    rating: 1650,
+    highestRating: 1720,
+    stars: "3★",
+    starsCount: 3,
+    division: "Div 2",
+    globalRank: "24500",
+    countryRank: "8200",
+    solved: 142,
+    lastSynced: null,
+  },
+  gfg: {
+    score: 350,
+    solved: 120,
+    instituteRank: "42",
+    instituteName: "IIIT Allahabad",
+    easy: 58,
+    medium: 48,
+    hard: 14,
+    lastSynced: null,
+  },
+  geeksforgeeks: {
+    score: 350,
+    solved: 120,
+    instituteRank: "42",
+    instituteName: "IIIT Allahabad",
+    easy: 58,
+    medium: 48,
+    hard: 14,
+    lastSynced: null,
+  },
+  github: {
+    contributions: 512,
+    repos: 14,
+    streak: 18,
+  },
+  weeklyActivity: defaultMonthlyActivity.slice(21).map((item, idx) => ({
+    day: item.day,
+    count: item.count,
+    completed: idx < 6 ? item.count > 0 : false,
+  })),
+  monthlyActivity: defaultMonthlyActivity,
+  annualActivity: defaultAnnualActivity,
+  recentLogs: [
+    {
+      id: "log-1",
+      date: defaultYesterday,
+      platform: "LeetCode",
+      problemsSolved: 2,
+      difficulty: "Medium",
+      category: "Two Pointers",
+      notes: "Solved 3Sum and Container With Most Water",
+    },
+    {
+      id: "log-2",
+      date: defaultMonthlyActivity[25]?.date || "2026-11-03",
+      platform: "Codeforces",
+      problemsSolved: 2,
+      difficulty: "Medium",
+      category: "Contest Upsolving",
+      notes: "Upsolved Problem B & C from Codeforces Round 982",
+    },
+    {
+      id: "log-3",
+      date: defaultMonthlyActivity[24]?.date || "2026-11-02",
+      platform: "GeeksforGeeks",
+      problemsSolved: 1,
+      difficulty: "Medium",
+      category: "Graph Algorithms",
+      notes: "Solved Detect Cycle in an Undirected Graph",
+    },
+    {
+      id: "log-4",
+      date: defaultMonthlyActivity[23]?.date || "2026-11-01",
+      platform: "CodeChef",
+      problemsSolved: 2,
+      difficulty: "Hard",
+      category: "Dynamic Programming",
+      notes: "Starters 158 Division 2: Array Optimization",
+    },
+    {
+      id: "log-5",
+      date: defaultMonthlyActivity[22]?.date || "2026-10-31",
+      platform: "GitHub",
+      problemsSolved: 3,
+      difficulty: "Open Source",
+      category: "Full Stack",
+      notes: "Implement auth session verification and unit tests",
+    },
+  ],
+  autonomousProjects: [
+    {
+      id: "proj-1",
+      name: "AI Adoption Governance Framework",
+      language: "Python",
+      commits: 6,
+      date: "2026-10-28",
+      status: "Completed",
+      description: "Automated risk assessment and compliance checklist generator for internal AI tools.",
+    },
+    {
+      id: "proj-2",
+      name: "Thinking Effort Tuner",
+      language: "Python",
+      commits: 4,
+      date: "2026-10-27",
+      status: "Completed",
+      description: "CLI utility to benchmark reasoning token usage across LLM model tiers.",
+    },
+    {
+      id: "proj-3",
+      name: "Email Assistant Microservice",
+      language: "Python",
+      commits: 8,
+      date: "2026-10-25",
+      status: "Completed",
+      description: "FastAPI service with Docker Compose for inbox summarization and task routing.",
+    },
+  ],
+};
+
+export const initialCalendarEvents = [
+  {
+    id: "cf-982",
+    title: "Codeforces Round 982 (Div. 2)",
+    organizer: "Codeforces",
+    type: "Contest",
+    date: "2026-11-01",
+    time: "20:05 IST (2.5 hrs)",
+    link: "https://codeforces.com/contests",
+    status: "Upcoming",
+    description: "Rated contest for Div. 2 participants. 6 competitive algorithmic challenges.",
+    tags: ["Competitive Programming", "Algorithms", "Rated"],
+    isReminderSet: true,
+  },
+  {
+    id: "lc-biweekly-142",
+    title: "LeetCode Biweekly Contest 142",
+    organizer: "LeetCode",
+    type: "Contest",
+    date: "2026-11-01",
+    time: "19:30 IST (1.5 hrs)",
+    link: "https://leetcode.com/contest",
+    status: "Upcoming",
+    description: "4 problem algorithmic challenge testing data structures and optimization.",
+    tags: ["Data Structures", "Speed Coding", "Global Ranking"],
+    isReminderSet: true,
+  },
+  {
+    id: "sih-internal",
+    title: "Smart India Hackathon Internal College Screening",
+    organizer: "Institute Innovation Council",
+    type: "Hackathon",
+    date: "2026-11-01",
+    time: "10:00 - 18:00 IST",
+    link: "https://sih.gov.in",
+    status: "Upcoming",
+    description: "Internal team evaluation and problem statement shortlisting for SIH national rounds.",
+    tags: ["Hackathon", "College Team", "Prototype"],
+    isReminderSet: false,
+  },
+  {
+    id: "stripe-priority-deadline",
+    title: "Stripe Early Referral Priority Deadline",
+    organizer: "Stripe",
+    type: "Deadline",
+    date: "2026-11-01",
+    time: "23:59 IST",
+    link: "https://stripe.com/jobs",
+    status: "Upcoming",
+    description: "Priority review deadline for University 2027 SWE candidates with referrals.",
+    tags: ["Internship", "Priority Deadline"],
+    isReminderSet: true,
+  },
+  {
+    id: "google-cloud-workshop",
+    title: "Google Cloud Distributed Systems & Kubernetes Masterclass",
+    organizer: "Google Cloud",
+    type: "Workshop",
+    date: "2026-11-01",
+    time: "15:00 - 17:00 IST",
+    link: "https://cloud.google.com/events",
+    status: "Upcoming",
+    description: "Hands-on engineering workshop on container orchestration, microservices latency, and distributed caching.",
+    tags: ["Cloud", "DevOps", "Microservices"],
+    isReminderSet: true,
+  },
+  {
+    id: "atcoder-grand-contest",
+    title: "AtCoder Grand Contest 072",
+    organizer: "AtCoder",
+    type: "Contest",
+    date: "2026-11-01",
+    time: "21:00 IST (3 hrs)",
+    link: "https://atcoder.jp/contests",
+    status: "Upcoming",
+    description: "World-class algorithmic round featuring high-difficulty constructive algorithms and combinatorial optimization.",
+    tags: ["Competitive Programming", "High Rating", "Rated"],
+    isReminderSet: false,
+  },
+  {
+    id: "gfg-weekly-160",
+    title: "GFG Weekly Coding Contest 160",
+    organizer: "GeeksforGeeks",
+    type: "Contest",
+    date: "2026-11-03",
+    time: "19:00 IST (1.5 hrs)",
+    link: "https://practice.geeksforgeeks.org/events/rec/gfg-weekly-coding-contest",
+    status: "Upcoming",
+    description: "Algorithmic contest featuring 3 DSA challenges rated for GeeksforGeeks overall leaderboard.",
+    tags: ["DSA", "Competitive Programming", "Rated"],
+    isReminderSet: true,
+  },
+  {
+    id: "hacktoberfest-final",
+    title: "Hacktoberfest Final Sprint",
+    organizer: "GitHub",
+    type: "Hackathon",
+    date: "2026-10-31",
+    time: "23:59 UTC",
+    link: "https://hacktoberfest.com",
+    status: "Live",
+    description: "Last chance to submit 4 valid pull requests to earn open-source certification.",
+    tags: ["Open Source", "Git", "Community"],
+    isReminderSet: false,
+  },
+  {
+    id: "stripe-deadline",
+    title: "Stripe Software Engineering Intern Deadline",
+    organizer: "Stripe",
+    type: "Deadline",
+    date: "2026-11-12",
+    time: "23:59 IST",
+    link: "https://stripe.com/jobs",
+    status: "Upcoming",
+    description: "Application portal closes for Summer 2027 internship cohorts.",
+    tags: ["Internship", "Priority Deadline"],
+    isReminderSet: true,
+  },
+  {
+    id: "eth-global-india",
+    title: "ETHGlobal Hackathon (Web3 & Distributed Systems)",
+    organizer: "ETHGlobal",
+    type: "Hackathon",
+    date: "2026-11-15",
+    time: "36 hrs Hackathon",
+    link: "https://ethglobal.com",
+    status: "Upcoming",
+    description: "Global builder hackathon with $125k in bounties for decentralized apps, developer tooling, and smart contracts.",
+    tags: ["Hackathon", "Web3", "Distributed Systems", "Bounties"],
+    isReminderSet: true,
+  },
+];
+
+export const streakMilestones = [
+  { id: "spark", name: "7-Day Spark", targetDays: 7, description: "Solidified a consistent 1-week coding habit" },
+  { id: "momentum", name: "14-Day Momentum", targetDays: 14, description: "Two straight weeks of uninterrupted problem solving" },
+  { id: "master", name: "30-Day Master", targetDays: 30, description: "One full month of unbroken technical consistency" },
+  { id: "legend", name: "100-Day Legend", targetDays: 100, description: "Elite dedication, top 1% developer consistency" },
+];
+
+export const initialDailyChallenge = {
+  id: "lc-daily-2026-11-05",
+  title: "Find the Distance Value Between Two Arrays",
+  platform: "LeetCode",
+  difficulty: "Easy",
+  category: "Array",
+  tags: ["Array", "Two Pointers", "Binary Search", "Sorting"],
+  link: "https://leetcode.com/problems/find-the-distance-value-between-two-arrays/",
+  description: "Given two integer arrays arr1 and arr2, and the integer d, return the distance value between the two arrays.",
+  completed: false,
+};
